@@ -7,7 +7,7 @@ from discord.ext import commands
 import aiohttp
 from datetime import timedelta, datetime
 import json
-
+from keep_alive import keep_alive
 # ==================== CẤU HÌNH HỆ THỐNG ====================
 DISCORD_TOKEN = os.getenv("TOKEN")
 
@@ -3161,4 +3161,5 @@ if __name__ == "__main__":
     if DISCORD_TOKEN is None:
         print("❌ Thiếu TOKEN. Hãy đặt biến môi trường TOKEN.")
         sys.exit(1)
+    keep_alive()
     bot.run(DISCORD_TOKEN)
