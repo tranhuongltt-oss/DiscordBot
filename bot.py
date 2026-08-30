@@ -2644,7 +2644,7 @@ async def autoclear_channel_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== HỆ THỐNG COIN & VUI CHƠI MỞ RỘNG ====================
+# ==================== HỆ THỐNG COIN ====================
 COIN_FILE = "coins.json"
 
 def load_coins():
@@ -2666,7 +2666,7 @@ def get_balance(user_id):
 def set_balance(user_id, amount):
     user_id = str(user_id)
     if user_id not in user_coins:
-        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0, "last_crime": 0, "last_beg": 0, "bank": 0}
+        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0, "last_crime": 0, "last_beg": 0, "bank": 0, "last_interest": 0}
     user_coins[user_id]["balance"] = max(0, amount)
     save_coins(user_coins)
 
@@ -2685,19 +2685,124 @@ def get_last(user_id, key):
 def set_last(user_id, key):
     user_id = str(user_id)
     if user_id not in user_coins:
-        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0, "last_crime": 0, "last_beg": 0, "bank": 0}
+        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0, "last_crime": 0, "last_beg": 0, "bank": 0, "last_interest": 0}
     user_coins[user_id][key] = datetime.now().timestamp()
     save_coins(user_coins)
 
+# ==================== SHOP VỚI 100+ VẬT PHẨM ====================
 SHOP_ITEMS = {
+    # Role cơ bản
     "VIP": 1000,
     "Rich": 5000,
     "Legend": 10000,
     "Mystic": 20000,
     "God": 50000,
+    "Royal": 75000,
+    "Emperor": 100000,
+    "Immortal": 150000,
+    "Omnipotent": 200000,
+    # Vật phẩm ảo
+    "X2 EXP": 300,
+    "X3 EXP": 500,
+    "X5 EXP": 1000,
+    "Instant Level": 5000,
+    "Respawn Token": 200,
+    "Shield": 400,
+    "Mega Shield": 800,
+    "Ultra Shield": 1500,
+    "Health Potion": 100,
+    "Mega Potion": 250,
+    "Ultra Potion": 500,
+    "Phoenix Feather": 1200,
+    "Dragon Scale": 1800,
+    "Wizard Staff": 2500,
+    "Enchanted Sword": 3000,
+    "Mystic Orb": 4000,
+    "Golden Apple": 600,
+    "Silver Coin": 150,
+    "Gold Coin": 300,
+    "Platinum Coin": 500,
+    "Diamond": 800,
+    "Ruby": 1000,
+    "Sapphire": 1200,
+    "Emerald": 1400,
+    "Amethyst": 1600,
+    "Topaz": 1800,
+    "Opal": 2000,
+    "Pearl": 2200,
+    "Coral": 2400,
+    "Crystal": 2600,
+    "Moonstone": 2800,
+    "Sunstone": 3000,
+    "Star Fragment": 3500,
+    "Comet Shard": 4000,
+    "Galaxy Orb": 5000,
+    "Void Crystal": 6000,
+    "Time Sand": 7000,
+    "Space Dust": 8000,
+    "Reality Gem": 10000,
+    "Ender Pearl": 12000,
+    "Nether Star": 15000,
+    "Dragon Egg": 20000,
+    "Phoenix Down": 25000,
+    "Unicorn Horn": 30000,
+    "Mermaid Scale": 35000,
+    "Gryphon Feather": 40000,
+    "Basilisk Fang": 45000,
+    "Hydra Blood": 50000,
+    "Cerberus Tooth": 55000,
+    "Chimera Mane": 60000,
+    "Sphinx Riddle": 65000,
+    "Minotaur Axe": 70000,
+    "Cyclops Eye": 75000,
+    "Giant Club": 80000,
+    "Titan Gauntlet": 85000,
+    "Olympus Key": 90000,
+    "Asgardian Helmet": 95000,
+    "Valhalla Shield": 100000,
+    "Mjolnir Replica": 110000,
+    "Gungnir Spear": 120000,
+    "Excalibur": 130000,
+    "Aegis": 140000,
+    "Hades Helm": 150000,
+    "Poseidon Trident": 160000,
+    "Zeus Bolt": 170000,
+    "Hera Scepter": 180000,
+    "Athena Shield": 190000,
+    "Apollo Bow": 200000,
+    "Artemis Dagger": 210000,
+    "Ares Sword": 220000,
+    "Aphrodite Charm": 230000,
+    "Hermes Boots": 240000,
+    "Dionysus Cup": 250000,
+    "Demeter Sickle": 260000,
+    "Hestia Flame": 270000,
+    "Hephaestus Hammer": 280000,
+    "Nike Wing": 290000,
+    "Eros Arrow": 300000,
+    "Nemesis Blade": 310000,
+    "Typhon Scale": 320000,
+    "Python Skin": 330000,
+    "Charybdis Whirlpool": 340000,
+    "Scylla Tentacle": 350000,
+    "Medusa Gaze": 360000,
+    "Pegasus Wing": 370000,
+    "Centaur Bow": 380000,
+    "Satyr Flute": 390000,
+    "Nymph Tears": 400000,
+    "Dryad Bark": 410000,
+    "Sylph Wind": 420000,
+    "Salamander Fire": 430000,
+    "Undine Water": 440000,
+    "Gnome Earth": 450000,
+    "Phoenix Ash": 460000,
+    "Dragon Breath": 470000,
+    "Griffin Claw": 480000,
+    "Basilisk Eye": 490000,
+    "Manticore Sting": 500000,
 }
 
-# ==================== CÁC LỆNH CƠ BẢN ====================
+# ==================== CÁC LỆNH GAME CƠ BẢN ====================
 @bot.command(name="balance", aliases=["coin"])
 async def balance(ctx, member: discord.Member = None):
     if member is None:
@@ -2710,6 +2815,7 @@ async def balance(ctx, member: discord.Member = None):
         color=0xFFD700
     )
     embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_footer(text="Boss Bảo Game Center 💖")
     await ctx.send(embed=embed)
 
 @bot.command(name="daily")
@@ -2721,7 +2827,12 @@ async def daily(ctx):
         remaining = int(86400 - (now - last))
         hours, remainder = divmod(remaining, 3600)
         minutes, seconds = divmod(remainder, 60)
-        await ctx.send(f"⏳ Bạn đã nhận daily hôm nay rồi! Quay lại sau **{hours} giờ {minutes} phút**.")
+        embed = discord.Embed(
+            title="⏳ ĐÃ NHẬN DAILY",
+            description=f"Bạn đã nhận daily hôm nay rồi! Quay lại sau **{hours} giờ {minutes} phút**.",
+            color=0xFF9900
+        )
+        await ctx.send(embed=embed)
         return
     reward = random.randint(100, 500)
     add_coins(user_id, reward)
@@ -2731,6 +2842,7 @@ async def daily(ctx):
         description=f"Bạn nhận được **{reward} coin**! Tổng: **{get_balance(user_id)} coin**.",
         color=0x00FF00
     )
+    embed.set_footer(text="Hãy quay lại mỗi ngày để nhận thêm!")
     await ctx.send(embed=embed)
 
 @bot.command(name="work")
@@ -2738,19 +2850,24 @@ async def work(ctx):
     user_id = ctx.author.id
     last = get_last(user_id, "last_work")
     now = datetime.now().timestamp()
-    # Giới hạn 5 giây để tránh spam
     if now - last < 5:
         remaining = int(5 - (now - last))
-        await ctx.send(f"⏳ Bạn đã làm việc quá nhanh! Hãy đợi **{remaining} giây** nữa.")
+        embed = discord.Embed(
+            title="⏳ ĐANG NGHỈ NGƠI",
+            description=f"Bạn đã làm việc quá nhanh! Hãy đợi **{remaining} giây** nữa.",
+            color=0xFF9900
+        )
+        await ctx.send(embed=embed)
         return
     earned = random.randint(50, 300)
     add_coins(user_id, earned)
     set_last(user_id, "last_work")
     embed = discord.Embed(
-        title="💼 LÀM VIỆC",
-        description=f"Bạn đã làm việc chăm chỉ và kiếm được **{earned} coin**!",
+        title="💼 LÀM VIỆC CHĂM CHỈ",
+        description=f"Bạn đã làm việc và kiếm được **{earned} coin**!",
         color=0x00FF00
     )
+    embed.set_footer(text="Tiếp tục làm việc để giàu có!")
     await ctx.send(embed=embed)
 
 @bot.command(name="give", aliases=["transfer"])
@@ -2770,18 +2887,31 @@ async def give_coins(ctx, member: discord.Member, amount: int):
         description=f"{ctx.author.mention} đã chuyển **{amount} coin** cho {member.mention}.",
         color=0x00FF00
     )
+    embed.set_footer(text="Giao dịch an toàn!")
     await ctx.send(embed=embed)
 
 @bot.command(name="shop")
-async def shop(ctx):
+async def shop(ctx, page: int = 1):
+    items = list(SHOP_ITEMS.items())
+    total_pages = (len(items) + 9) // 10
+    if page < 1 or page > total_pages:
+        embed = discord.Embed(
+            title="❌ LỖI TRANG",
+            description=f"Trang không hợp lệ! Có {total_pages} trang.",
+            color=0xFF0000
+        )
+        await ctx.send(embed=embed)
+        return
+    start = (page - 1) * 10
+    end = min(start + 10, len(items))
     embed = discord.Embed(
-        title="🛒 CỬA HÀNG COIN",
-        description="Mua role bằng coin nhé!",
+        title=f"🛒 CỬA HÀNG COIN (Trang {page}/{total_pages})",
+        description="Mua vật phẩm bằng coin nhé!",
         color=0xFFD700
     )
-    for item, price in SHOP_ITEMS.items():
-        embed.add_field(name=item, value=f"Giá: {price} coin", inline=False)
-    embed.set_footer(text="Dùng lệnh `nuked buyrole <tên>` để mua.")
+    for item, price in items[start:end]:
+        embed.add_field(name=f"• {item}", value=f"💰 {price:,} coin", inline=False)
+    embed.set_footer(text="Dùng lệnh `nuked buyrole <tên>` hoặc `nuked buyitem <tên>` để mua.")
     await ctx.send(embed=embed)
 
 @bot.command(name="buyrole")
@@ -2813,9 +2943,32 @@ async def buyrole(ctx, role_name: str):
         description=f"{ctx.author.mention} đã mua role **{role.name}** với giá **{price} coin**.",
         color=0x00FF00
     )
+    embed.set_footer(text="Chúc mừng bạn đã sở hữu role mới!")
     await ctx.send(embed=embed)
 
-# ==================== CÁC TRÒ CHƠI ====================
+@bot.command(name="buyitem")
+async def buyitem(ctx, item_name: str):
+    found = None
+    for key in SHOP_ITEMS:
+        if key.lower() == item_name.lower():
+            found = key
+            break
+    if not found:
+        await ctx.send("❌ Vật phẩm không có trong cửa hàng! Dùng `nuked shop` để xem.")
+        return
+    price = SHOP_ITEMS[found]
+    if not subtract_coins(ctx.author.id, price):
+        await ctx.send(f"❌ Bạn cần **{price} coin** để mua {found}.")
+        return
+    embed = discord.Embed(
+        title="🎁 MUA VẬT PHẨM THÀNH CÔNG",
+        description=f"{ctx.author.mention} đã mua **{found}** với giá **{price} coin**.\n(Vật phẩm đã được thêm vào kho ảo của bạn!)",
+        color=0x00FF00
+    )
+    embed.set_footer(text="Sử dụng vật phẩm để tăng sức mạnh!")
+    await ctx.send(embed=embed)
+
+# ==================== CÁC TRÒ CHƠI PHỔ BIẾN ====================
 @bot.command(name="coinflip", aliases=["cf"])
 async def coinflip(ctx, amount: int, choice: str):
     choice = choice.lower()
@@ -2833,13 +2986,15 @@ async def coinflip(ctx, amount: int, choice: str):
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         result_text = "thắng"
+        color = 0x00FF00
     else:
         winnings = 0
         result_text = "thua"
+        color = 0xFF0000
     embed = discord.Embed(
         title="🪙 TUNG ĐỒNG XU",
         description=f"Kết quả: **{result.upper()}**\nBạn đã **{result_text}**!",
-        color=0x00FF00 if winnings > 0 else 0xFF0000
+        color=color
     )
     embed.add_field(name="Số dư hiện tại", value=f"{get_balance(ctx.author.id)} coin")
     await ctx.send(embed=embed)
@@ -2858,17 +3013,20 @@ async def slots(ctx, amount: int):
         winnings = amount * 5
         add_coins(ctx.author.id, winnings)
         message = f"🎉 JACKPOT! {results[0]} {results[1]} {results[2]} - Bạn nhận {winnings} coin!"
+        color = 0xFFD700
     elif results[0] == results[1] or results[1] == results[2] or results[0] == results[2]:
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         message = f"🍀 Hai giống nhau! {results[0]} {results[1]} {results[2]} - Bạn nhận {winnings} coin!"
+        color = 0x00FF00
     else:
         winnings = 0
         message = f"😢 Không có gì! {results[0]} {results[1]} {results[2]} - Bạn mất {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="🎰 SLOTS MACHINE",
         description=message,
-        color=0xFFD700 if winnings > 0 else 0xFF0000
+        color=color
     )
     embed.add_field(name="Số dư hiện tại", value=f"{get_balance(ctx.author.id)} coin")
     await ctx.send(embed=embed)
@@ -2889,13 +3047,15 @@ async def dice(ctx, amount: int, guess: int):
         winnings = amount * 6
         add_coins(ctx.author.id, winnings)
         message = f"🎉 Chính xác! Xúc xắc ra {result}. Bạn nhận {winnings} coin."
+        color = 0x00FF00
     else:
         winnings = 0
         message = f"😢 Sai rồi! Xúc xắc ra {result}. Bạn mất {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="🎲 XÚC XẮC",
         description=message,
-        color=0x00FF00 if winnings > 0 else 0xFF0000
+        color=color
     )
     await ctx.send(embed=embed)
 
@@ -2916,19 +3076,22 @@ async def rps(ctx, amount: int, choice: str):
         add_coins(ctx.author.id, amount)
         result_text = "Hòa"
         winnings = 0
+        color = 0xFF9900
     elif (choice == "r" and bot_choice == "s") or \
          (choice == "s" and bot_choice == "p") or \
          (choice == "p" and bot_choice == "r"):
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         result_text = "Thắng"
+        color = 0x00FF00
     else:
         winnings = 0
         result_text = "Thua"
+        color = 0xFF0000
     embed = discord.Embed(
         title="✊✋✌️ KÉO BÚA BAO",
         description=f"Bạn chọn {choice.upper()}, bot chọn {bot_choice.upper()}.\nKết quả: **{result_text}**!",
-        color=0x00FF00 if result_text == "Thắng" else 0xFF0000
+        color=color
     )
     embed.add_field(name="Số dư", value=f"{get_balance(ctx.author.id)} coin")
     await ctx.send(embed=embed)
@@ -2950,13 +3113,15 @@ async def hilo(ctx, amount: int, choice: str):
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         message = f"🎉 Số rút ra {secret}. Bạn thắng {winnings} coin."
+        color = 0x00FF00
     else:
         winnings = 0
         message = f"😢 Số rút ra {secret}. Bạn thua {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="⬆️⬇️ CAO THẤP",
         description=message,
-        color=0x00FF00 if winnings > 0 else 0xFF0000
+        color=color
     )
     await ctx.send(embed=embed)
 
@@ -2973,12 +3138,14 @@ async def crash(ctx, amount: int):
         winnings = int(amount * multiplier)
         add_coins(ctx.author.id, winnings)
         message = f"🚀 CRASH! Bạn thoát ở mức {multiplier:.2f}x và nhận {winnings} coin."
+        color = 0x00FF00
     else:
         message = f"💥 CRASH! Bạn mất {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="🚀 CRASH",
         description=message,
-        color=0x00FF00 if multiplier >= 1.5 else 0xFF0000
+        color=color
     )
     await ctx.send(embed=embed)
 
@@ -2994,13 +3161,15 @@ async def lottery(ctx, amount: int):
         winnings = amount * 100
         add_coins(ctx.author.id, winnings)
         message = f"🎰 JACKPOT! Bạn trúng {winnings} coin."
+        color = 0xFFD700
     else:
         winnings = 0
         message = f"🍀 Không trúng. Bạn mất {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="🎟️ XỔ SỐ",
         description=message,
-        color=0x00FF00 if winnings > 0 else 0xFF0000
+        color=color
     )
     await ctx.send(embed=embed)
 
@@ -3022,21 +3191,25 @@ async def blackjack(ctx, amount: int):
     if player_total > 21:
         result_text = "Bạn quá 21! Bot thắng."
         winnings = 0
+        color = 0xFF0000
     elif bot_total > 21 or player_total > bot_total:
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         result_text = f"Bạn thắng {winnings} coin!"
+        color = 0x00FF00
     elif player_total == bot_total:
         add_coins(ctx.author.id, amount)
         winnings = 0
         result_text = "Hòa!"
+        color = 0xFF9900
     else:
         winnings = 0
         result_text = f"Bot thắng! Bạn mất {amount} coin."
+        color = 0xFF0000
     embed = discord.Embed(
         title="🃏 BLACKJACK",
         description=f"Bạn: {player_cards} (tổng {player_total})\nBot: {bot_cards} (tổng {bot_total})\n{result_text}",
-        color=0x00FF00 if "thắng" in result_text else 0xFF0000
+        color=color
     )
     await ctx.send(embed=embed)
 
@@ -3047,17 +3220,29 @@ async def beg(ctx):
     now = datetime.now().timestamp()
     if now - last < 300:
         remaining = int(300 - (now - last))
-        await ctx.send(f"⏳ Hãy kiên nhẫn, thử lại sau {remaining // 60} phút.")
+        embed = discord.Embed(
+            title="⏳ CHỜ ĐỢI",
+            description=f"Hãy kiên nhẫn, thử lại sau {remaining // 60} phút.",
+            color=0xFF9900
+        )
+        await ctx.send(embed=embed)
         return
     success = random.random() < 0.5
     if success:
         earned = random.randint(10, 50)
         add_coins(user_id, earned)
         message = f"🙏 Bạn được ai đó cho **{earned} coin**."
+        color = 0x00FF00
     else:
         message = "😔 Không ai cho bạn coin cả."
+        color = 0xFF0000
     set_last(user_id, "last_beg")
-    await ctx.send(message)
+    embed = discord.Embed(
+        title="🚶 XIN TIỀN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(name="crime")
 async def crime(ctx):
@@ -3066,12 +3251,18 @@ async def crime(ctx):
     now = datetime.now().timestamp()
     if now - last < 600:
         remaining = int(600 - (now - last))
-        await ctx.send(f"⏳ Cảnh sát đang truy lùng, thử lại sau {remaining // 60} phút.")
+        embed = discord.Embed(
+            title="⏳ CHỜ ĐỢI",
+            description=f"Cảnh sát đang truy lùng, thử lại sau {remaining // 60} phút.",
+            color=0xFF9900
+        )
+        await ctx.send(embed=embed)
         return
     if random.random() < 0.3:
         earned = random.randint(100, 500)
         add_coins(user_id, earned)
         message = f"🕵️ Bạn trộm được **{earned} coin**."
+        color = 0x00FF00
     else:
         fine = random.randint(50, 200)
         if get_balance(user_id) >= fine:
@@ -3080,8 +3271,14 @@ async def crime(ctx):
         else:
             set_balance(user_id, 0)
             message = f"🚨 Bạn bị bắt, mất sạch coin."
+        color = 0xFF0000
     set_last(user_id, "last_crime")
-    await ctx.send(message)
+    embed = discord.Embed(
+        title="🔫 TỘI PHẠM",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(name="bank")
 async def bank(ctx, action: str, amount: int = None):
@@ -3096,7 +3293,12 @@ async def bank(ctx, action: str, amount: int = None):
             return
         user_coins[user_id]["bank"] = bank_balance + amount
         save_coins(user_coins)
-        await ctx.send(f"✅ Đã gửi **{amount} coin** vào ngân hàng.")
+        embed = discord.Embed(
+            title="🏦 GỬI TIỀN",
+            description=f"✅ Đã gửi **{amount} coin** vào ngân hàng.",
+            color=0x00FF00
+        )
+        await ctx.send(embed=embed)
     elif action == "withdraw":
         if amount is None or amount <= 0:
             await ctx.send("❌ Vui lòng nhập số coin muốn rút.")
@@ -3107,9 +3309,19 @@ async def bank(ctx, action: str, amount: int = None):
         user_coins[user_id]["bank"] = bank_balance - amount
         add_coins(ctx.author.id, amount)
         save_coins(user_coins)
-        await ctx.send(f"✅ Đã rút **{amount} coin** từ ngân hàng.")
+        embed = discord.Embed(
+            title="🏦 RÚT TIỀN",
+            description=f"✅ Đã rút **{amount} coin** từ ngân hàng.",
+            color=0x00FF00
+        )
+        await ctx.send(embed=embed)
     else:
-        await ctx.send("❌ Dùng `nuked bank deposit <số>` hoặc `nuked bank withdraw <số>`.")
+        embed = discord.Embed(
+            title="❌ LỖI CÚ PHÁP",
+            description="Dùng `nuked bank deposit <số>` hoặc `nuked bank withdraw <số>`.",
+            color=0xFF0000
+        )
+        await ctx.send(embed=embed)
 
 @bot.command(name="leaderboard", aliases=["top"])
 async def leaderboard(ctx):
@@ -3125,28 +3337,1070 @@ async def leaderboard(ctx):
         except:
             name = uid
         embed.add_field(name=f"{i}. {name}", value=f"{data.get('balance', 0)} coin", inline=False)
+    embed.set_footer(text="Hãy cố gắng leo lên bảng xếp hạng!")
     await ctx.send(embed=embed)
 
-# ==================== CÁC LỆNH ADMIN ====================
+# ==================== CÁC TRÒ CHƠI MỚI HOÀN CHỈNH ====================
+@bot.command(name="roulette")
+async def roulette(ctx, amount: int, choice: str):
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    if choice.lower() in ["red", "black"]:
+        result = random.choice(["red", "black"])
+        if result == choice.lower():
+            winnings = amount * 2
+            add_coins(ctx.author.id, winnings)
+            message = f"🎉 Kết quả {result.upper()}, bạn thắng {winnings} coin!"
+            color = 0x00FF00
+        else:
+            winnings = 0
+            message = f"😢 Kết quả {result.upper()}, bạn thua {amount} coin."
+            color = 0xFF0000
+    else:
+        try:
+            num = int(choice)
+            if num < 1 or num > 36:
+                await ctx.send("❌ Số phải từ 1 đến 36.")
+                return
+            result = random.randint(0, 36)
+            if result == num:
+                winnings = amount * 36
+                add_coins(ctx.author.id, winnings)
+                message = f"🎉 Trúng số {num}, bạn thắng {winnings} coin!"
+                color = 0x00FF00
+            else:
+                winnings = 0
+                message = f"😢 Kết quả {result}, bạn thua {amount} coin."
+                color = 0xFF0000
+        except ValueError:
+            await ctx.send("❌ Lựa chọn không hợp lệ! Dùng `red`, `black` hoặc số từ 1-36.")
+            return
+    embed = discord.Embed(
+        title="🎡 ROULETTE",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="mines")
+async def mines(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    # 5x5 board, 3 mines
+    mines_pos = random.sample(range(25), 3)
+    chosen = random.randint(0, 24)
+    if chosen in mines_pos:
+        message = f"💥 Bạn chọn trúng mìn! Mất {amount} coin."
+        winnings = 0
+        color = 0xFF0000
+    else:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"✅ Bạn an toàn! Nhận {winnings} coin."
+        color = 0x00FF00
+    embed = discord.Embed(
+        title="💣 MINES",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="plinko")
+async def plinko(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    multipliers = [0.5, 1, 1.5, 2, 1.5, 1, 0.5]
+    result = random.choice(multipliers)
+    winnings = int(amount * result)
+    if result >= 1:
+        add_coins(ctx.author.id, winnings)
+        message = f"🎉 Bi rơi vào ô x{result}, bạn nhận {winnings} coin."
+        color = 0x00FF00
+    else:
+        message = f"😢 Bi rơi vào ô x{result}, bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="📌 PLINKO",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="wheel")
+async def wheel(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    outcomes = [1, 2, 3, 5, 10, 0]
+    result = random.choice(outcomes)
+    if result > 0:
+        winnings = amount * result
+        add_coins(ctx.author.id, winnings)
+        message = f"🎡 Quay trúng x{result}, bạn nhận {winnings} coin!"
+        color = 0x00FF00
+    else:
+        winnings = 0
+        message = f"😢 Quay trúng ô trắng, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎡 WHEEL OF FORTUNE",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="betroll")
+async def betroll(ctx, amount: int, threshold: int):
+    if amount <= 0 or threshold < 1 or threshold > 6:
+        await ctx.send("❌ Ngưỡng từ 1 đến 6, số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    roll = random.randint(1, 6)
+    if roll >= threshold:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🎲 Bạn cược >= {threshold}, xúc xắc ra {roll}. Thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        winnings = 0
+        message = f"😢 Bạn cược >= {threshold}, xúc xắc ra {roll}. Thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎲 BETROLL",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="battle")
+async def battle(ctx, member: discord.Member, amount: int):
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Không thể đấu với chính mình!")
+        return
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if get_balance(ctx.author.id) < amount:
+        await ctx.send("❌ Bạn không đủ coin để cược!")
+        return
+    if get_balance(member.id) < amount:
+        await ctx.send(f"❌ {member.mention} không đủ coin để tham gia!")
+        return
+    subtract_coins(ctx.author.id, amount)
+    subtract_coins(member.id, amount)
+    winner = random.choice([ctx.author, member])
+    add_coins(winner.id, amount * 2)
+    embed = discord.Embed(
+        title="⚔️ BATTLE",
+        description=f"🏆 **{winner.mention}** chiến thắng và nhận {amount*2} coin!",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="steal")
+async def steal(ctx, member: discord.Member):
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Không thể trộm chính mình!")
+        return
+    if get_balance(member.id) <= 0:
+        await ctx.send("❌ Nạn nhân không có coin để trộm!")
+        return
+    if random.random() < 0.6:
+        stolen = min(get_balance(member.id), random.randint(10, 100))
+        subtract_coins(member.id, stolen)
+        add_coins(ctx.author.id, stolen)
+        message = f"🕵️ Bạn trộm thành công **{stolen} coin** từ {member.mention}!"
+        color = 0x00FF00
+    else:
+        fine = random.randint(20, 80)
+        if get_balance(ctx.author.id) >= fine:
+            subtract_coins(ctx.author.id, fine)
+            message = f"🚨 Bị bắt! Phạt **{fine} coin**."
+        else:
+            set_balance(ctx.author.id, 0)
+            message = "🚨 Bị bắt, mất sạch coin!"
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🔪 TRỘM CẮP",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="heist")
+async def heist(ctx):
+    user_id = ctx.author.id
+    if random.random() < 0.25:
+        reward = random.randint(300, 800)
+        add_coins(user_id, reward)
+        message = f"💰 Bạn thực hiện một vụ cướp táo bạo và thu được **{reward} coin**!"
+        color = 0x00FF00
+    else:
+        fine = random.randint(100, 300)
+        if get_balance(user_id) >= fine:
+            subtract_coins(user_id, fine)
+            message = f"👮 Bị cảnh sát bắt, phạt **{fine} coin**."
+        else:
+            set_balance(user_id, 0)
+            message = "👮 Bị bắt, mất hết tiền!"
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="💰 VỤ CƯỚP LỚN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="interest")
+async def interest(ctx):
+    user_id = ctx.author.id
+    last = get_last(user_id, "last_interest")
+    now = datetime.now().timestamp()
+    if now - last < 43200:
+        remaining = int(43200 - (now - last))
+        hours = remaining // 3600
+        minutes = (remaining % 3600) // 60
+        embed = discord.Embed(
+            title="⏳ LÃI SUẤT",
+            description=f"Lãi suất chỉ áp dụng sau 12h. Còn {hours}h {minutes}p.",
+            color=0xFF9900
+        )
+        await ctx.send(embed=embed)
+        return
+    bank_balance = user_coins.get(str(user_id), {}).get("bank", 0)
+    if bank_balance == 0:
+        await ctx.send("💤 Bạn chưa có tiền trong ngân hàng!")
+        return
+    interest_amount = int(bank_balance * 0.05)
+    add_coins(user_id, interest_amount)
+    set_last(user_id, "last_interest")
+    embed = discord.Embed(
+        title="🏦 LÃI SUẤT",
+        description=f"Bạn nhận được **{interest_amount} coin** lãi từ ngân hàng!",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="giveaway")
+@is_bot_owner()
+async def giveaway(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải >0.")
+        return
+    members = [m for m in ctx.guild.members if not m.bot]
+    if not members:
+        await ctx.send("Không có thành viên.")
+        return
+    winner = random.choice(members)
+    add_coins(winner.id, amount)
+    embed = discord.Embed(
+        title="🎁 GIVEAWAY",
+        description=f"Chúc mừng {winner.mention} đã thắng **{amount} coin**!",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="rob")
+async def rob(ctx, member: discord.Member):
+    await steal(ctx, member)
+
+@bot.command(name="scout")
+async def scout(ctx):
+    if random.random() < 0.3:
+        reward = random.randint(50, 200)
+        add_coins(ctx.author.id, reward)
+        message = f"🔍 Bạn phát hiện kho báu và nhận **{reward} coin**!"
+        color = 0x00FF00
+    else:
+        message = "🔍 Không tìm thấy gì."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="🔍 TRINH SÁT",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="bankrob")
+async def bankrob(ctx):
+    if random.random() < 0.15:
+        reward = random.randint(500, 1500)
+        add_coins(ctx.author.id, reward)
+        message = f"🏦 Cướp ngân hàng thành công, bạn nhận **{reward} coin**!"
+        color = 0x00FF00
+    else:
+        fine = random.randint(200, 600)
+        if get_balance(ctx.author.id) >= fine:
+            subtract_coins(ctx.author.id, fine)
+            message = f"🚔 Bị truy nã, phạt **{fine} coin**."
+        else:
+            set_balance(ctx.author.id, 0)
+            message = "🚔 Bị bắt, mất hết tiền."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🏦 CƯỚP NGÂN HÀNG",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="dig")
+async def dig(ctx):
+    if random.random() < 0.4:
+        coin = random.randint(20, 80)
+        add_coins(ctx.author.id, coin)
+        message = f"⛏️ Bạn đào được **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "⛏️ Đào mãi chẳng có gì."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="⛏️ ĐÀO BỚI",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="mine")
+async def mine(ctx):
+    if random.random() < 0.5:
+        coin = random.randint(30, 100)
+        add_coins(ctx.author.id, coin)
+        message = f"⛏️ Bạn khai thác được **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "⛏️ Hầm mỏ cạn kiệt."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="⛏️ KHAI THÁC",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="fish")
+async def fish(ctx):
+    if random.random() < 0.4:
+        coin = random.randint(10, 50)
+        add_coins(ctx.author.id, coin)
+        message = f"🐟 Bạn bắt được cá và bán được **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "🐟 Hôm nay không có cá."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="🐟 CÂU CÁ",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="hunt")
+async def hunt(ctx):
+    if random.random() < 0.3:
+        coin = random.randint(40, 120)
+        add_coins(ctx.author.id, coin)
+        message = f"🏹 Bạn săn được thú và bán được **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "🏹 Đi săn về tay không."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="🏹 SĂN BẮN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="chop")
+async def chop(ctx):
+    if random.random() < 0.5:
+        coin = random.randint(15, 60)
+        add_coins(ctx.author.id, coin)
+        message = f"🪓 Bạn chặt được củi bán **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "🪓 Củi ẩm, không bán được."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="🪓 CHẶT CỦI",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="farm")
+async def farm(ctx):
+    if random.random() < 0.6:
+        coin = random.randint(25, 90)
+        add_coins(ctx.author.id, coin)
+        message = f"🌾 Mùa màng bội thu, bạn thu được **{coin} coin**!"
+        color = 0x00FF00
+    else:
+        message = "🌾 Mất mùa, chẳng có gì."
+        color = 0xFF9900
+    embed = discord.Embed(
+        title="🌾 NÔNG TRẠI",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="gamble")
+async def gamble(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.4:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🎲 Bạn thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎲 Bạn thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎲 ĐÁNH BẠC",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="double")
+async def double(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.3:
+        winnings = amount * 3
+        add_coins(ctx.author.id, winnings)
+        message = f"🎯 Bạn nhân đôi thành công, nhận {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎯 Bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎯 NHÂN ĐÔI",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="triple")
+async def triple(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.2:
+        winnings = amount * 5
+        add_coins(ctx.author.id, winnings)
+        message = f"🎯 Bạn nhân ba thành công, nhận {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎯 Bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎯 NHÂN BA",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="jackpot")
+async def jackpot(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.05:
+        winnings = amount * 20
+        add_coins(ctx.author.id, winnings)
+        message = f"🎰 JACKPOT! Bạn thắng {winnings} coin!"
+        color = 0xFFD700
+    else:
+        message = f"🎰 Bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎰 JACKPOT",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="spin")
+async def spin(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    result = random.randint(1, 10)
+    if result >= 8:
+        winnings = amount * 3
+        add_coins(ctx.author.id, winnings)
+        message = f"🎡 Bạn quay trúng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎡 Bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎡 VÒNG QUAY",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="roll")
+async def roll(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    roll = random.randint(1, 6)
+    if roll > 4:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🎲 Bạn ra {roll}, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎲 Bạn ra {roll}, thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎲 LĂN XÚC XẮC",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="draw")
+async def draw(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.3:
+        winnings = amount * 5
+        add_coins(ctx.author.id, winnings)
+        message = f"🃏 Bạn rút được lá bài may mắn, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🃏 Bạn rút phải lá xấu, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🃏 RÚT BÀI",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="guess")
+async def guess(ctx, amount: int, number: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if number < 1 or number > 10:
+        await ctx.send("❌ Đoán số từ 1-10.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    secret = random.randint(1, 10)
+    if number == secret:
+        winnings = amount * 5
+        add_coins(ctx.author.id, winnings)
+        message = f"🎯 Chính xác! Số {secret}, bạn thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎯 Sai rồi, số cần đoán là {secret}, bạn mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎯 ĐOÁN SỐ",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="bingo")
+async def bingo(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    if random.random() < 0.1:
+        winnings = amount * 10
+        add_coins(ctx.author.id, winnings)
+        message = f"🎰 BINGO! Bạn thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎰 Không trúng, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎰 BINGO",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="keno")
+async def keno(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    picks = random.sample(range(1, 21), 3)
+    draws = random.sample(range(1, 21), 5)
+    hits = len(set(picks) & set(draws))
+    if hits >= 2:
+        winnings = amount * (hits * 2)
+        add_coins(ctx.author.id, winnings)
+        message = f"🎲 Keno: trúng {hits} số, nhận {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎲 Keno: trúng {hits} số, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎲 KENO",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="poker")
+async def poker(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    player = random.randint(1, 13)
+    bot_card = random.randint(1, 13)
+    if player > bot_card:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🃏 Poker: bạn thắng với lá {player} > {bot_card}, nhận {winnings} coin!"
+        color = 0x00FF00
+    elif player == bot_card:
+        add_coins(ctx.author.id, amount)
+        message = f"🃏 Hòa, hoàn lại {amount} coin."
+        color = 0xFF9900
+    else:
+        message = f"🃏 Bạn thua với lá {player} < {bot_card}, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🃏 POKER",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="baccarat")
+async def baccarat(ctx, amount: int, choice: str):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if choice.lower() not in ["player", "banker", "tie"]:
+        await ctx.send("❌ Chọn `player`, `banker` hoặc `tie`.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    result = random.choice(["player", "banker", "tie"])
+    if choice.lower() == result:
+        if result == "tie":
+            winnings = amount * 8
+        else:
+            winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🎴 Baccarat: kết quả {result}, bạn thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🎴 Baccarat: kết quả {result}, bạn thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🎴 BACCARAT",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="craps")
+async def craps(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    dice1 = random.randint(1, 6)
+    dice2 = random.randint(1, 6)
+    total = dice1 + dice2
+    if total in [7, 11]:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🎲 Craps: bạn ra {total}, thắng {winnings} coin!"
+        color = 0x00FF00
+    elif total in [2, 3, 12]:
+        message = f"🎲 Craps: bạn ra {total}, thua {amount} coin."
+        color = 0xFF0000
+    else:
+        await ctx.send(f"🎲 Craps: bạn ra {total}, lăn tiếp...")
+        dice3 = random.randint(1, 6)
+        dice4 = random.randint(1, 6)
+        total2 = dice3 + dice4
+        if total2 == total:
+            winnings = amount * 2
+            add_coins(ctx.author.id, winnings)
+            message = f"🎲 Lần 2: {total2}, bạn thắng {winnings} coin!"
+            color = 0x00FF00
+        else:
+            message = f"🎲 Lần 2: {total2}, bạn thua {amount} coin."
+            color = 0xFF0000
+    embed = discord.Embed(
+        title="🎲 CRAPS",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="war")
+async def war(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    player = random.randint(1, 13)
+    bot_card = random.randint(1, 13)
+    if player > bot_card:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"⚔️ War: bạn thắng với {player} > {bot_card}, nhận {winnings} coin!"
+        color = 0x00FF00
+    elif player == bot_card:
+        add_coins(ctx.author.id, amount)
+        message = f"⚔️ Hòa, hoàn lại {amount} coin."
+        color = 0xFF9900
+    else:
+        message = f"⚔️ Bạn thua với {player} < {bot_card}, mất {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="⚔️ WAR",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="higher")
+async def higher(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    num = random.randint(1, 10)
+    guess = random.randint(1, 10)
+    if guess > num:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"⬆️ Bạn đoán {guess} > {num}, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"⬆️ Bạn đoán {guess} <= {num}, thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="⬆️ CAO HƠN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="lower")
+async def lower(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    num = random.randint(1, 10)
+    guess = random.randint(1, 10)
+    if guess < num:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"⬇️ Bạn đoán {guess} < {num}, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"⬇️ Bạn đoán {guess} >= {num}, thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="⬇️ THẤP HƠN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="odds")
+async def odds(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    num = random.randint(1, 6)
+    if num % 2 == 1:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🔢 Số {num} lẻ, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🔢 Số {num} chẵn, thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🔢 LẺ",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="even")
+async def even(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin >0.")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Không đủ coin.")
+        return
+    num = random.randint(1, 6)
+    if num % 2 == 0:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🔢 Số {num} chẵn, thắng {winnings} coin!"
+        color = 0x00FF00
+    else:
+        message = f"🔢 Số {num} lẻ, thua {amount} coin."
+        color = 0xFF0000
+    embed = discord.Embed(
+        title="🔢 CHẴN",
+        description=message,
+        color=color
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="odd")
+async def odd(ctx, amount: int):
+    await odds(ctx, amount)
+
+# ==================== MENU TRÒ CHƠI VỚI NÚT BẤM ====================
+class GameMenuView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(label="💰 Coin & Điểm Danh", style=discord.ButtonStyle.primary, custom_id="coin", row=0))
+        self.add_item(discord.ui.Button(label="🎲 Mini Games", style=discord.ButtonStyle.success, custom_id="mini", row=0))
+        self.add_item(discord.ui.Button(label="🎰 Casino", style=discord.ButtonStyle.danger, custom_id="casino", row=0))
+        self.add_item(discord.ui.Button(label="⚔️ PvP & Mạo hiểm", style=discord.ButtonStyle.secondary, custom_id="pvp", row=1))
+        self.add_item(discord.ui.Button(label="🛒 Shop & Giao dịch", style=discord.ButtonStyle.primary, custom_id="shop", row=1))
+        self.add_item(discord.ui.Button(label="🏆 Bảng xếp hạng", style=discord.ButtonStyle.success, custom_id="leaderboard", row=1))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        custom_id = interaction.data["custom_id"]
+        if custom_id == "coin":
+            embed = discord.Embed(
+                title="💰 COIN & ĐIỂM DANH",
+                description=(
+                    "**Các lệnh:**\n"
+                    "• `nuked balance` – Xem số dư\n"
+                    "• `nuked daily` – Nhận coin hàng ngày\n"
+                    "• `nuked work` – Làm việc (5s cooldown)\n"
+                    "• `nuked beg` – Xin tiền (5p)\n"
+                    "• `nuked crime` – Phạm tội (10p)\n"
+                    "• `nuked bank deposit/withdraw` – Ngân hàng\n"
+                    "• `nuked interest` – Lãi suất (12h)\n"
+                ),
+                color=0xFFD700
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif custom_id == "mini":
+            embed = discord.Embed(
+                title="🎲 MINI GAMES",
+                description=(
+                    "**Các lệnh:**\n"
+                    "• `nuked coinflip <số> h/t` – Tung xu\n"
+                    "• `nuked slots <số>` – Máy đánh bạc\n"
+                    "• `nuked dice <số> <1-6>` – Xúc xắc\n"
+                    "• `nuked rps <số> r/p/s` – Kéo búa bao\n"
+                    "• `nuked hilo <số> h/l` – Cao thấp\n"
+                    "• `nuked guess <số> <1-10>` – Đoán số\n"
+                ),
+                color=0x00FF00
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif custom_id == "casino":
+            embed = discord.Embed(
+                title="🎰 CASINO",
+                description=(
+                    "**Các lệnh:**\n"
+                    "• `nuked roulette <số> red/black/<1-36>` – Roulette\n"
+                    "• `nuked blackjack <số>` – Blackjack\n"
+                    "• `nuked crash <số>` – Crash\n"
+                    "• `nuked lottery <số>` – Xổ số\n"
+                    "• `nuked plinko <số>` – Plinko\n"
+                    "• `nuked wheel <số>` – Wheel of Fortune\n"
+                    "• `nuked betroll <số> <ngưỡng>` – Betroll\n"
+                    "• `nuked bingo <số>` – Bingo\n"
+                    "• `nuked keno <số>` – Keno\n"
+                    "• `nuked poker <số>` – Poker\n"
+                    "• `nuked baccarat <số> player/banker/tie` – Baccarat\n"
+                    "• `nuked craps <số>` – Craps\n"
+                    "• `nuked war <số>` – War\n"
+                    "• `nuked odds/even <số>` – Chẵn lẻ\n"
+                ),
+                color=0xFF0000
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif custom_id == "pvp":
+            embed = discord.Embed(
+                title="⚔️ PVP & MẠO HIỂM",
+                description=(
+                    "**Các lệnh:**\n"
+                    "• `nuked battle @user <số>` – Đấu tay đôi\n"
+                    "• `nuked steal @user` – Ăn trộm\n"
+                    "• `nuked rob @user` – Cướp\n"
+                    "• `nuked heist` – Cướp lớn\n"
+                    "• `nuked bankrob` – Cướp ngân hàng\n"
+                    "• `nuked scout` – Trinh sát\n"
+                    "• `nuked dig` – Đào bới\n"
+                    "• `nuked mine` – Khai thác\n"
+                    "• `nuked fish` – Câu cá\n"
+                    "• `nuked hunt` – Săn bắn\n"
+                    "• `nuked chop` – Chặt cây\n"
+                    "• `nuked farm` – Nông trại\n"
+                ),
+                color=0x0000FF
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif custom_id == "shop":
+            embed = discord.Embed(
+                title="🛒 SHOP & GIAO DỊCH",
+                description=(
+                    "**Các lệnh:**\n"
+                    "• `nuked shop [trang]` – Xem cửa hàng\n"
+                    "• `nuked buyrole <tên>` – Mua role (có trong shop)\n"
+                    "• `nuked buyitem <tên>` – Mua vật phẩm (có trong shop)\n"
+                    "• `nuked give @user <số>` – Chuyển coin\n"
+                    "• `nuked gamble <số>` – Đánh bạc đơn\n"
+                    "• `nuked double <số>` – Nhân đôi\n"
+                    "• `nuked triple <số>` – Nhân ba\n"
+                    "• `nuked jackpot <số>` – Jackpot\n"
+                    "• `nuked spin <số>` – Vòng quay\n"
+                    "• `nuked roll <số>` – Lăn xúc xắc\n"
+                    "• `nuked draw <số>` – Rút bài\n"
+                ),
+                color=0xFF69B4
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        elif custom_id == "leaderboard":
+            embed = discord.Embed(
+                title="🏆 BẢNG XẾP HẠNG",
+                description="Dùng lệnh `nuked leaderboard` hoặc `nuked top` để xem top 10 người giàu nhất.",
+                color=0xFFD700
+            )
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+        return True
+
+@bot.command(name="games")
+async def games_menu(ctx):
+    embed = discord.Embed(
+        title="🎮 MENU TRÒ CHƠI",
+        description="Chọn một danh mục để xem danh sách lệnh tương ứng.\n"
+                    "Mỗi lệnh đều có hướng dẫn chi tiết khi sử dụng.",
+        color=0x00FFFF
+    )
+    embed.set_image(url="https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6cee161f85df62c.gif")
+    embed.set_footer(text="Boss Bảo Game Center 💖")
+    view = GameMenuView()
+    await ctx.send(embed=embed, view=view)
+
+# ==================== ADMIN COIN COMMANDS ====================
 @bot.command(name="setcoins")
 @is_bot_owner()
 async def setcoins(ctx, member: discord.Member, amount: int):
     set_balance(member.id, amount)
-    await ctx.send(f"✅ Đã đặt số dư của {member.mention} thành **{amount} coin**.")
+    embed = discord.Embed(
+        title="✅ ĐÃ ĐẶT SỐ DƯ",
+        description=f"Đã đặt số dư của {member.mention} thành **{amount} coin**.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(name="addcoins")
 @is_bot_owner()
 async def addcoins_cmd(ctx, member: discord.Member, amount: int):
     add_coins(member.id, amount)
-    await ctx.send(f"✅ Đã cộng **{amount} coin** cho {member.mention}.")
+    embed = discord.Embed(
+        title="✅ ĐÃ CỘNG COIN",
+        description=f"Đã cộng **{amount} coin** cho {member.mention}.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
 
 @bot.command(name="removecoins")
 @is_bot_owner()
 async def removecoins_cmd(ctx, member: discord.Member, amount: int):
     if subtract_coins(member.id, amount):
-        await ctx.send(f"✅ Đã trừ **{amount} coin** của {member.mention}.")
+        embed = discord.Embed(
+            title="✅ ĐÃ TRỪ COIN",
+            description=f"Đã trừ **{amount} coin** của {member.mention}.",
+            color=0x00FF00
+        )
+        await ctx.send(embed=embed)
     else:
-        await ctx.send("❌ Không đủ coin để trừ.")
+        embed = discord.Embed(
+            title="❌ LỖI",
+            description="Không đủ coin để trừ.",
+            color=0xFF0000
+        )
+        await ctx.send(embed=embed)
 
 @bot.command(name="resetdaily")
 @is_bot_owner()
@@ -3155,163 +4409,19 @@ async def resetdaily_cmd(ctx, member: discord.Member):
     if user_id in user_coins:
         user_coins[user_id]["last_daily"] = 0
         save_coins(user_coins)
-        await ctx.send(f"✅ Đã reset daily cho {member.mention}.")
+        embed = discord.Embed(
+            title="✅ ĐÃ RESET DAILY",
+            description=f"Đã reset daily cho {member.mention}.",
+            color=0x00FF00
+        )
+        await ctx.send(embed=embed)
     else:
-        await ctx.send("❌ Người dùng chưa có dữ liệu.")
-
-# ==================== LỆNH CHƯA HOÀN THIỆN (THÔNG BÁO) ====================
-@bot.command(name="roulette")
-async def roulette(ctx, amount: int, choice: str):
-    await ctx.send("Chức năng Roulette đang phát triển, vui lòng quay lại sau!")
-
-@bot.command(name="mines")
-async def mines(ctx, amount: int):
-    await ctx.send("Chức năng Mines đang phát triển!")
-
-@bot.command(name="plinko")
-async def plinko(ctx, amount: int):
-    await ctx.send("Chức năng Plinko đang phát triển!")
-
-@bot.command(name="wheel")
-async def wheel(ctx, amount: int):
-    await ctx.send("Chức năng Wheel đang phát triển!")
-
-@bot.command(name="betroll")
-async def betroll(ctx, amount: int, threshold: int):
-    await ctx.send("Chức năng Betroll đang phát triển!")
-
-@bot.command(name="battle")
-async def battle(ctx, member: discord.Member, amount: int):
-    await ctx.send("Chức năng Battle đang phát triển!")
-
-@bot.command(name="steal")
-async def steal(ctx, member: discord.Member):
-    await ctx.send("Chức năng Steal đang phát triển!")
-
-@bot.command(name="heist")
-async def heist(ctx):
-    await ctx.send("Chức năng Heist đang phát triển!")
-
-@bot.command(name="interest")
-async def interest(ctx):
-    await ctx.send("Chức năng Interest đang phát triển!")
-
-@bot.command(name="giveaway")
-@is_bot_owner()
-async def giveaway(ctx, amount: int):
-    await ctx.send("Chức năng Giveaway đang phát triển!")
-
-@bot.command(name="rob")
-async def rob(ctx, member: discord.Member):
-    await ctx.send("Chức năng Rob đang phát triển!")
-
-@bot.command(name="scout")
-async def scout(ctx):
-    await ctx.send("Chức năng Scout đang phát triển!")
-
-@bot.command(name="bankrob")
-async def bankrob(ctx):
-    await ctx.send("Chức năng Bankrob đang phát triển!")
-
-@bot.command(name="dig")
-async def dig(ctx):
-    await ctx.send("Chức năng Dig đang phát triển!")
-
-@bot.command(name="mine")
-async def mine(ctx):
-    await ctx.send("Chức năng Mine đang phát triển!")
-
-@bot.command(name="fish")
-async def fish(ctx):
-    await ctx.send("Chức năng Fish đang phát triển!")
-
-@bot.command(name="hunt")
-async def hunt(ctx):
-    await ctx.send("Chức năng Hunt đang phát triển!")
-
-@bot.command(name="chop")
-async def chop(ctx):
-    await ctx.send("Chức năng Chop đang phát triển!")
-
-@bot.command(name="farm")
-async def farm(ctx):
-    await ctx.send("Chức năng Farm đang phát triển!")
-
-@bot.command(name="gamble")
-async def gamble(ctx, amount: int):
-    await ctx.send("Chức năng Gamble đang phát triển!")
-
-@bot.command(name="double")
-async def double(ctx, amount: int):
-    await ctx.send("Chức năng Double đang phát triển!")
-
-@bot.command(name="triple")
-async def triple(ctx, amount: int):
-    await ctx.send("Chức năng Triple đang phát triển!")
-
-@bot.command(name="jackpot")
-async def jackpot(ctx, amount: int):
-    await ctx.send("Chức năng Jackpot đang phát triển!")
-
-@bot.command(name="spin")
-async def spin(ctx, amount: int):
-    await ctx.send("Chức năng Spin đang phát triển!")
-
-@bot.command(name="roll")
-async def roll(ctx, amount: int):
-    await ctx.send("Chức năng Roll đang phát triển!")
-
-@bot.command(name="draw")
-async def draw(ctx, amount: int):
-    await ctx.send("Chức năng Draw đang phát triển!")
-
-@bot.command(name="guess")
-async def guess(ctx, amount: int, number: int):
-    await ctx.send("Chức năng Guess đang phát triển!")
-
-@bot.command(name="bingo")
-async def bingo(ctx, amount: int):
-    await ctx.send("Chức năng Bingo đang phát triển!")
-
-@bot.command(name="keno")
-async def keno(ctx, amount: int):
-    await ctx.send("Chức năng Keno đang phát triển!")
-
-@bot.command(name="poker")
-async def poker(ctx, amount: int):
-    await ctx.send("Chức năng Poker đang phát triển!")
-
-@bot.command(name="baccarat")
-async def baccarat(ctx, amount: int, choice: str):
-    await ctx.send("Chức năng Baccarat đang phát triển!")
-
-@bot.command(name="craps")
-async def craps(ctx, amount: int):
-    await ctx.send("Chức năng Craps đang phát triển!")
-
-@bot.command(name="war")
-async def war(ctx, amount: int):
-    await ctx.send("Chức năng War đang phát triển!")
-
-@bot.command(name="higher")
-async def higher(ctx, amount: int):
-    await ctx.send("Chức năng Higher đang phát triển!")
-
-@bot.command(name="lower")
-async def lower(ctx, amount: int):
-    await ctx.send("Chức năng Lower đang phát triển!")
-
-@bot.command(name="odds")
-async def odds(ctx, amount: int):
-    await ctx.send("Chức năng Odds đang phát triển!")
-
-@bot.command(name="even")
-async def even(ctx, amount: int):
-    await ctx.send("Chức năng Even đang phát triển!")
-
-@bot.command(name="odd")
-async def odd(ctx, amount: int):
-    await ctx.send("Chức năng Odd đang phát triển!")
+        embed = discord.Embed(
+            title="❌ LỖI",
+            description="Người dùng chưa có dữ liệu.",
+            color=0xFF0000
+        )
+        await ctx.send(embed=embed)
 
 # ==================== LỆNH TÌNH YÊU ====================
 # Danh sách GIF cho các hành động (mỗi danh sách 50 ảnh tenor hoạt động)
