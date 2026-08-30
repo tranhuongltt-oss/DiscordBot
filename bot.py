@@ -35,7 +35,8 @@ def get_prefix(bot, message):
         return message.content[:len(prefix)]
     return prefix
 
-bot = commands.Bot(command_prefix=get_prefix, intents=intents, help_command=None)
+bot = commands.Bot(command_prefix=get_prefix, intents=intents)
+bot.remove_command('help') # Xóa bỏ lệnh help gốc của discord.py
 
 spam_task_running = None
 bot_enabled = True  # Trạng thái hoạt động của bot
