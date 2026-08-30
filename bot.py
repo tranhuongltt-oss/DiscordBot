@@ -3560,6 +3560,7 @@ HELP_CATEGORIES = {
     "🚦 Bật/Tắt lệnh": [
         "`nuked off <lệnh>` - Tắt một lệnh",
         "`nuked on <lệnh>` - Bật lại lệnh đã tắt",
+    ],  
         "💰 Coin & Giải trí": [
         "`nuked balance` - Xem số coin",
         "`nuked daily` - Nhận coin mỗi ngày",
