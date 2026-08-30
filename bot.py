@@ -3560,7 +3560,17 @@ HELP_CATEGORIES = {
     "🚦 Bật/Tắt lệnh": [
         "`nuked off <lệnh>` - Tắt một lệnh",
         "`nuked on <lệnh>` - Bật lại lệnh đã tắt",
+        "💰 Coin & Giải trí": [
+        "`nuked balance` - Xem số coin",
+        "`nuked daily` - Nhận coin mỗi ngày",
+        "`nuked work` - Làm việc kiếm coin",
+        "`nuked give @user <số>` - Chuyển coin",
+        "`nuked shop` - Xem cửa hàng",
+        "`nuked buyrole <tên>` - Mua role bằng coin",
+        "`nuked coinflip <số> <h/t>` - Tung đồng xu",
+        "`nuked slots <số>` - Chơi máy đánh bạc",
     ],
+    
 }
 
 HELP_CATEGORY_DESCRIPTIONS = {
@@ -3577,6 +3587,7 @@ HELP_CATEGORY_DESCRIPTIONS = {
     "✉️ Tiện ích": "Gửi thư, đổi nickname, xóa tin nhắn...",
     "💘 Tình yêu": "Các lệnh tình yêu, cặp đôi, tương tác vui vẻ...",
     "🚦 Bật/Tắt lệnh": "Quản lý bật/tắt các lệnh của bot (chỉ Owner).",
+    "💰 Coin & Giải trí": "Kiếm coin, giao dịch, mua sắm và các trò chơi giải trí.",
 }
 
 # ==================== CLASS VIEW TƯƠNG TÁC ====================
