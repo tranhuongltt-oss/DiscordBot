@@ -46,9 +46,13 @@ GOODBYE_CHANNELS = {}
 SERVER_LEVEL_CHANNELS = {}
 DISABLED_COMMANDS = set()  # Danh sách lệnh bị tắt
 
+# Cấu hình các file lưu trữ dữ liệu JSON
 LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
+COIN_FILE = "coins.json"
+INVENTORY_FILE = "inventory.json"
 
+# ==================== LƯU TRỮ & TẢI DỮ LIỆU JSON ====================
 def load_levels():
     global USER_LEVELS
     try:
@@ -60,6 +64,28 @@ def load_levels():
 def save_levels():
     with open(LEVEL_FILE, "w", encoding="utf-8") as f:
         json.dump(USER_LEVELS, f, indent=2, ensure_ascii=False)
+
+def load_coins():
+    try:
+        with open(COIN_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_coins(data):
+    with open(COIN_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+def load_inventory():
+    try:
+        with open(INVENTORY_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_inventory(data):
+    with open(INVENTORY_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
 
 def load_config():
     global SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS, DISABLED_COMMANDS
@@ -87,13 +113,16 @@ def save_config():
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+# Khởi tạo dữ liệu ban đầu
 USER_LEVELS = {}
+user_coins = load_coins()
+user_inventory = load_inventory()
 load_levels()
 load_config()
 
 CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6cee161f85df62c.gif"
-NUKE_GIF_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542122209156538388/739ed3f3955356f06352d43eb649168a.gif?ex=6a9014b9&is=6a8ec339&hm=3ec421cedab61dea731230ee0ee1327c900406c15b333adbdd4003452727f06e&="
-NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg?ex=6a901935&is=6a8ec7b5&hm=2905f55bd53b4142f359b31f020f6a474c89878b9b2a28dffdb5f047040f4381&=&format=webp"
+NUKE_GIF_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542122209156538388/739ed3f3955356f06352d43eb649168a.gif"
+NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg"
 
 def get_required_exp(level: int) -> int:
     return level * 100
