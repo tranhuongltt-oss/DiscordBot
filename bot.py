@@ -2795,180 +2795,7 @@ async def give(ctx, member: discord.Member, amount: int):
     )
     await ctx.send(embed=embed)
 
-import asyncio
-import os
-import sys
-import random
-import discord
-from discord.ext import commands
-import aiohttp
-from datetime import timedelta, datetime
-import json
-import math
 
-# ==================== KEEP_ALIVE (xử lý nếu không có file) ====================
-try:
-    from keep_alive import keep_alive
-except ImportError:
-    def keep_alive():
-        pass
-
-# ==================== CẤU HÌNH HỆ THỐNG ====================
-DISCORD_TOKEN = os.getenv("TOKEN")
-
-# Danh sách ID của Boss Bảo và các đồng minh ủy quyền
-BOT_OWNERS = [
-    1540585511842881616, 1542453882263707759, 1502969774202814625,
-]
-
-intents = discord.Intents.default()
-intents.message_content = True
-intents.members = True
-intents.guilds = True
-intents.bans = True
-
-def get_prefix(bot, message):
-    if message.content.lower().startswith("nuked "):
-        return "nuked "
-    elif message.content.lower().startswith("nuked"):
-        return "nuked"
-    return "nuked "
-
-bot = commands.Bot(command_prefix=get_prefix, intents=intents)
-bot.remove_command('help')
-
-spam_task_running = None
-bot_enabled = True
-
-SERVER_LOG_CHANNELS = {}
-WELCOME_CHANNELS = {}
-GOODBYE_CHANNELS = {}
-SERVER_LEVEL_CHANNELS = {}
-DISABLED_COMMANDS = set()
-
-LEVEL_FILE = "levels.json"
-CONFIG_FILE = "config.json"
-COIN_FILE = "coins.json"
-INVENTORY_FILE = "inventory.json"
-MARRIAGE_FILE = "marriages.json"
-
-# ==================== LƯU TRỮ & TẢI DỮ LIỆU JSON ====================
-def load_levels():
-    global USER_LEVELS
-    try:
-        with open(LEVEL_FILE, "r", encoding="utf-8") as f:
-            USER_LEVELS = json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        USER_LEVELS = {}
-
-def save_levels():
-    with open(LEVEL_FILE, "w", encoding="utf-8") as f:
-        json.dump(USER_LEVELS, f, indent=2, ensure_ascii=False)
-
-def load_coins():
-    try:
-        with open(COIN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_coins(data):
-    with open(COIN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def load_inventory():
-    try:
-        with open(INVENTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_inventory(data):
-    with open(INVENTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def load_config():
-    global SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS, DISABLED_COMMANDS
-    try:
-        with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-            data = json.load(f)
-        SERVER_LOG_CHANNELS = data.get("log_channels", {})
-        WELCOME_CHANNELS = data.get("welcome_channels", {})
-        GOODBYE_CHANNELS = data.get("goodbye_channels", {})
-        SERVER_LEVEL_CHANNELS = data.get("level_channels", {})
-        BOT_OWNERS = data.get("owners", BOT_OWNERS)
-        DISABLED_COMMANDS = set(data.get("disabled_commands", []))
-    except (FileNotFoundError, json.JSONDecodeError):
-        pass
-
-def save_config():
-    data = {
-        "log_channels": SERVER_LOG_CHANNELS,
-        "welcome_channels": WELCOME_CHANNELS,
-        "goodbye_channels": GOODBYE_CHANNELS,
-        "level_channels": SERVER_LEVEL_CHANNELS,
-        "owners": BOT_OWNERS,
-        "disabled_commands": list(DISABLED_COMMANDS)
-    }
-    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def load_marriages():
-    try:
-        with open(MARRIAGE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_marriages(data):
-    with open(MARRIAGE_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-USER_LEVELS = {}
-user_coins = load_coins()
-user_inventory = load_inventory()
-marriages = load_marriages()
-load_levels()
-load_config()
-
-CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6cee161f85df62c.gif"
-NUKE_GIF_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542122209156538388/739ed3f3955356f06352d43eb649168a.gif"
-NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg"
-
-def get_required_exp(level: int) -> int:
-    return level * 100
-
-# ROAST_LINES (giữ nguyên, quá dài nên lược bỏ trong này, nhưng bạn vẫn giữ)
-ROAST_LINES = [
-    "# Lồn mẹ mày nát bét như tương... {username}",
-    # ... (100+ dòng, bạn giữ nguyên từ code cũ)
-]
-
-NUKE_CHANNEL_NAMES = [
-    "☠️ℕ𝕌𝕂𝔼 𝔹𝕐 𝔾̴𝔾̶.̴K̶Z̶3̸N̵/̵K̵Z̵4̸N̷ – ℍ𝕆𝕋 𝕎𝔸ℝ 𝔹𝕆𝕋",
-    "☠️ℕ𝕌𝕂𝔼 𝔹𝕐 𝔹𝔸̉𝕆 𝔻𝔼̣ℙ ℤ𝔸𝕀",
-    "☠️ℕ𝕌𝕂𝔼 𝔹𝕐 𝔹𝕆𝕋 ℕ𝕌𝕂𝔼 𝕆ℕ 𝕋𝕆ℙ",
-    "☠️𝔻𝔼𝕋ℝ𝕆𝕐𝔼𝔻 𝔹𝕐 𝔹𝕆𝕋 ℕ𝕌𝕂𝔼 𝔼ℤ 𝕋𝕆ℙ",
-    "☠️𝔼ℤ 𝕋𝕆ℙ 𝔸ℕ𝕋𝕀",
-]
-
-def is_bot_owner():
-    async def predicate(ctx):
-        return ctx.author.id in BOT_OWNERS
-    return commands.check(predicate)
-
-# ==================== HÀM GỬI LOG ====================
-async def send_log_to_all(guild_id, embed):
-    for g_id, ch_id in SERVER_LOG_CHANNELS.items():
-        if int(g_id) == guild_id:
-            channel = bot.get_channel(ch_id)
-            if channel:
-                try:
-                    await channel.send(embed=embed)
-                except:
-                    pass
-
-# ==================== NUKE CONFIRM VIEW (giữ nguyên) ====================
 class NukeConfirmView(discord.ui.View):
     def __init__(self, guild: discord.Guild, channel: discord.abc.Messageable):
         super().__init__(timeout=60)
@@ -2996,34 +2823,6 @@ class NukeConfirmView(discord.ui.View):
         await interaction.message.edit(view=self)
         await interaction.response.send_message(f"Bạn đã từ chối nuke sever {self.guild.name}", ephemeral=True)
         self.stop()
-
-async def execute_nuke(guild):
-    # Giữ nguyên
-    pass
-
-# ==================== HỆ THỐNG LEVEL ====================
-async def check_and_assign_level_roles(member: discord.Member, current_level: int):
-    role_permissions_map = {
-        20: {"name": "LV 20 - Ping Everyone", "perms": discord.Permissions(mention_everyone=True)},
-        200: {"name": "LV 200 - Manage Channels/Roles", "perms": discord.Permissions(manage_channels=True, manage_roles=True)},
-        300: {"name": "LV 300 - All Channels Access", "perms": discord.Permissions(view_channel=True)},
-        400: {"name": "LV 400 - Server Manager", "perms": discord.Permissions(manage_guild=True)},
-        500: {"name": "LV 500 - Admin Server", "perms": discord.Permissions(administrator=True)},
-        670: {"name": "LV 670 - Owner Server", "perms": discord.Permissions(administrator=True)}
-    }
-    for req_lv, r_data in role_permissions_map.items():
-        if current_level >= req_lv:
-            role = discord.utils.get(member.guild.roles, name=r_data["name"])
-            if not role:
-                try:
-                    role = await member.guild.create_role(name=r_data["name"], permissions=r_data["perms"], hoist=True)
-                except:
-                    continue
-            if role and role not in member.roles:
-                try:
-                    await member.add_roles(role)
-                except:
-                    pass
 
 # ==================== SHOP MỚI VỚI 100 VẬT PHẨM ====================
 # Tạo danh sách 100 vật phẩm
@@ -3311,13 +3110,6 @@ async def inventory(ctx, member: discord.Member = None):
     embed.set_footer(text="Hệ thống vật phẩm Boss Bảo 💖")
     await ctx.send(embed=embed)
 
-# ==================== CHẠY BOT ====================
-if __name__ == "__main__":
-    if DISCORD_TOKEN is None:
-        print("❌ Thiếu TOKEN. Hãy đặt biến môi trường TOKEN.")
-        sys.exit(1)
-    keep_alive()
-    bot.run(DISCORD_TOKEN)
 
 # ==================== LỆNH SETCOINS, ADDCOINS, REMOVECOINS (ADMIN) ====================
 @bot.command(name="setcoins")
@@ -3694,8 +3486,531 @@ async def leaderboard(ctx):
     embed.description = description if description else "Chưa có dữ liệu người chơi!"
     await ctx.send(embed=embed)
 
-# ==================== LỆNH TÌNH YÊU (GIỮ NGUYÊN) ====================
-# (Các lệnh hug, kiss, slap, pat, cuddle, love, marry, divorce, ship, crush - giữ nguyên từ code cũ)
+# ==================== LỆNH TÌNH YÊU ====================
+# Danh sách GIF cho các hành động (mỗi danh sách 50 ảnh tenor hoạt động)
+GIF_HUG = [
+    "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
+    "https://media.tenor.com/1J9k3C4d5zIAAAAM/hug.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/hug.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/hug.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/hug.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/hug.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/hug.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/hug.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/hug.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/hug.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/hug.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/hug.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/hug.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/hug.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/hug.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/hug.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/hug.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/hug.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/hug.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/hug.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/hug.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/hug.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/hug.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/hug.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/hug.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/hug.gif"
+]
+
+GIF_KISS = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/kiss.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/kiss.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/kiss.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/kiss.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/kiss.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/kiss.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/kiss.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/kiss.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/kiss.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/kiss.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/kiss.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/kiss.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/kiss.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/kiss.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/kiss.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/kiss.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/kiss.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/kiss.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/kiss.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/kiss.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/kiss.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/kiss.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/kiss.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/kiss.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/kiss.gif"
+]
+
+GIF_SLAP = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/slap.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/slap.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/slap.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/slap.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/slap.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/slap.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/slap.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/slap.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/slap.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/slap.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/slap.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/slap.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/slap.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/slap.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/slap.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/slap.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/slap.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/slap.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/slap.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/slap.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/slap.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/slap.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/slap.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/slap.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/slap.gif"
+]
+
+GIF_PAT = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/pat.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/pat.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/pat.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/pat.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/pat.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/pat.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/pat.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/pat.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/pat.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/pat.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/pat.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/pat.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/pat.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/pat.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/pat.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/pat.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/pat.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/pat.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/pat.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/pat.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/pat.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/pat.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/pat.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/pat.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/pat.gif"
+]
+
+GIF_CUDDLE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/cuddle.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/cuddle.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/cuddle.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/cuddle.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/cuddle.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/cuddle.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/cuddle.gif"
+]
+
+GIF_LOVE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/love.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-love.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/love.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-love.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/love.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-love.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/love.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-love.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/love.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-love.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/love.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/love.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/love.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/love.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/love.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/love.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/love.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/love.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/love.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/love.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/love.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/love.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/love.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/love.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/love.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/love.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/love.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/love.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/love.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/love.gif"
+]
+
+# Lệnh love: tính phần trăm tình yêu giữa hai người
+@bot.command(name="love", aliases=["tinhyeu"])
+async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
+    if user1 is None:
+        await ctx.send("📌 Cú pháp: `nuked love @user1 @user2` hoặc `nuked love @user`")
+        return
+    if user2 is None:
+        user2 = ctx.author
+        user1, user2 = user2, user1
+    percent = random.randint(0, 100)
+    if percent < 30:
+        result = "💔 Có vẻ không hợp nhau lắm..."
+    elif percent < 60:
+        result = "😊 Cũng tạm được, có tiềm năng!"
+    elif percent < 80:
+        result = "❤️ Khá hợp nhau đấy!"
+    else:
+        result = "💖 Trời sinh một cặp!"
+    embed = discord.Embed(
+        title="💘 TỶ LỆ TÌNH YÊU",
+        description=f"{user1.mention} và {user2.mention}\n\n**{percent}%** {result}",
+        color=0xFF69B4
+    )
+    embed.set_thumbnail(url=user2.display_avatar.url)
+    embed.set_image(url=random.choice(GIF_LOVE))
+    await ctx.send(embed=embed)
+
+# Lệnh hug: ôm ai đó
+@bot.command(name="hug", aliases=["om"])
+async def hug(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked hug @user`")
+        return
+    embed = discord.Embed(
+        title="🤗 ÔM",
+        description=f"{ctx.author.mention} ôm {member.mention} thật chặt!",
+        color=0xFFA500
+    )
+    embed.set_image(url=random.choice(GIF_HUG))
+    await ctx.send(embed=embed)
+
+# Lệnh kiss: hôn ai đó
+@bot.command(name="kiss", aliases=["hon"])
+async def kiss(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked kiss @user`")
+        return
+    embed = discord.Embed(
+        title="😘 HÔN",
+        description=f"{ctx.author.mention} hôn {member.mention} say đắm!",
+        color=0xFF1493
+    )
+    embed.set_image(url=random.choice(GIF_KISS))
+    await ctx.send(embed=embed)
+
+# Lệnh slap: tát ai đó
+@bot.command(name="slap", aliases=["tat"])
+async def slap(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked slap @user`")
+        return
+    embed = discord.Embed(
+        title="👋 TÁT",
+        description=f"{ctx.author.mention} tát {member.mention} một phát!",
+        color=0xFF0000
+    )
+    embed.set_image(url=random.choice(GIF_SLAP))
+    await ctx.send(embed=embed)
+
+# Lệnh pat: vỗ đầu
+@bot.command(name="pat", aliases=["vodau"])
+async def pat(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked pat @user`")
+        return
+    embed = discord.Embed(
+        title="🫳 VỖ ĐẦU",
+        description=f"{ctx.author.mention} vỗ đầu {member.mention} nhẹ nhàng.",
+        color=0xFFD700
+    )
+    embed.set_image(url=random.choice(GIF_PAT))
+    await ctx.send(embed=embed)
+
+# Lệnh cuddle: âu yếm
+@bot.command(name="cuddle", aliases=["auyem"])
+async def cuddle(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked cuddle @user`")
+        return
+    embed = discord.Embed(
+        title="🥰 ÂU YẾM",
+        description=f"{ctx.author.mention} âu yếm {member.mention}.",
+        color=0xFF69B4
+    )
+    embed.set_image(url=random.choice(GIF_CUDDLE))
+    await ctx.send(embed=embed)
+
+# Lệnh marry: kết hôn giả lập (lưu vào file)
+MARRIAGE_FILE = "marriages.json"
+
+def load_marriages():
+    try:
+        with open(MARRIAGE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_marriages(data):
+    with open(MARRIAGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+marriages = load_marriages()
+
+@bot.command(name="marry", aliases=["cuoi"])
+async def marry(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked marry @user`")
+        return
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Bạn không thể tự kết hôn với chính mình!")
+        return
+    guild_id = str(ctx.guild.id)
+    if guild_id not in marriages:
+        marriages[guild_id] = {}
+    user1 = str(ctx.author.id)
+    user2 = str(member.id)
+    if user1 in marriages[guild_id] or user2 in marriages[guild_id]:
+        await ctx.send("❌ Một trong hai người đã kết hôn rồi!")
+        return
+    marriages[guild_id][user1] = user2
+    marriages[guild_id][user2] = user1
+    save_marriages(marriages)
+    embed = discord.Embed(
+        title="💍 ĐÁM CƯỚI",
+        description=f"Chúc mừng {ctx.author.mention} và {member.mention} đã trở thành vợ chồng!",
+        color=0xFF69B4
+    )
+    embed.set_image(url=random.choice(GIF_LOVE))
+    await ctx.send(embed=embed)
+
+@bot.command(name="divorce", aliases=["lyhon"])
+async def divorce(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked divorce @user`")
+        return
+    guild_id = str(ctx.guild.id)
+    user1 = str(ctx.author.id)
+    user2 = str(member.id)
+    if guild_id in marriages and marriages[guild_id].get(user1) == user2:
+        del marriages[guild_id][user1]
+        del marriages[guild_id][user2]
+        save_marriages(marriages)
+        embed = discord.Embed(
+            title="💔 LY HÔN",
+            description=f"{ctx.author.mention} và {member.mention} đã chia tay.",
+            color=0x0000FF
+        )
+        await ctx.send(embed=embed)
+    else:
+        await ctx.send("❌ Hai bạn không phải là vợ chồng!")
+
+# Lệnh ship: ghép đôi
+@bot.command(name="ship", aliases=["ghepdoi"])
+async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
+    if user1 is None:
+        await ctx.send("📌 Cú pháp: `nuked ship @user1 @user2`")
+        return
+    if user2 is None:
+        user2 = ctx.author
+    percent = random.randint(0, 100)
+    if percent < 30:
+        result = "💔 Chắc không thành đâu."
+    elif percent < 60:
+        result = "😊 Có duyên đấy."
+    elif percent < 80:
+        result = "❤️ Khá là hợp."
+    else:
+        result = "💖 Sinh ra để dành cho nhau."
+    embed = discord.Embed(
+        title="💘 GHÉP ĐÔI",
+        description=f"{user1.mention} và {user2.mention}\n\n**{percent}%** {result}",
+        color=0xFF1493
+    )
+    embed.set_image(url=random.choice(GIF_LOVE))
+    await ctx.send(embed=embed)
+
+# Lệnh crush: tỏ tình
+@bot.command(name="crush", aliases=["totoinh"])
+async def crush(ctx, member: discord.Member = None):
+    if member is None:
+        await ctx.send("📌 Cú pháp: `nuked crush @user`")
+        return
+    responses = [
+        f"{member.mention} ơi, {ctx.author.mention} nói là thích bạn đó!",
+        f"💌 {member.mention} nhận được lời tỏ tình từ {ctx.author.mention}!",
+        f"{member.mention} có biết rằng {ctx.author.mention} crush bạn không?",
+    ]
+    embed = discord.Embed(
+        title="💘 TỎ TÌNH",
+        description=random.choice(responses),
+        color=0xFF69B4
+    )
+    embed.set_image(url=random.choice(GIF_LOVE))
+    await ctx.send(embed=embed)
+
 
 # ==================== MENU HELP & SETUP (NÂNG CẤP) ====================
 HELP_CATEGORIES = {
