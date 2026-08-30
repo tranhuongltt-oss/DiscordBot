@@ -2588,18 +2588,20 @@ async def member_count(ctx):
     )
     await ctx.send(embed=embed)
 
-# 12. Clearuser
-@bot.command(name="clearuser")
+# ==================== LỆNH AUTOCLEARUSER ====================
+@bot.command(name="autoclearuser")
 @is_bot_owner()
-async def clear_user(ctx, member: discord.Member):
+async def autoclear_user(ctx, member: discord.Member):
+    """Xóa toàn bộ tin nhắn của một thành viên trong kênh hiện tại."""
     try:
         deleted = 0
-        async for message in ctx.channel.history(limit=1000):
+        # Duyệt tất cả tin nhắn trong kênh
+        async for message in ctx.channel.history(limit=None):
             if message.author == member:
                 await message.delete()
                 deleted += 1
         embed = discord.Embed(
-            title="🧹 ĐÃ XÓA TIN NHẮN CỦA USER",
+            title="🧹 ĐÃ TỰ ĐỘNG XÓA TIN NHẮN CỦA USER",
             description=f"✅ Đã xóa **{deleted}** tin nhắn của {member.mention} trong kênh này.",
             color=0x00FF00
         )
@@ -2607,11 +2609,56 @@ async def clear_user(ctx, member: discord.Member):
     except Exception as e:
         await ctx.send(f"❌ Lỗi: {str(e)}")
 
-@clear_user.error
-async def clear_user_error(ctx, error):
+@autoclear_user.error
+async def autoclear_user_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+    else:
+        await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH AUTOCLEAR ====================
+@bot.command(name="autoclear")
+@is_bot_owner()
+async def autoclear_channel(ctx, limit: int = None):
+    """Xóa toàn bộ tin nhắn trong kênh hiện tại, có thể chỉ định số lượng tối đa."""
+    try:
+        if limit is None:
+            # Xóa tất cả tin nhắn (lặp đến khi không còn)
+            deleted = 0
+            while True:
+                msgs = await ctx.channel.purge(limit=1000)
+                deleted += len(msgs)
+                if len(msgs) < 1000:
+                    break
+                await asyncio.sleep(1)  # Tránh rate limit
+        else:
+            if limit < 1 or limit > 10000:
+                await ctx.send("⚠️ Số lượng từ 1 đến 10000.")
+                return
+            deleted = 0
+            while limit > 0:
+                batch = min(limit, 1000)
+                msgs = await ctx.channel.purge(limit=batch)
+                deleted += len(msgs)
+                limit -= batch
+                if len(msgs) < batch:
+                    break
+                await asyncio.sleep(1)
+        embed = discord.Embed(
+            title="🧹 ĐÃ TỰ ĐỘNG XÓA TIN NHẮN TRONG KÊNH",
+            description=f"✅ Đã xóa **{deleted}** tin nhắn.",
+            color=0x00FF00
+        )
+        await ctx.send(embed=embed, delete_after=5)
+    except Exception as e:
+        await ctx.send(f"❌ Lỗi: {str(e)}")
+
+@autoclear_channel.error
+async def autoclear_channel_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+    else:
+        await ctx.send(f"❌ Lỗi: {str(error)}")
 # ==================== LỆNH GUITHU ====================
 @bot.command(name="guithu")
 async def guithu(ctx, member: discord.Member, *, noidung: str = None):
