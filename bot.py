@@ -2649,8 +2649,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 bot = commands.Bot(command_prefix="nuked ", intents=intents)
 
-COIN_FILE = "coins.json"
-INVENTORY_FILE = "inventory.json"
+# Xóa lệnh help mặc định của discord.py để tránh đụng độ
+bot.remove_command('help')
 
 # ==================== XỬ LÝ DỮ LIỆU JSON ====================
 def load_coins():
