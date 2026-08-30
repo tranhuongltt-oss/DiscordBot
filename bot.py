@@ -1867,7 +1867,7 @@ async def list_emoji_error(ctx, error):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH STEAL ====================
-@bot.command(name="steal")
+@bot.command(name="steal_emoji")
 @is_bot_owner()
 async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
     if name is None:
