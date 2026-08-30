@@ -3986,7 +3986,6 @@ HELP_CATEGORIES = {
         "`nuked removecoins @user <số>` - (Admin) Trừ coin",
         "`nuked resetdaily @user` - (Admin) Reset daily",
     ],
-    ],
 }
 
 HELP_CATEGORY_DESCRIPTIONS = {
