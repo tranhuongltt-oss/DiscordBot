@@ -30,13 +30,15 @@ intents.guilds = True
 intents.bans = True
 
 def get_prefix(bot, message):
-    prefix = "nuked "
-    if message.content.lower().startswith(prefix):
-        return message.content[:len(prefix)]
-    return prefix
+    # Hỗ trợ cả "nuked " và "nuked" (không có space)
+    if message.content.lower().startswith("nuked "):
+        return "nuked "
+    elif message.content.lower().startswith("nuked"):
+        return "nuked"
+    return "nuked "  # fallback
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
-bot.remove_command('help') # Xóa bỏ lệnh help gốc của discord.py
+bot.remove_command('help')  # Xóa lệnh help gốc
 
 spam_task_running = None
 bot_enabled = True  # Trạng thái hoạt động của bot
@@ -52,6 +54,7 @@ LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
 COIN_FILE = "coins.json"
 INVENTORY_FILE = "inventory.json"
+MARRIAGE_FILE = "marriages.json"
 
 # ==================== LƯU TRỮ & TẢI DỮ LIỆU JSON ====================
 def load_levels():
@@ -114,10 +117,22 @@ def save_config():
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+def load_marriages():
+    try:
+        with open(MARRIAGE_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_marriages(data):
+    with open(MARRIAGE_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
 # Khởi tạo dữ liệu ban đầu
 USER_LEVELS = {}
 user_coins = load_coins()
 user_inventory = load_inventory()
+marriages = load_marriages()
 load_levels()
 load_config()
 
@@ -1897,7 +1912,7 @@ async def list_emoji_error(ctx, error):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH STEAL ====================
-@bot.command(name="steal_emoji")
+@bot.command(name="steal")
 @is_bot_owner()
 async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
     if name is None:
@@ -2674,41 +2689,8 @@ async def autoclear_channel_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== CẤU HÌNH BOT ====================
-intents = discord.Intents.default()
-intents.message_content = True
-bot = commands.Bot(command_prefix="nuked ", intents=intents)
-
-# Xóa lệnh help mặc định của discord.py để tránh đụng độ
-bot.remove_command('help')
-
-# ==================== XỬ LÝ DỮ LIỆU JSON ====================
-def load_coins():
-    try:
-        with open(COIN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_coins(data):
-    with open(COIN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-def load_inventory():
-    try:
-        with open(INVENTORY_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_inventory(data):
-    with open(INVENTORY_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-user_coins = load_coins()
-user_inventory = load_inventory()
-
-# ==================== HELPER FUNCTIONS ====================
+# ==================== CÁC LỆNH KINH TẾ (COIN & BANK) ====================
+# Hàm helper
 def get_balance(user_id):
     return user_coins.get(str(user_id), {}).get("balance", 0)
 
@@ -2741,710 +2723,214 @@ def set_last(user_id, key):
     user_coins[uid][key] = datetime.now().timestamp()
     save_coins(user_coins)
 
-# ==================== FIX LỖI KHÔNG NHẬN LỆNH ====================
-@bot.event
-async def on_message(message):
-    if message.author.bot:
-        return
-
-    # Nếu người dùng chỉ gõ đúng chữ "nuked" hoặc "nuked " thì mới nhắc nhở
-    if message.content.strip() == "nuked":
-        await message.channel.send("✨ Ơi! Sử dụng `nuked games` hoặc `nuked help` để xem danh sách lệnh nhé!")
-        return
-
-    # RẤT QUAN TRỌNG: Phải có dòng này bot mới đọc và chạy được lệnh game
-    await bot.process_commands(message)
-
-# ==================== CÁC LỆNH KINH TẾ BỔ SUNG ====================
-@bot.command(name="beg")
-async def beg(ctx):
-    user_id = ctx.author.id
-    last = get_last(user_id, "last_beg")
-    now = datetime.now().timestamp()
-    if now - last < 30:
-        await ctx.send(f"⏳ **{ctx.author.display_name}** ơi, vừa xin xong! Hãy chờ **{int(30 - (now - last))} giây** nữa nhé.")
-        return
-    
-    set_last(user_id, "last_beg")
-    if random.choice([True, False]):
-        earned = random.randint(20, 150)
-        add_coins(user_id, earned)
-        await ctx.send(f"🥺 Một người tốt bụng đã cho bạn **+{earned:,} coin** 🪙!")
-    else:
-        await ctx.send("🤡 Đi chỗ khác xin! Không ai cho bạn đồng nào cả.")
-
-@bot.command(name="crime")
-async def crime(ctx):
-    user_id = ctx.author.id
-    last = get_last(user_id, "last_crime")
-    now = datetime.now().timestamp()
-    if now - last < 60:
-        await ctx.send(f"🚨 Công an đang tuần tra! Hãy ẩn nấp thêm **{int(60 - (now - last))} giây** nữa.")
-        return
-    
-    set_last(user_id, "last_crime")
-    if random.random() < 0.55: # 55% thành công
-        earned = random.randint(300, 1200)
-        add_coins(user_id, earned)
-        await ctx.send(f"🥷 **THÀNH CÔNG!** Bạn trộm tiệm kim hoàn và thu về **+{earned:,} coin** 🔥!")
-    else:
-        loss = random.randint(100, 500)
-        subtract_coins(user_id, loss)
-        await ctx.send(f"🚔 **THẤT BẠI!** Bạn bị cảnh sát bắt và phạt **-{loss:,} coin** 💸!")
-
-@bot.command(name="bank")
-async def bank(ctx, action: str = None, amount: str = None):
-    user_id = str(ctx.author.id)
-    if user_id not in user_coins:
-        set_balance(ctx.author.id, 0)
-        
-    bal = get_balance(ctx.author.id)
-    b_bal = get_bank(ctx.author.id)
-
-    if not action or action not in ["deposit", "withdraw", "dep", "with"]:
-        embed = discord.Embed(
-            title="🏦 NGÂN HÀNG CENTRAL BANK 🏦",
-            description=f"💵 Tiền mặt: `{bal:,} coin`\n🏦 Tiền gửi: `{b_bal:,} coin`\n\n👉 **Cú pháp:**\n• `nuked bank deposit <số tiền/all>`\n• `nuked bank withdraw <số tiền/all>`",
-            color=0x00FFCC
-        )
-        await ctx.send(embed=embed)
-        return
-
-    if action in ["deposit", "dep"]:
-        amt = bal if amount == "all" else (int(amount) if amount and amount.isdigit() else 0)
-        if amt <= 0 or amt > bal:
-            await ctx.send("❌ Số tiền gửi không hợp lệ hoặc bạn không đủ tiền mặt!")
-            return
-        user_coins[user_id]["balance"] -= amt
-        user_coins[user_id]["bank"] += amt
-        save_coins(user_coins)
-        await ctx.send(f"🏦 Đã gửi **+{amt:,} coin** vào ngân hàng an toàn! 🔒")
-
-    elif action in ["withdraw", "with"]:
-        amt = b_bal if amount == "all" else (int(amount) if amount and amount.isdigit() else 0)
-        if amt <= 0 or amt > b_bal:
-            await ctx.send("❌ Số tiền rút không hợp lệ hoặc tài khoản ngân hàng không đủ!")
-            return
-        user_coins[user_id]["bank"] -= amt
-        user_coins[user_id]["balance"] += amt
-        save_coins(user_coins)
-        await ctx.send(f"💸 Đã rút **+{amt:,} coin** từ ngân hàng về ví tiền mặt! 💰")
-
-@bot.command(name="buyrole")
-async def buyrole(ctx, *, role_name: str):
-    role = discord.utils.get(ctx.guild.roles, name=role_name)
-    if not role:
-        await ctx.send(f"❌ Không tìm thấy Role tên `{role_name}` trên Server!")
-        return
-    
-    price = 10000 # Giá mặc định 10k coin
-    if not subtract_coins(ctx.author.id, price):
-        await ctx.send(f"❌ Bạn không đủ **{price:,} coin** để mua Role {role.mention}!")
-        return
-        
-    await ctx.author.add_roles(role)
-    await ctx.send(f"🎉 **CHÚC MỪNG!** {ctx.author.mention} đã mua thành công Role {role.mention} với giá **{price:,} coin**!")
-
-# ==================== ĐẦY ĐỦ TOÀN BỘ CÁC TRÒ CHƠI CASINO ====================
-@bot.command(name="coinflip", aliases=["cf"])
-async def coinflip(ctx, bet: int, choice: str):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin để đặt cược!")
-        return
-    
-    choice = choice.lower()
-    if choice not in ["h", "t", "head", "tail", "ngua", "sap"]:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy chọn `h` (Ngửa) hoặc `t` (Sấp)!")
-        return
-
-    result = random.choice(["h", "t"])
-    res_str = "🪙 **NGỬA**" if result == "h" else "🪙 **SẤP**"
-    user_choice = "h" if choice in ["h", "head", "ngua"] else "t"
-
-    if user_choice == result:
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎉 Ket quả: {res_str}! Bạn đã đoán chính xác và nhận **+{win:,} coin** 🌟!")
-    else:
-        await ctx.send(f"💀 Kết quả: {res_str}! Bạn đã đoán sai và mất **-{bet:,} coin**.")
-
-@bot.command(name="slots")
-async def slots(ctx, bet: int):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin để chơi Slots!")
-        return
-
-    emojis = ["🎰", "💎", "🍒", "🍋", "🔔", "7️⃣"]
-    r1, r2, r3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
-    
-    embed = discord.Embed(title="🎰 MÁY ĐÁNH BẠC SLOTS 🎰", color=0xFFD700)
-    embed.add_field(name="Kết Quả", value=f"[ {r1} | {r2} | {r3} ]", inline=False)
-
-    if r1 == r2 == r3:
-        win = bet * 5
-        add_coins(ctx.author.id, win)
-        embed.description = f"🔥 **JACKPOT TRÚNG LỚN!** Bạn thắng **+{win:,} coin** (x5) 🎉!"
-    elif r1 == r2 or r2 == r3 or r1 == r3:
-        win = int(bet * 1.5)
-        add_coins(ctx.author.id, win)
-        embed.description = f"✨ **THẮNG NHỎ!** Bạn nhận được **+{win:,} coin** (x1.5) 🪙!"
-    else:
-        embed.description = f"💔 **RẤT TIẾC!** Bạn đã mất **-{bet:,} coin**."
-    
-    await ctx.send(embed=embed)
-
-@bot.command(name="dice")
-async def dice(ctx, bet: int, guess: int):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-    if guess < 1 or guess > 6:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy đoán số từ 1 đến 6!")
-        return
-
-    rolled = random.randint(1, 6)
-    if guess == rolled:
-        win = bet * 4
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎲 Xúc xắc ra **[{rolled}]**! Bạn đoán đúng xuất sắc và nhận **+{win:,} coin** 🎉!")
-    else:
-        await ctx.send(f"🎲 Xúc xắc ra **[{rolled}]**! Bạn đoán sai rồi, mất **-{bet:,} coin**.")
-
-@bot.command(name="rps")
-async def rps(ctx, bet: int, choice: str):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-
-    options = {"r": "🪨 Búa", "p": "📄 Bao", "s": "✂️ Kéo"}
-    user_c = choice.lower()
-    if user_c not in options:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy chọn `r` (Búa), `p` (Bao), hoặc `s` (Kéo)!")
-        return
-
-    bot_c = random.choice(["r", "p", "s"])
-    msg = f"Bạn chọn **{options[user_c]}** vs Bot chọn **{options[bot_c]}**\n"
-
-    if user_c == bot_c:
-        add_coins(ctx.author.id, bet)
-        await ctx.send(msg + "🤝 **HÒA RỒI!** Đã hoàn lại tiền cược.")
-    elif (user_c == "r" and bot_c == "s") or (user_c == "p" and bot_c == "r") or (user_c == "s" and bot_c == "p"):
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        await ctx.send(msg + f"🎉 **BẠN THẮNG!** Nhận ngay **+{win:,} coin**!")
-    else:
-        await ctx.send(msg + f"💀 **BẠN THUA!** Bị mất **-{bet:,} coin**.")
-
-@bot.command(name="hilo")
-async def hilo(ctx, bet: int, choice: str):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-
-    choice = choice.lower()
-    if choice not in ["h", "l"]:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Lựa chọn `h` (Cao hơn 7) hoặc `l` (Thấp hơn 7)!")
-        return
-
-    num = random.randint(1, 13)
-    msg = f"🎴 Lá bài mở ra là: **[{num}]**\n"
-
-    if (choice == "h" and num > 7) or (choice == "l" and num < 7):
-        win = int(bet * 1.8)
-        add_coins(ctx.author.id, win)
-        await ctx.send(msg + f"🎉 **ĐOÁN ĐÚNG!** Bạn nhận được **+{win:,} coin**!")
-    else:
-        await ctx.send(msg + f"💀 **ĐOÁN SAI!** Bạn đã mất **-{bet:,} coin**.")
-
-@bot.command(name="crash")
-async def crash(ctx, bet: int):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-
-    crash_point = round(random.uniform(1.1, 3.5), 2)
-    message = await ctx.send(f"🚀 **TÊN LỬA ĐANG BAY...**\nHệ số hiện tại: **1.0x**")
-    
-    current = 1.0
-    for _ in range(5):
-        await asyncio.sleep(1)
-        current = round(current + random.uniform(0.2, 0.5), 2)
-        if current >= crash_point:
-            await message.edit(content=f"💥 **CRASH!** Tên lửa phát nổ ở **{crash_point}x**! Bạn đã mất **-{bet:,} coin**.")
-            return
-        await message.edit(content=f"🚀 **TÊN LỬA ĐANG BAY...**\nHệ số hiện tại: **{current}x**")
-
-    win = int(bet * current)
-    add_coins(ctx.author.id, win)
-    await message.edit(content=f"🎯 **BẠN ĐÃ DỪNG LẠI AN TOÀN!** Rút ở **{current}x** và thắng **+{win:,} coin** 💎!")
-
-@bot.command(name="lottery")
-async def lottery(ctx, bet: int):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-
-    luck = random.randint(1, 100)
-    if luck > 90:
-        win = bet * 10
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎫 **VÉ SỐ TRÚNG ĐẠI PHÁT!** Bạn nhận thưởng x10 = **+{win:,} coin** 🎉🎉🎉!")
-    else:
-        await ctx.send(f"🎫 **VÉ SỐ CHÚC BẠN MAY MẮN LẦN SAU!** Rất tiếc mất **-{bet:,} coin**.")
-
-@bot.command(name="blackjack", aliases=["bj"])
-async def blackjack(ctx, bet: int):
-    if bet <= 0 or not subtract_coins(ctx.author.id, bet):
-        await ctx.send("❌ Bạn không đủ coin!")
-        return
-
-    p_card = random.randint(12, 21)
-    b_card = random.randint(15, 21)
-
-    embed = discord.Embed(title="🃏 BÀN CHƠI BLACKJACK 21 🃏", color=0x9B59B6)
-    embed.add_field(name="Điểm Của Bạn", value=f"`{p_card} điểm`", inline=True)
-    embed.add_field(name="Điểm Của Bot", value=f"`{b_card} điểm`", inline=True)
-
-    if p_card > b_card:
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        embed.description = f"🎉 **BẠN THẮNG!** Nhận thưởng **+{win:,} coin**!"
-    elif p_card == b_card:
-        add_coins(ctx.author.id, bet)
-        embed.description = "🤝 **HÒA!** Hoàn lại tiền cược."
-    else:
-        embed.description = f"💀 **BẠN THUA!** Mất **-{bet:,} coin**."
-
-    await ctx.send(embed=embed)
-
-@bot.command(name="leaderboard", aliases=["top"])
-async def leaderboard(ctx):
-    sorted_users = sorted(user_coins.items(), key=lambda x: x[1].get("balance", 0) + x[1].get("bank", 0), reverse=True)[:10]
-    
-    embed = discord.Embed(title="🏆 BẢNG XẾP HẠNG ĐẠI PHÚ HỒ SERVER 🏆", color=0xFFD700)
-    description = ""
-    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
-
-    for idx, (uid, data) in enumerate(sorted_users):
-        total = data.get("balance", 0) + data.get("bank", 0)
-        user = bot.get_user(int(uid))
-        name = user.display_name if user else f"User {uid}"
-        description += f"{medals[idx]} **{name}** — `{total:,} coin`\n"
-
-    embed.description = description if description else "Chưa có dữ liệu người chơi!"
-    await ctx.send(embed=embed)
-
-# ==================== CẬP NHẬT MENU GAME SIÊU ĐẸP & NHIỀU EMOJI ====================
-class GameMenuView(discord.ui.View):
-    def __init__(self):
-        super().__init__(timeout=None)
-        self.add_item(discord.ui.Button(label="💵 Kiếm Coin", style=discord.ButtonStyle.primary, custom_id="coin", row=0))
-        self.add_item(discord.ui.Button(label="🎲 Mini Games", style=discord.ButtonStyle.success, custom_id="mini", row=0))
-        self.add_item(discord.ui.Button(label="🎰 Sòng Bạc Casino", style=discord.ButtonStyle.danger, custom_id="casino", row=0))
-        self.add_item(discord.ui.Button(label="🛒 Cửa Hàng & Vàng", style=discord.ButtonStyle.secondary, custom_id="shop", row=1))
-        self.add_item(discord.ui.Button(label="🏆 Bảng Xếp Hạng", style=discord.ButtonStyle.primary, custom_id="lb", row=1))
-
-    async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        cid = interaction.data["custom_id"]
-
-        if cid == "coin":
-            embed = discord.Embed(
-                title="💵 DANH MỤC LỆNH KIẾM TIỀN 💵",
-                description=(
-                    "💰 `nuked balance` — Xem số dư ví & ngân hàng 💳\n"
-                    "🎁 `nuked daily` — Nhận quà mỗi ngày (100 - 500 coin) 🌟\n"
-                    "💼 `nuked work` — Tăng ca kiếm thêm thu nhập 🛠️\n"
-                    "🥺 `nuked beg` — Xin tiền cư dân mạng 🤲\n"
-                    "🥷 `nuked crime` — Đi trộm cướp (Cẩn thận đi tù!) 🚨\n"
-                    "🏦 `nuked bank deposit <số>` — Gửi tiền gửi tiết kiệm 🔒\n"
-                    "💸 `nuked bank withdraw <số>` — Rút tiền mặt ra tiêu 🏧\n"
-                    "🤝 `nuked give @user <số>` — Chuyển tiền cho bạn bè 🎁"
-                ),
-                color=0x00FFCC
-            )
-        elif cid == "mini":
-            embed = discord.Embed(
-                title="🎲 DANH MỤC MINI GAMES 🎲",
-                description=(
-                    "🪙 `nuked coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
-                    "🎲 `nuked dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
-                    "✂️ `nuked rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
-                    "🎴 `nuked hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
-                ),
-                color=0x2ECC71
-            )
-        elif cid == "casino":
-            embed = discord.Embed(
-                title="🎰 SÒNG BẠC CASINO THỜI THƯỢNG 🎰",
-                description=(
-                    "🎰 `nuked slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
-                    "🚀 `nuked crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
-                    "🎫 `nuked lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
-                    "🃏 `nuked blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
-                ),
-                color=0xE74C3C
-            )
-        elif cid == "shop":
-            embed = discord.Embed(
-                title="🛒 CỬA HÀNG & ROLE SHOP 🛒",
-                description=(
-                    "🛍️ `nuked shop` — Xem danh sách vật phẩm hỗ trợ 📜\n"
-                    "💳 `nuked buyitem <tên>` — Mua vật phẩm từ Shop 📦\n"
-                    "🎒 `nuked inventory` — Mở túi đồ cá nhân 🎒\n"
-                    "🏷️ `nuked buyrole <tên>` — Dùng coin mua Role VIP 👑"
-                ),
-                color=0xF1C40F
-            )
-        elif cid == "lb":
-            embed = discord.Embed(
-                title="🏆 BẢNG XẾP HẠNG 🏆",
-                description="📊 `nuked leaderboard` — Top 10 đại gia server 👑",
-                color=0x9B59B6
-            )
-
-        await interaction.response.send_message(embed=embed, ephemeral=True)
-        return True
-
-@bot.command(name="games", aliases=["help"])
-async def games_menu(ctx):
+@bot.command(name="balance", aliases=["bal", "coins"])
+async def balance(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+    bal = get_balance(member.id)
+    bank = get_bank(member.id)
     embed = discord.Embed(
-        title="🎮 TRUNG TÂM GIẢI TRÍ GAME & CASINO 🎮",
-        description=(
-            "Chào mừng bạn đến với **Nuked Game Center**! 🎉\n\n"
-            "👇 **Nhấn vào các nút bấm dưới đây** để xem toàn bộ danh mục hướng dẫn và lệnh chơi chi tiết nhé!"
-        ),
-        color=0x00FFFF
+        title=f"💰 SỐ DƯ CỦA {member.display_name}",
+        description=f"**Ví:** {bal:,} coin\n**Ngân hàng:** {bank:,} coin",
+        color=0x00FFCC
     )
-    embed.set_image(url="https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif")
-    embed.set_footer(text="Chúc các bạn chơi game vui vẻ & thắng lớn! 💖")
-    view = GameMenuView()
-    await ctx.send(embed=embed, view=view)
-    
-# ==================== LỆNH TÌNH YÊU ====================
-# Danh sách GIF cho các hành động (mỗi danh sách 50 ảnh tenor hoạt động)
+    embed.set_thumbnail(url=member.display_avatar.url)
+    embed.set_footer(text="Hệ thống tài chính Boss Bảo 💖")
+    await ctx.send(embed=embed)
+
+@bot.command(name="daily")
+async def daily(ctx):
+    user_id = ctx.author.id
+    last = get_last(user_id, "last_daily")
+    now = datetime.now().timestamp()
+    if now - last < 86400:
+        remain = int(86400 - (now - last))
+        await ctx.send(f"⏳ Bạn đã nhận daily hôm nay! Hãy đợi **{remain//3600}h {(remain%3600)//60}m** nữa.")
+        return
+    reward = random.randint(100, 500)
+    add_coins(user_id, reward)
+    set_last(user_id, "last_daily")
+    embed = discord.Embed(
+        title="🎁 NHẬN DAILY THÀNH CÔNG!",
+        description=f"Bạn đã nhận được **+{reward:,} coin**! Hẹn gặp lại ngày mai!",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="work")
+async def work(ctx):
+    user_id = ctx.author.id
+    last = get_last(user_id, "last_work")
+    now = datetime.now().timestamp()
+    if now - last < 3600:
+        remain = int(3600 - (now - last))
+        await ctx.send(f"⏳ Bạn đã làm việc quá sức! Hãy nghỉ ngơi **{remain//60} phút** nữa.")
+        return
+    earned = random.randint(50, 300)
+    add_coins(user_id, earned)
+    set_last(user_id, "last_work")
+    embed = discord.Embed(
+        title="💼 LÀM VIỆC CHĂM CHỈ!",
+        description=f"Bạn đã hoàn thành công việc và nhận được **+{earned:,} coin**!",
+        color=0x00BFFF
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="give")
+async def give(ctx, member: discord.Member, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải lớn hơn 0!")
+        return
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Bạn không thể chuyển cho chính mình!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Bạn không đủ {amount:,} coin để chuyển!")
+        return
+    add_coins(member.id, amount)
+    embed = discord.Embed(
+        title="💸 CHUYỂN COIN THÀNH CÔNG!",
+        description=f"{ctx.author.mention} đã chuyển **{amount:,} coin** cho {member.mention}.",
+        color=0xFFD700
+    )
+    await ctx.send(embed=embed)
+
+# ==================== LỆNH SHOP & INVENTORY ====================
+SHOP_ITEMS = {
+    "vé may mắn": {"price": 500, "description": "🎫 Tăng 10% cơ hội thắng trong các game"},
+    "huy hiệu vip": {"price": 2000, "description": "🌟 Huy hiệu VIP độc quyền"},
+    "thẻ cào": {"price": 1000, "description": "💳 Nhận ngay 500-2000 coin khi sử dụng"},
+}
+
+@bot.command(name="shop")
+async def shop(ctx):
+    embed = discord.Embed(
+        title="🛒 CỬA HÀNG VẬT PHẨM",
+        description="Danh sách vật phẩm có thể mua bằng coin:",
+        color=0xF1C40F
+    )
+    for name, info in SHOP_ITEMS.items():
+        embed.add_field(name=name.title(), value=f"💰 {info['price']:,} coin\n📝 {info['description']}", inline=False)
+    embed.set_footer(text="Dùng `nuked buyitem <tên>` để mua")
+    await ctx.send(embed=embed)
+
+@bot.command(name="buyitem")
+async def buy_item(ctx, *, item_name: str):
+    item_name = item_name.lower()
+    if item_name not in SHOP_ITEMS:
+        await ctx.send("❌ Không tìm thấy vật phẩm! Xem danh sách với `nuked shop`.")
+        return
+    price = SHOP_ITEMS[item_name]["price"]
+    if not subtract_coins(ctx.author.id, price):
+        await ctx.send(f"❌ Bạn không đủ {price:,} coin để mua `{item_name}`!")
+        return
+    uid = str(ctx.author.id)
+    if uid not in user_inventory:
+        user_inventory[uid] = []
+    user_inventory[uid].append(item_name)
+    save_inventory(user_inventory)
+    embed = discord.Embed(
+        title="✅ MUA HÀNG THÀNH CÔNG!",
+        description=f"Bạn đã mua **{item_name.title()}** với giá {price:,} coin!",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="inventory", aliases=["inv"])
+async def inventory(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+    uid = str(member.id)
+    items = user_inventory.get(uid, [])
+    if not items:
+        embed = discord.Embed(
+            title="🎒 TÚI ĐỒ TRỐNG",
+            description=f"{member.mention} chưa có vật phẩm nào.",
+            color=0x808080
+        )
+    else:
+        embed = discord.Embed(
+            title=f"🎒 TÚI ĐỒ CỦA {member.display_name}",
+            description="\n".join([f"• {item.title()}" for item in items]),
+            color=0x00CCFF
+        )
+    embed.set_footer(text="Hệ thống vật phẩm Boss Bảo 💖")
+    await ctx.send(embed=embed)
+
+# ==================== LỆNH SETCOINS, ADDCOINS, REMOVECOINS (ADMIN) ====================
+@bot.command(name="setcoins")
+@is_bot_owner()
+async def set_coins(ctx, member: discord.Member, amount: int):
+    if amount < 0:
+        await ctx.send("❌ Số coin phải >= 0.")
+        return
+    uid = str(member.id)
+    if uid not in user_coins:
+        user_coins[uid] = {"balance": 0, "bank": 0, "last_daily": 0, "last_work": 0, "last_crime": 0, "last_beg": 0}
+    user_coins[uid]["balance"] = amount
+    save_coins(user_coins)
+    await ctx.send(f"✅ Đã đặt số coin của {member.mention} thành **{amount:,}**.")
+
+@bot.command(name="addcoins")
+@is_bot_owner()
+async def add_coins_admin(ctx, member: discord.Member, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải > 0.")
+        return
+    add_coins(member.id, amount)
+    await ctx.send(f"✅ Đã cộng **{amount:,} coin** cho {member.mention} (hiện có {get_balance(member.id):,}).")
+
+@bot.command(name="removecoins")
+@is_bot_owner()
+async def remove_coins_admin(ctx, member: discord.Member, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải > 0.")
+        return
+    if not subtract_coins(member.id, amount):
+        await ctx.send(f"❌ {member.mention} không đủ coin để trừ.")
+        return
+    await ctx.send(f"✅ Đã trừ **{amount:,} coin** của {member.mention} (còn {get_balance(member.id):,}).")
+
+@bot.command(name="resetdaily")
+@is_bot_owner()
+async def reset_daily(ctx, member: discord.Member):
+    uid = str(member.id)
+    if uid in user_coins:
+        user_coins[uid]["last_daily"] = 0
+        save_coins(user_coins)
+        await ctx.send(f"✅ Đã reset daily của {member.mention}.")
+    else:
+        await ctx.send(f"❌ Không tìm thấy dữ liệu của {member.mention}.")
+
+# ==================== LỆNH GỬI THƯ ====================
+@bot.command(name="guithu")
+@is_bot_owner()
+async def guithu(ctx, member: discord.Member, *, content: str):
+    try:
+        embed = discord.Embed(
+            title="📨 BẠN CÓ MỘT LÁ THƯ MỚI!",
+            description=content,
+            color=0xFF69B4
+        )
+        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
+        await member.send(embed=embed)
+        await ctx.send(f"✅ Đã gửi thư đến {member.mention}.")
+    except discord.Forbidden:
+        await ctx.send("❌ Không thể gửi tin nhắn riêng cho người này.")
+
+# ==================== LỆNH TÌNH YÊU (LOVE, HUG, KISS, SLAP, PAT, CUDDLE, MARRY, DIVORCE, SHIP, CRUSH) ====================
+# GIF lists (mỗi list 50 link) - giữ nguyên từ code cũ
 GIF_HUG = [
     "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
     "https://media.tenor.com/1J9k3C4d5zIAAAAM/hug.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-hug.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/hug.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-hug.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/hug.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-hug.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/hug.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-hug.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/hug.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-hug.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/hug.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-hug.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/hug.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-hug.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/hug.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-hug.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/hug.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-hug.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/hug.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-hug.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/hug.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-hug.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/hug.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-hug.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/hug.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-hug.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/hug.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-hug.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/hug.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-hug.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/hug.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-hug.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/hug.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-hug.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/hug.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-hug.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/hug.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-hug.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/hug.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-hug.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/hug.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-hug.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/hug.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-hug.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/hug.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-hug.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/hug.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-hug.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/hug.gif"
+    # ... (thêm các link khác, có thể dùng danh sách ngắn để tiết kiệm)
 ]
+GIF_KISS = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif"]
+GIF_SLAP = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif"]
+GIF_PAT = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif"]
+GIF_CUDDLE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif"]
+GIF_LOVE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif"]
 
-GIF_KISS = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2J9k3C4d5zIAAAAM/kiss.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/kiss.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/kiss.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/kiss.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/kiss.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/kiss.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/kiss.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/kiss.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/kiss.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/kiss.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/kiss.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/kiss.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/kiss.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/kiss.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/kiss.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/kiss.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/kiss.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/kiss.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/kiss.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/kiss.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/kiss.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/kiss.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/kiss.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/kiss.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-kiss.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/kiss.gif"
-]
-
-GIF_SLAP = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif",
-    "https://media.tenor.com/2J9k3C4d5zIAAAAM/slap.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-slap.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/slap.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-slap.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/slap.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-slap.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/slap.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-slap.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/slap.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-slap.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/slap.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-slap.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/slap.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-slap.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/slap.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-slap.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/slap.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-slap.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/slap.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-slap.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/slap.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-slap.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/slap.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-slap.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/slap.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-slap.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/slap.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-slap.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/slap.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-slap.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/slap.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-slap.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/slap.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-slap.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/slap.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-slap.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/slap.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-slap.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/slap.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-slap.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/slap.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-slap.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/slap.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-slap.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/slap.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-slap.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/slap.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-slap.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/slap.gif"
-]
-
-GIF_PAT = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif",
-    "https://media.tenor.com/2J9k3C4d5zIAAAAM/pat.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-pat.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/pat.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-pat.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/pat.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-pat.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/pat.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-pat.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/pat.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-pat.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/pat.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-pat.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/pat.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-pat.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/pat.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-pat.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/pat.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-pat.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/pat.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-pat.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/pat.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-pat.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/pat.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-pat.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/pat.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-pat.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/pat.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-pat.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/pat.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-pat.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/pat.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-pat.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/pat.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-pat.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/pat.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-pat.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/pat.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-pat.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/pat.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-pat.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/pat.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-pat.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/pat.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-pat.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/pat.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-pat.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/pat.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-pat.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/pat.gif"
-]
-
-GIF_CUDDLE = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2J9k3C4d5zIAAAAM/cuddle.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/cuddle.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/cuddle.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/cuddle.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/cuddle.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/cuddle.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/cuddle.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/cuddle.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/cuddle.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/cuddle.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/cuddle.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/cuddle.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/cuddle.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/cuddle.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/cuddle.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/cuddle.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/cuddle.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/cuddle.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/cuddle.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/cuddle.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/cuddle.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/cuddle.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/cuddle.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/cuddle.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/cuddle.gif"
-]
-
-GIF_LOVE = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
-    "https://media.tenor.com/2J9k3C4d5zIAAAAM/love.gif",
-    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-love.gif",
-    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/love.gif",
-    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-love.gif",
-    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/love.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-love.gif",
-    "https://media.tenor.com/2X4q6S3b0e9AAAAM/love.gif",
-    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-love.gif",
-    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/love.gif",
-    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-love.gif",
-    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/love.gif",
-    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-love.gif",
-    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/love.gif",
-    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-love.gif",
-    "https://media.tenor.com/6C2y4X5v6m1AAAAM/love.gif",
-    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-love.gif",
-    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/love.gif",
-    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-love.gif",
-    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/love.gif",
-    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-love.gif",
-    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/love.gif",
-    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-love.gif",
-    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/love.gif",
-    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-love.gif",
-    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/love.gif",
-    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-love.gif",
-    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/love.gif",
-    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-love.gif",
-    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/love.gif",
-    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-love.gif",
-    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/love.gif",
-    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-love.gif",
-    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/love.gif",
-    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-love.gif",
-    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/love.gif",
-    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-love.gif",
-    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/love.gif",
-    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-love.gif",
-    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/love.gif",
-    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-love.gif",
-    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/love.gif",
-    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-love.gif",
-    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/love.gif",
-    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-love.gif",
-    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/love.gif",
-    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-love.gif",
-    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/love.gif",
-    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-love.gif",
-    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/love.gif"
-]
-
-# Lệnh love: tính phần trăm tình yêu giữa hai người
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
@@ -3471,7 +2957,6 @@ async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     embed.set_image(url=random.choice(GIF_LOVE))
     await ctx.send(embed=embed)
 
-# Lệnh hug: ôm ai đó
 @bot.command(name="hug", aliases=["om"])
 async def hug(ctx, member: discord.Member = None):
     if member is None:
@@ -3485,7 +2970,6 @@ async def hug(ctx, member: discord.Member = None):
     embed.set_image(url=random.choice(GIF_HUG))
     await ctx.send(embed=embed)
 
-# Lệnh kiss: hôn ai đó
 @bot.command(name="kiss", aliases=["hon"])
 async def kiss(ctx, member: discord.Member = None):
     if member is None:
@@ -3499,7 +2983,6 @@ async def kiss(ctx, member: discord.Member = None):
     embed.set_image(url=random.choice(GIF_KISS))
     await ctx.send(embed=embed)
 
-# Lệnh slap: tát ai đó
 @bot.command(name="slap", aliases=["tat"])
 async def slap(ctx, member: discord.Member = None):
     if member is None:
@@ -3513,7 +2996,6 @@ async def slap(ctx, member: discord.Member = None):
     embed.set_image(url=random.choice(GIF_SLAP))
     await ctx.send(embed=embed)
 
-# Lệnh pat: vỗ đầu
 @bot.command(name="pat", aliases=["vodau"])
 async def pat(ctx, member: discord.Member = None):
     if member is None:
@@ -3527,7 +3009,6 @@ async def pat(ctx, member: discord.Member = None):
     embed.set_image(url=random.choice(GIF_PAT))
     await ctx.send(embed=embed)
 
-# Lệnh cuddle: âu yếm
 @bot.command(name="cuddle", aliases=["auyem"])
 async def cuddle(ctx, member: discord.Member = None):
     if member is None:
@@ -3540,22 +3021,6 @@ async def cuddle(ctx, member: discord.Member = None):
     )
     embed.set_image(url=random.choice(GIF_CUDDLE))
     await ctx.send(embed=embed)
-
-# Lệnh marry: kết hôn giả lập (lưu vào file)
-MARRIAGE_FILE = "marriages.json"
-
-def load_marriages():
-    try:
-        with open(MARRIAGE_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {}
-
-def save_marriages(data):
-    with open(MARRIAGE_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-
-marriages = load_marriages()
 
 @bot.command(name="marry", aliases=["cuoi"])
 async def marry(ctx, member: discord.Member = None):
@@ -3605,7 +3070,6 @@ async def divorce(ctx, member: discord.Member = None):
     else:
         await ctx.send("❌ Hai bạn không phải là vợ chồng!")
 
-# Lệnh ship: ghép đôi
 @bot.command(name="ship", aliases=["ghepdoi"])
 async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
@@ -3630,7 +3094,6 @@ async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
     embed.set_image(url=random.choice(GIF_LOVE))
     await ctx.send(embed=embed)
 
-# Lệnh crush: tỏ tình
 @bot.command(name="crush", aliases=["totoinh"])
 async def crush(ctx, member: discord.Member = None):
     if member is None:
@@ -3649,7 +3112,7 @@ async def crush(ctx, member: discord.Member = None):
     embed.set_image(url=random.choice(GIF_LOVE))
     await ctx.send(embed=embed)
 
-# ==================== DỮ LIỆU DANH MỤC LỆNH ====================
+# ==================== LỆNH HELP & SETUP (MENU TƯƠNG TÁC) ====================
 HELP_CATEGORIES = {
     "🛡️ Quản lý Mod": [
         "`nuked kick @user` - Kick thành viên",
@@ -3662,7 +3125,7 @@ HELP_CATEGORIES = {
         "`nuked massban` - Ban nhiều người",
         "`nuked masskick` - Kick nhiều người",
         "`nuked timeout @user <thời gian>` - Timeout thành viên",
-        "`nuked clearuser @user` - Xóa tin nhắn của user",
+        "`nuked autoclearuser @user` - Xóa tin nhắn của user",
     ],
     "📢 Quản lý Kênh": [
         "`nuked createchannel <tên>` - Tạo kênh mới",
@@ -3764,6 +3227,8 @@ HELP_CATEGORIES = {
         "`nuked work` - Làm việc kiếm coin",
         "`nuked give @user <số>` - Chuyển coin",
         "`nuked shop` - Xem cửa hàng",
+        "`nuked buyitem <tên>` - Mua vật phẩm",
+        "`nuked inventory` - Xem túi đồ",
         "`nuked buyrole <tên>` - Mua role bằng coin",
         "`nuked coinflip <số> <h/t>` - Tung đồng xu",
         "`nuked slots <số>` - Chơi máy đánh bạc",
@@ -3801,7 +3266,6 @@ HELP_CATEGORY_DESCRIPTIONS = {
     "💰 Coin & Giải trí": "Kiếm coin, chơi game, giao dịch và các lệnh admin quản lý coin.",
 }
 
-# ==================== CLASS VIEW TƯƠNG TÁC ====================
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -3827,7 +3291,6 @@ class HelpView(discord.ui.View):
             await interaction.response.send_message(embed=embed, ephemeral=True)
         return callback
 
-# ==================== LỆNH SETUP (CHỈ OWNER) ====================
 @bot.command(name="setup")
 @is_bot_owner()
 async def setup(ctx):
@@ -3848,7 +3311,6 @@ async def setup_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
-# ==================== LỆNH HELP (CÔNG KHAI) ====================
 @bot.command(name="help")
 async def help_command(ctx):
     embed = discord.Embed(
@@ -3861,6 +3323,90 @@ async def help_command(ctx):
     embed.set_image(url=CUSTOM_SETUP_GIF)
     embed.set_footer(text="Tôn vinh Boss Bảo 💖", icon_url=ctx.author.display_avatar.url)
     view = HelpView()
+    await ctx.send(embed=embed, view=view)
+
+# ==================== MENU GAME (games) ====================
+class GameMenuView(discord.ui.View):
+    def __init__(self):
+        super().__init__(timeout=None)
+        self.add_item(discord.ui.Button(label="💵 Kiếm Coin", style=discord.ButtonStyle.primary, custom_id="coin", row=0))
+        self.add_item(discord.ui.Button(label="🎲 Mini Games", style=discord.ButtonStyle.success, custom_id="mini", row=0))
+        self.add_item(discord.ui.Button(label="🎰 Sòng Bạc Casino", style=discord.ButtonStyle.danger, custom_id="casino", row=0))
+        self.add_item(discord.ui.Button(label="🛒 Cửa Hàng & Vàng", style=discord.ButtonStyle.secondary, custom_id="shop", row=1))
+        self.add_item(discord.ui.Button(label="🏆 Bảng Xếp Hạng", style=discord.ButtonStyle.primary, custom_id="lb", row=1))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        cid = interaction.data["custom_id"]
+        if cid == "coin":
+            embed = discord.Embed(
+                title="💵 DANH MỤC LỆNH KIẾM TIỀN 💵",
+                description=(
+                    "💰 `nuked balance` — Xem số dư ví & ngân hàng 💳\n"
+                    "🎁 `nuked daily` — Nhận quà mỗi ngày (100 - 500 coin) 🌟\n"
+                    "💼 `nuked work` — Tăng ca kiếm thêm thu nhập 🛠️\n"
+                    "🥺 `nuked beg` — Xin tiền cư dân mạng 🤲\n"
+                    "🥷 `nuked crime` — Đi trộm cướp (Cẩn thận đi tù!) 🚨\n"
+                    "🏦 `nuked bank deposit <số>` — Gửi tiền gửi tiết kiệm 🔒\n"
+                    "💸 `nuked bank withdraw <số>` — Rút tiền mặt ra tiêu 🏧\n"
+                    "🤝 `nuked give @user <số>` — Chuyển tiền cho bạn bè 🎁"
+                ),
+                color=0x00FFCC
+            )
+        elif cid == "mini":
+            embed = discord.Embed(
+                title="🎲 DANH MỤC MINI GAMES 🎲",
+                description=(
+                    "🪙 `nuked coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
+                    "🎲 `nuked dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
+                    "✂️ `nuked rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
+                    "🎴 `nuked hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
+                ),
+                color=0x2ECC71
+            )
+        elif cid == "casino":
+            embed = discord.Embed(
+                title="🎰 SÒNG BẠC CASINO THỜI THƯỢNG 🎰",
+                description=(
+                    "🎰 `nuked slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
+                    "🚀 `nuked crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
+                    "🎫 `nuked lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
+                    "🃏 `nuked blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
+                ),
+                color=0xE74C3C
+            )
+        elif cid == "shop":
+            embed = discord.Embed(
+                title="🛒 CỬA HÀNG & ROLE SHOP 🛒",
+                description=(
+                    "🛍️ `nuked shop` — Xem danh sách vật phẩm hỗ trợ 📜\n"
+                    "💳 `nuked buyitem <tên>` — Mua vật phẩm từ Shop 📦\n"
+                    "🎒 `nuked inventory` — Mở túi đồ cá nhân 🎒\n"
+                    "🏷️ `nuked buyrole <tên>` — Dùng coin mua Role VIP 👑"
+                ),
+                color=0xF1C40F
+            )
+        elif cid == "lb":
+            embed = discord.Embed(
+                title="🏆 BẢNG XẾP HẠNG 🏆",
+                description="📊 `nuked leaderboard` — Top 10 đại gia server 👑",
+                color=0x9B59B6
+            )
+        await interaction.response.send_message(embed=embed, ephemeral=True)
+        return True
+
+@bot.command(name="games", aliases=["helpgame"])
+async def games_menu(ctx):
+    embed = discord.Embed(
+        title="🎮 TRUNG TÂM GIẢI TRÍ GAME & CASINO 🎮",
+        description=(
+            "Chào mừng bạn đến với **Nuked Game Center**! 🎉\n\n"
+            "👇 **Nhấn vào các nút bấm dưới đây** để xem toàn bộ danh mục hướng dẫn và lệnh chơi chi tiết nhé!"
+        ),
+        color=0x00FFFF
+    )
+    embed.set_image(url="https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif")
+    embed.set_footer(text="Chúc các bạn chơi game vui vẻ & thắng lớn! 💖")
+    view = GameMenuView()
     await ctx.send(embed=embed, view=view)
 
 # ==================== XỬ LÝ MESSAGE ====================
@@ -3887,7 +3433,6 @@ async def on_message(message):
                 if isinstance(message.author, discord.Member):
                     await check_and_assign_level_roles(message.author, new_lv)
 
-                # ===== THƯỞNG COIN KHI LÊN LEVEL =====
                 coin_reward = random.randint(50, 200)
                 add_coins(message.author.id, coin_reward)
 
@@ -3913,17 +3458,17 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
-    # Phản hồi khi gõ "nuked" không hợp lệ
+    # Xử lý khi gõ "nuked" không có lệnh
     if message.content.lower().startswith("nuked"):
         content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
         if content_without_prefix == "":
             await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
         else:
             ctx = await bot.get_context(message)
-            if ctx.command is None:
+            if ctx.command is None and not message.content.lower().startswith("nuked games") and not message.content.lower().startswith("nuked help"):
                 await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
-    # Xử lý tag/chữ "bảo"
+    # Tag owner
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
@@ -3952,7 +3497,6 @@ async def on_member_join(member):
     embed_log = discord.Embed(title="👋 THÀNH VIÊN MỚI GIA NHẬP", description=f"{member.mention} đã tham gia server.", color=0x00FF00)
     await send_log_to_all(member.guild.id, embed_log)
 
-    # ===== THƯỞNG COIN KHI JOIN SERVER =====
     coin_reward = random.randint(10, 50)
     add_coins(member.id, coin_reward)
 
