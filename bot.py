@@ -32,6 +32,7 @@ def get_prefix(bot, message):
 bot = commands.Bot(command_prefix=get_prefix, intents=intents, help_command=None)
 
 spam_task_running = None
+bot_enabled = True  # Trạng thái hoạt động của bot
 
 SERVER_LOG_CHANNELS = {}
 WELCOME_CHANNELS = {}
@@ -1418,9 +1419,10 @@ async def admin_commands(ctx):
 @bot.command(name="off")
 @is_bot_owner()
 async def off_command(ctx, *, command_name: str = None):
+    global bot_enabled
     if command_name is None:
-        await ctx.send("🛑 Boss Bảo đã yêu cầu tắt bot. Tạm biệt!")
-        await bot.close()
+        bot_enabled = False
+        await ctx.send("🛑 Boss Bảo đã tạm dừng bot. Gõ `nuked on` để bật lại.")
         return
     cmd = bot.get_command(command_name.lower())
     if cmd is None:
@@ -1444,8 +1446,13 @@ async def off_error(ctx, error):
 @bot.command(name="on")
 @is_bot_owner()
 async def on_command(ctx, *, command_name: str = None):
+    global bot_enabled
     if command_name is None:
-        await ctx.send("🤖 Bot đang hoạt động bình thường!")
+        if bot_enabled:
+            await ctx.send("🤖 Bot đang hoạt động bình thường!")
+        else:
+            bot_enabled = True
+            await ctx.send("✅ Bot đã hoạt động trở lại!")
         return
     cmd = bot.get_command(command_name.lower())
     if cmd is None:
@@ -1466,6 +1473,10 @@ async def on_error(ctx, error):
 # ==================== GLOBAL CHECK: KIỂM TRA LỆNH BỊ TẮT ====================
 @bot.check
 async def globally_disabled_check(ctx):
+    if not bot_enabled:
+        if ctx.command and ctx.command.name != "on":
+            await ctx.send("🛑 Bot đang tạm dừng. Gõ `nuked on` để bật lại.")
+            return False
     if ctx.command and ctx.command.name in DISABLED_COMMANDS:
         await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `nuked on {ctx.command.name}` để bật lại.")
         return False
