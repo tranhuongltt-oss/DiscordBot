@@ -2659,6 +2659,247 @@ async def autoclear_channel_error(ctx, error):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
+# ==================== HỆ THỐNG COIN & VUI CHƠI ====================
+COIN_FILE = "coins.json"
+
+def load_coins():
+    try:
+        with open(COIN_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {}
+
+def save_coins(data):
+    with open(COIN_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2, ensure_ascii=False)
+
+user_coins = load_coins()
+
+def get_balance(user_id):
+    return user_coins.get(str(user_id), {}).get("balance", 0)
+
+def set_balance(user_id, amount):
+    user_id = str(user_id)
+    if user_id not in user_coins:
+        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0}
+    user_coins[user_id]["balance"] = max(0, amount)
+    save_coins(user_coins)
+
+def add_coins(user_id, amount):
+    set_balance(user_id, get_balance(user_id) + amount)
+
+def subtract_coins(user_id, amount):
+    if get_balance(user_id) < amount:
+        return False
+    set_balance(user_id, get_balance(user_id) - amount)
+    return True
+
+def get_last_daily(user_id):
+    return user_coins.get(str(user_id), {}).get("last_daily", 0)
+
+def set_last_daily(user_id):
+    user_id = str(user_id)
+    if user_id not in user_coins:
+        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0}
+    user_coins[user_id]["last_daily"] = datetime.now().timestamp()
+    save_coins(user_coins)
+
+def get_last_work(user_id):
+    return user_coins.get(str(user_id), {}).get("last_work", 0)
+
+def set_last_work(user_id):
+    user_id = str(user_id)
+    if user_id not in user_coins:
+        user_coins[user_id] = {"balance": 0, "last_daily": 0, "last_work": 0}
+    user_coins[user_id]["last_work"] = datetime.now().timestamp()
+    save_coins(user_coins)
+
+SHOP_ITEMS = {
+    "VIP": 1000,
+    "Rich": 5000,
+    "Legend": 10000,
+}
+
+# Lệnh xem số dư coin
+@bot.command(name="balance", aliases=["coin"])
+async def balance(ctx, member: discord.Member = None):
+    if member is None:
+        member = ctx.author
+    bal = get_balance(member.id)
+    embed = discord.Embed(
+        title="💰 SỐ DƯ COIN",
+        description=f"{member.mention} đang có **{bal} coin**.",
+        color=0xFFD700
+    )
+    embed.set_thumbnail(url=member.display_avatar.url)
+    await ctx.send(embed=embed)
+
+# Lệnh nhận coin hàng ngày
+@bot.command(name="daily")
+async def daily(ctx):
+    user_id = ctx.author.id
+    last = get_last_daily(user_id)
+    now = datetime.now().timestamp()
+    if now - last < 86400:
+        remaining = int(86400 - (now - last))
+        hours, remainder = divmod(remaining, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        await ctx.send(f"⏳ Bạn đã nhận daily hôm nay rồi! Quay lại sau **{hours} giờ {minutes} phút**.")
+        return
+    add_coins(user_id, 100)
+    set_last_daily(user_id)
+    embed = discord.Embed(
+        title="🎁 ĐIỂM DANH HÀNG NGÀY",
+        description=f"Bạn nhận được **100 coin**! Tổng: **{get_balance(user_id)} coin**.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+# Lệnh đi làm kiếm coin (cooldown 1 giờ)
+@bot.command(name="work")
+async def work(ctx):
+    user_id = ctx.author.id
+    last = get_last_work(user_id)
+    now = datetime.now().timestamp()
+    if now - last < 3600:
+        remaining = int(3600 - (now - last))
+        minutes, seconds = divmod(remaining, 60)
+        await ctx.send(f"⏳ Bạn quá mệt rồi! Nghỉ **{minutes} phút {seconds} giây** nữa nhé.")
+        return
+    earned = random.randint(50, 150)
+    add_coins(user_id, earned)
+    set_last_work(user_id)
+    embed = discord.Embed(
+        title="💼 LÀM VIỆC",
+        description=f"Bạn đã làm việc chăm chỉ và kiếm được **{earned} coin**! Tổng: **{get_balance(user_id)} coin**.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+# Lệnh chuyển coin cho người khác
+@bot.command(name="give", aliases=["transfer"])
+async def give_coins(ctx, member: discord.Member, amount: int):
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Bạn không thể chuyển coin cho chính mình!")
+        return
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send("❌ Bạn không đủ coin để chuyển!")
+        return
+    add_coins(member.id, amount)
+    embed = discord.Embed(
+        title="💸 CHUYỂN COIN THÀNH CÔNG",
+        description=f"{ctx.author.mention} đã chuyển **{amount} coin** cho {member.mention}.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+# Lệnh xem cửa hàng
+@bot.command(name="shop")
+async def shop(ctx):
+    embed = discord.Embed(
+        title="🛒 CỬA HÀNG COIN",
+        description="Mua role bằng coin nhé!",
+        color=0xFFD700
+    )
+    for item, price in SHOP_ITEMS.items():
+        embed.add_field(name=item, value=f"Giá: {price} coin", inline=False)
+    embed.set_footer(text="Dùng lệnh `nuked buyrole <tên>` để mua.")
+    await ctx.send(embed=embed)
+
+# Lệnh mua role bằng coin
+@bot.command(name="buyrole")
+async def buyrole(ctx, role_name: str):
+    role_name = role_name.capitalize()
+    if role_name not in SHOP_ITEMS:
+        await ctx.send("❌ Role không có trong cửa hàng! Dùng `nuked shop` để xem.")
+        return
+    price = SHOP_ITEMS[role_name]
+    if not subtract_coins(ctx.author.id, price):
+        await ctx.send(f"❌ Bạn cần **{price} coin** để mua role {role_name}. Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    # Tìm hoặc tạo role
+    role = discord.utils.get(ctx.guild.roles, name=role_name)
+    if not role:
+        try:
+            role = await ctx.guild.create_role(name=role_name, hoist=True)
+        except:
+            add_coins(ctx.author.id, price)  # hoàn lại nếu tạo role lỗi
+            await ctx.send("❌ Không thể tạo role, đã hoàn coin.")
+            return
+    try:
+        await ctx.author.add_roles(role)
+    except:
+        add_coins(ctx.author.id, price)
+        await ctx.send("❌ Không thể gán role, đã hoàn coin.")
+        return
+    embed = discord.Embed(
+        title="🎉 MUA ROLE THÀNH CÔNG",
+        description=f"{ctx.author.mention} đã mua role **{role.name}** với giá **{price} coin**.",
+        color=0x00FF00
+    )
+    await ctx.send(embed=embed)
+
+# Lệnh coinflip (tung đồng xu)
+@bot.command(name="coinflip", aliases=["cf"])
+async def coinflip(ctx, amount: int, choice: str):
+    choice = choice.lower()
+    if choice not in ["h", "t"]:
+        await ctx.send("❌ Chọn `h` (mặt ngửa) hoặc `t` (mặt sấp).")
+        return
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    result = random.choice(["h", "t"])
+    if result == choice:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        result_text = "thắng"
+    else:
+        winnings = 0
+        result_text = "thua"
+    embed = discord.Embed(
+        title="🪙 TUNG ĐỒNG XU",
+        description=f"Kết quả: **{result.upper()}**\nBạn đã **{result_text}**!",
+        color=0x00FF00 if winnings > 0 else 0xFF0000
+    )
+    embed.add_field(name="Số dư hiện tại", value=f"{get_balance(ctx.author.id)} coin")
+    await ctx.send(embed=embed)
+
+# Lệnh slots (máy đánh bạc đơn giản)
+@bot.command(name="slots")
+async def slots(ctx, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, amount):
+        await ctx.send(f"❌ Không đủ coin! Hiện có: {get_balance(ctx.author.id)} coin.")
+        return
+    icons = ["🍒", "🍋", "🔔", "💎", "7️⃣"]
+    results = [random.choice(icons) for _ in range(3)]
+    if results[0] == results[1] == results[2]:
+        winnings = amount * 5
+        add_coins(ctx.author.id, winnings)
+        message = f"🎉 JACKPOT! {results[0]} {results[1]} {results[2]} - Bạn nhận {winnings} coin!"
+    elif results[0] == results[1] or results[1] == results[2] or results[0] == results[2]:
+        winnings = amount * 2
+        add_coins(ctx.author.id, winnings)
+        message = f"🍀 Hai giống nhau! {results[0]} {results[1]} {results[2]} - Bạn nhận {winnings} coin!"
+    else:
+        winnings = 0
+        message = f"😢 Không có gì! {results[0]} {results[1]} {results[2]} - Bạn mất {amount} coin."
+    embed = discord.Embed(
+        title="🎰 SLOTS MACHINE",
+        description=message,
+        color=0xFFD700 if winnings > 0 else 0xFF0000
+    )
+    embed.add_field(name="Số dư hiện tại", value=f"{get_balance(ctx.author.id)} coin")
+    await ctx.send(embed=embed)        
 # ==================== LỆNH GUITHU ====================
 @bot.command(name="guithu")
 async def guithu(ctx, member: discord.Member, *, noidung: str = None):
