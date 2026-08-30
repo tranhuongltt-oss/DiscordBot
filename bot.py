@@ -3570,8 +3570,7 @@ HELP_CATEGORIES = {
         "`nuked coinflip <số> <h/t>` - Tung đồng xu",
         "`nuked slots <số>` - Chơi máy đánh bạc",
     ],
-    
-}
+ ]
 
 HELP_CATEGORY_DESCRIPTIONS = {
     "🛡️ Quản lý Mod": "Các lệnh quản lý thành viên như kick, ban, mute, warn, timeout...",
