@@ -7,18 +7,19 @@ from discord.ext import commands
 import aiohttp
 from datetime import timedelta, datetime
 import json
-import math
+import math  # Thêm import math để dùng trong shop
 
-# ==================== KEEP_ALIVE ====================
+# ==================== KEEP_ALIVE (xử lý nếu không có file) ====================
 try:
     from keep_alive import keep_alive
 except ImportError:
     def keep_alive():
         pass
 
-# ==================== CẤU HÌNH ====================
+# ==================== CẤU HÌNH HỆ THỐNG ====================
 DISCORD_TOKEN = os.getenv("TOKEN")
 
+# Danh sách ID của Boss Bảo và các đồng minh ủy quyền
 BOT_OWNERS = [
     1540585511842881616, 1542453882263707759, 1502969774202814625,
 ]
@@ -30,32 +31,34 @@ intents.guilds = True
 intents.bans = True
 
 def get_prefix(bot, message):
+    # Hỗ trợ cả "nuked " và "nuked" (không có space)
     if message.content.lower().startswith("nuked "):
         return "nuked "
     elif message.content.lower().startswith("nuked"):
         return "nuked"
-    return "nuked "
+    return "nuked "  # fallback
 
-# CHỈ MỘT DÒNG DUY NHẤT
+# CHỈ MỘT DÒNG bot – KHÔNG KHAI BÁO LẠI Ở DƯỚI
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
-bot.remove_command('help')
+bot.remove_command('help') # Xóa bỏ lệnh help gốc của discord.py
 
 spam_task_running = None
-bot_enabled = True
+bot_enabled = True  # Trạng thái hoạt động của bot
 
 SERVER_LOG_CHANNELS = {}
 WELCOME_CHANNELS = {}
 GOODBYE_CHANNELS = {}
 SERVER_LEVEL_CHANNELS = {}
-DISABLED_COMMANDS = set()
+DISABLED_COMMANDS = set()  # Danh sách lệnh bị tắt
 
+# Cấu hình các file lưu trữ dữ liệu JSON
 LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
 COIN_FILE = "coins.json"
 INVENTORY_FILE = "inventory.json"
 MARRIAGE_FILE = "marriages.json"
 
-# ==================== HÀM LƯU TRỮ JSON ====================
+# ==================== LƯU TRỮ & TẢI DỮ LIỆU JSON ====================
 def load_levels():
     global USER_LEVELS
     try:
@@ -127,6 +130,7 @@ def save_marriages(data):
     with open(MARRIAGE_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+# Khởi tạo dữ liệu ban đầu
 USER_LEVELS = {}
 user_coins = load_coins()
 user_inventory = load_inventory()
@@ -141,7 +145,6 @@ NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/
 def get_required_exp(level: int) -> int:
     return level * 100
 
-# ==================== ROAST_LINES ====================
 ROAST_LINES = [
     "# Lồn mẹ mày nát bét như tương, bị địt đến không còn + chảy lênh! {username}",
     "# Đéo biết xấu hổ, lồn mẹ mày thối như cứt + xác chết đầy dòi bọ! {username}",
@@ -286,7 +289,7 @@ def is_bot_owner():
         return ctx.author.id in BOT_OWNERS
     return commands.check(predicate)
 
-# ==================== HÀM GỬI LOG ====================
+# ==================== HÀM GỬI LOG ĐẾN CÁC KÊNH LOG ====================
 async def send_log_to_all(guild_id, embed):
     for g_id, ch_id in SERVER_LOG_CHANNELS.items():
         if int(g_id) == guild_id:
@@ -297,7 +300,7 @@ async def send_log_to_all(guild_id, embed):
                 except:
                     pass
 
-# ==================== NUKE CONFIRM VIEW ====================
+# ==================== VIEW XÁC NHẬN NUKE ====================
 class NukeConfirmView(discord.ui.View):
     def __init__(self, guild: discord.Guild, channel: discord.abc.Messageable):
         super().__init__(timeout=60)
@@ -425,7 +428,7 @@ async def execute_nuke(guild):
     except Exception as e:
         print(f"Lỗi khi thực hiện nuke: {e}")
 
-# ==================== LEVEL ROLES ====================
+# ==================== HỆ THỐNG GÁN ROLE THEO LEVEL ====================
 async def check_and_assign_level_roles(member: discord.Member, current_level: int):
     role_permissions_map = {
         20: {"name": "LV 20 - Ping Everyone", "perms": discord.Permissions(mention_everyone=True)},
@@ -435,6 +438,7 @@ async def check_and_assign_level_roles(member: discord.Member, current_level: in
         500: {"name": "LV 500 - Admin Server", "perms": discord.Permissions(administrator=True)},
         670: {"name": "LV 670 - Owner Server", "perms": discord.Permissions(administrator=True)}
     }
+
     for req_lv, r_data in role_permissions_map.items():
         if current_level >= req_lv:
             role = discord.utils.get(member.guild.roles, name=r_data["name"])
@@ -449,7 +453,7 @@ async def check_and_assign_level_roles(member: discord.Member, current_level: in
                 except:
                     pass
 
-# ==================== CÁC LỆNH CHÍNH ====================
+# ==================== LỆNH LOG ====================
 @bot.command(name="log")
 @is_bot_owner()
 async def setlog(ctx, channel: discord.TextChannel = None):
@@ -458,15 +462,21 @@ async def setlog(ctx, channel: discord.TextChannel = None):
             if ctx.guild.id in SERVER_LOG_CHANNELS:
                 del SERVER_LOG_CHANNELS[ctx.guild.id]
                 save_config()
-                embed = discord.Embed(title="🔇 ĐÃ TẮT LOG SỰ KIỆN", description="🎉 Hệ thống đã ngừng gửi log sự kiện!", color=0x00FF00)
+                embed = discord.Embed(
+                    title="🔇 ĐÃ TẮT LOG SỰ KIỆN",
+                    description="🎉 Hệ thống đã ngừng gửi log sự kiện!",
+                    color=0x00FF00
+                )
                 embed.set_footer(text="Boss Bảo đã tắt log 💖")
                 await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(
                     title="⚠️ CHƯA CÀI ĐẶT LOG",
-                    description=("🔹 Hiện chưa có kênh log nào được cài đặt.\n"
-                                 "🔹 **Cú pháp:** `nuked log #kênh`\n"
-                                 "🔹 **Ví dụ:** `nuked log #log`"),
+                    description=(
+                        "🔹 Hiện chưa có kênh log nào được cài đặt.\n"
+                        "🔹 **Cú pháp:** `nuked log #kênh`\n"
+                        "🔹 **Ví dụ:** `nuked log #log`"
+                    ),
                     color=0xFF9900
                 )
                 embed.set_footer(text="Hệ thống log tự động phục vụ Boss Bảo 💖")
@@ -519,6 +529,7 @@ async def setlog_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH SETWELCOME ====================
 @bot.command(name="setwelcome")
 @is_bot_owner()
 async def set_welcome(ctx, channel: discord.TextChannel = None):
@@ -526,7 +537,11 @@ async def set_welcome(ctx, channel: discord.TextChannel = None):
         if ctx.guild.id in WELCOME_CHANNELS:
             del WELCOME_CHANNELS[ctx.guild.id]
             save_config()
-            embed = discord.Embed(title="✅ ĐÃ TẮT KÊNH CHÀO MỪNG", description="🎉 Hệ thống đã ngừng gửi tin nhắn chào mừng!", color=0x00FF00)
+            embed = discord.Embed(
+                title="✅ ĐÃ TẮT KÊNH CHÀO MỪNG",
+                description="🎉 Hệ thống đã ngừng gửi tin nhắn chào mừng!",
+                color=0x00FF00
+            )
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
@@ -553,6 +568,7 @@ async def set_welcome_error(ctx, error):
     else:
         await ctx.send(f"❌ Cú pháp đúng: `nuked setwelcome #kênh` hoặc `nuked setwelcome` để tắt")
 
+# ==================== LỆNH SETGOODBYE ====================
 @bot.command(name="setgoodbye")
 @is_bot_owner()
 async def set_goodbye(ctx, channel: discord.TextChannel = None):
@@ -560,7 +576,11 @@ async def set_goodbye(ctx, channel: discord.TextChannel = None):
         if ctx.guild.id in GOODBYE_CHANNELS:
             del GOODBYE_CHANNELS[ctx.guild.id]
             save_config()
-            embed = discord.Embed(title="✅ ĐÃ TẮT KÊNH TẠM BIỆT", description="🎉 Hệ thống đã ngừng gửi tin nhắn tạm biệt!", color=0x00FF00)
+            embed = discord.Embed(
+                title="✅ ĐÃ TẮT KÊNH TẠM BIỆT",
+                description="🎉 Hệ thống đã ngừng gửi tin nhắn tạm biệt!",
+                color=0x00FF00
+            )
             await ctx.send(embed=embed)
         else:
             embed = discord.Embed(
@@ -587,6 +607,7 @@ async def set_goodbye_error(ctx, error):
     else:
         await ctx.send(f"❌ Cú pháp đúng: `nuked setgoodbye #kênh` hoặc `nuked setgoodbye` để tắt")
 
+# ==================== LỆNH SETLV ====================
 @bot.command(name="setlv")
 @is_bot_owner()
 async def set_level(ctx, level: int, member: discord.Member):
@@ -618,6 +639,7 @@ async def set_level_error(ctx, error):
     else:
         await ctx.send(f"❌ Cú pháp đúng: `nuked setlv <level> @user`")
 
+# ==================== LỆNH LV ====================
 @bot.command(name="lv")
 async def check_user_level(ctx, member: discord.Member = None):
     if member is None:
@@ -641,6 +663,7 @@ async def check_user_level(ctx, member: discord.Member = None):
 async def check_user_level_error(ctx, error):
     await ctx.send(f"❌ Cú pháp đúng: `nuked lv` hoặc `nuked lv @user`")
 
+# ==================== LỆNH CHANNELSLV ====================
 @bot.command(name="channelslv")
 @is_bot_owner()
 async def channelslv(ctx, channel: discord.TextChannel = None):
@@ -649,16 +672,22 @@ async def channelslv(ctx, channel: discord.TextChannel = None):
             if ctx.guild.id in SERVER_LEVEL_CHANNELS:
                 del SERVER_LEVEL_CHANNELS[ctx.guild.id]
                 save_config()
-                embed = discord.Embed(title="🔇 ĐÃ TẮT THÔNG BÁO LEVEL", description="🎉 Hệ thống đã ngừng gửi thông báo thăng cấp!", color=0x00FF00)
+                embed = discord.Embed(
+                    title="🔇 ĐÃ TẮT THÔNG BÁO LEVEL",
+                    description="🎉 Hệ thống đã ngừng gửi thông báo thăng cấp!",
+                    color=0x00FF00
+                )
                 embed.set_footer(text="Boss Bảo đã tắt thông báo level 💖")
                 await ctx.send(embed=embed)
             else:
                 embed = discord.Embed(
                     title="⚠️ CHƯA CÀI ĐẶT KÊNH LEVEL",
-                    description=("🔹 Hiện chưa có kênh thông báo level nào được cài đặt.\n"
-                                 "🔹 **Cú pháp:** `nuked channelslv #kênh`\n"
-                                 "🔹 **Ví dụ:** `nuked channelslv #level`\n\n"
-                                 "📌 **Chức năng:** Tự động thông báo khi thành viên lên level"),
+                    description=(
+                        "🔹 Hiện chưa có kênh thông báo level nào được cài đặt.\n"
+                        "🔹 **Cú pháp:** `nuked channelslv #kênh`\n"
+                        "🔹 **Ví dụ:** `nuked channelslv #level`\n\n"
+                        "📌 **Chức năng:** Tự động thông báo khi thành viên lên level"
+                    ),
                     color=0xFF9900
                 )
                 embed.set_footer(text="Hệ thống level tự động phục vụ Boss Bảo 💖")
@@ -714,6 +743,7 @@ async def channelslv_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH ADDROLE ====================
 @bot.command(name="addrole")
 @is_bot_owner()
 async def addrole(ctx, role_name: str, *, permissions_str: str = ""):
@@ -743,6 +773,7 @@ async def addrole_error(ctx, error):
     else:
         await ctx.send(f"❌ Cú pháp đúng: `nuked addrole <tên_role>`")
 
+# ==================== LỆNH SHOWSV ====================
 @bot.command(name="showsv")
 @is_bot_owner()
 async def showsv(ctx):
@@ -786,6 +817,7 @@ async def showsv_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH NUKE ====================
 @bot.command(name="nuke")
 @is_bot_owner()
 async def nuke_server(ctx):
@@ -825,7 +857,7 @@ async def nuke_error(ctx, error):
     else:
         await ctx.send(f"❌ Đã xảy ra lỗi khi thực hiện lệnh nuke: {str(error)}")
 
-# ==================== CÁC LỆNH SPAM, KICK, BAN, V.V. ====================
+# ==================== CÁC LỆNH SPAM, KICK, ROLE, CHANNEL, SETTING... ====================
 @bot.command(name="spamchannels")
 @is_bot_owner()
 async def spam_channels(ctx, amount: int = 100):
@@ -1158,6 +1190,7 @@ async def set_server_icon_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH KICK, BAN, UNBAN, CREATE CHANNEL, DELETE CHANNEL, PURGE, ROLE, REMOVEROLE, LOCK, UNLOCK ====================
 @bot.command(name="kick")
 @is_bot_owner()
 async def kick_user(ctx, member: discord.Member, *, reason: str = "Không có lý do"):
@@ -1353,6 +1386,7 @@ async def unlock_channel(ctx, channel: discord.TextChannel = None):
     except Exception as e:
         await ctx.send(f"❌ Lỗi: {str(e)}")
 
+# ==================== LỆNH ADMINCMD ====================
 @bot.command(name="admincmd")
 @is_bot_owner()
 async def admin_commands(ctx):
@@ -1427,6 +1461,7 @@ async def admin_commands(ctx):
     embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖")
     await ctx.send(embed=embed)
 
+# ==================== LỆNH OFF & ON ====================
 @bot.command(name="off")
 @is_bot_owner()
 async def off_command(ctx, *, command_name: str = None):
@@ -1481,7 +1516,7 @@ async def on_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send('❌ NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
-# ==================== GLOBAL CHECK ====================
+# ==================== GLOBAL CHECK: KIỂM TRA LỆNH BỊ TẮT ====================
 @bot.check
 async def globally_disabled_check(ctx):
     if not bot_enabled:
@@ -1493,7 +1528,7 @@ async def globally_disabled_check(ctx):
         return False
     return True
 
-# ==================== BACKUP & RESTORE ====================
+# ==================== LỆNH BACKUP ====================
 @bot.command(name="backup")
 @is_bot_owner()
 async def backup_server(ctx):
@@ -1537,6 +1572,7 @@ async def backup_server_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== VIEW XÁC NHẬN RESTORE ====================
 class RestoreConfirmView(discord.ui.View):
     def __init__(self, ctx, backup_data, filename):
         super().__init__(timeout=60)
@@ -1619,6 +1655,7 @@ async def restore_process(ctx, backup_data, filename):
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi restore: {str(e)}")
 
+# ==================== LỆNH RESTORE ====================
 @bot.command(name="restore")
 @is_bot_owner()
 async def restore_server(ctx, file_name: str = None):
@@ -1652,6 +1689,7 @@ async def restore_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH SLOWMODE ====================
 @bot.command(name="slowmode")
 @is_bot_owner()
 async def set_slowmode(ctx, seconds: int = 0):
@@ -1675,6 +1713,7 @@ async def set_slowmode_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH NICK ====================
 @bot.command(name="nick")
 @is_bot_owner()
 async def set_nickname(ctx, member: discord.Member, *, nickname: str = None):
@@ -1699,6 +1738,7 @@ async def set_nickname_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH RESETNICK ====================
 @bot.command(name="resetnick")
 @is_bot_owner()
 async def reset_nickname(ctx, member: discord.Member):
@@ -1719,6 +1759,7 @@ async def reset_nickname_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH VC ====================
 @bot.command(name="vc")
 @is_bot_owner()
 async def create_voice_channel(ctx, *, name: str):
@@ -1739,6 +1780,7 @@ async def create_voice_channel_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH HIDE ====================
 @bot.command(name="hide")
 @is_bot_owner()
 async def hide_channel(ctx, channel: discord.TextChannel = None):
@@ -1761,6 +1803,7 @@ async def hide_channel_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH REVEAL ====================
 @bot.command(name="reveal")
 @is_bot_owner()
 async def reveal_channel(ctx, channel: discord.TextChannel = None):
@@ -1783,6 +1826,7 @@ async def reveal_channel_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH RENAME ====================
 @bot.command(name="rename")
 @is_bot_owner()
 async def rename_server(ctx, *, new_name: str):
@@ -1806,6 +1850,7 @@ async def rename_server_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH ICON ====================
 @bot.command(name="icon")
 @is_bot_owner()
 async def set_icon(ctx, url: str = None):
@@ -1841,6 +1886,7 @@ async def set_icon_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH EMOJI ====================
 @bot.command(name="emoji")
 @is_bot_owner()
 async def list_emoji(ctx):
@@ -1867,6 +1913,7 @@ async def list_emoji_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH STEAL ====================
 @bot.command(name="steal")
 @is_bot_owner()
 async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
@@ -1899,6 +1946,7 @@ async def steal_emoji_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH MOVEALL ====================
 @bot.command(name="moveall")
 @is_bot_owner()
 async def move_all_voice(ctx, channel: discord.VoiceChannel = None):
@@ -1927,6 +1975,7 @@ async def move_all_voice_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH MUTE ====================
 @bot.command(name="mute")
 @is_bot_owner()
 async def mute(ctx, member: discord.Member, duration: str = None, *, reason="Không có lý do"):
@@ -1998,6 +2047,7 @@ async def mute_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH UNMUTE ====================
 @bot.command(name="unmute")
 @is_bot_owner()
 async def unmute(ctx, member: discord.Member):
@@ -2042,6 +2092,7 @@ async def unmute_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH WARN ====================
 @bot.command(name="warn")
 @is_bot_owner()
 async def warn(ctx, member: discord.Member, *, reason="Cảnh cáo chung"):
@@ -2061,6 +2112,7 @@ async def warn_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH CLEAR ====================
 @bot.command(name="clear")
 @is_bot_owner()
 async def clear(ctx, amount: int = 10):
@@ -2083,6 +2135,7 @@ async def clear_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH MASSBAN ====================
 @bot.command(name="massban")
 @is_bot_owner()
 async def massban(ctx, *members: discord.Member):
@@ -2113,6 +2166,7 @@ async def massban_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH MASSKICK ====================
 @bot.command(name="masskick")
 @is_bot_owner()
 async def masskick(ctx, *members: discord.Member):
@@ -2143,6 +2197,7 @@ async def masskick_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH CLONECHANNEL ====================
 @bot.command(name="clonechannel")
 @is_bot_owner()
 async def clone_channel(ctx, channel: discord.TextChannel = None):
@@ -2165,6 +2220,7 @@ async def clone_channel_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH WEBHOOKSPAM ====================
 @bot.command(name="webhookspam")
 @is_bot_owner()
 async def webhook_spam(ctx, *, content: str = "Boss Bảo đã spam webhook!"):
@@ -2194,6 +2250,7 @@ async def webhook_spam_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH SERVERINFO ====================
 @bot.command(name="serverinfo")
 async def server_info(ctx):
     guild = ctx.guild
@@ -2215,6 +2272,7 @@ async def server_info(ctx):
 async def server_info_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH USERINFO ====================
 @bot.command(name="userinfo")
 async def user_info(ctx, member: discord.Member = None):
     if member is None:
@@ -2236,6 +2294,7 @@ async def user_info(ctx, member: discord.Member = None):
 async def user_info_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH AVATAR ====================
 @bot.command(name="avatar")
 async def avatar(ctx, member: discord.Member = None):
     if member is None:
@@ -2252,6 +2311,7 @@ async def avatar(ctx, member: discord.Member = None):
 async def avatar_error(ctx, error):
     await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH ADDOWNER & DELETEOWNER ====================
 @bot.command(name="addowner")
 @is_bot_owner()
 async def addowner(ctx, target: discord.User):
@@ -2285,6 +2345,7 @@ async def deleteowner_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH SPAM CHỬI ====================
 @bot.command(name="spam")
 @is_bot_owner()
 async def spam(ctx, member: discord.Member = None, *, custom_text: str = None):
@@ -2330,6 +2391,8 @@ async def stop_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== BỔ SUNG CÁC LỆNH QUẢN TRỊ MỚI ====================
+# 1. Timeout
 @bot.command(name="timeout")
 @is_bot_owner()
 async def timeout(ctx, member: discord.Member, duration: str, *, reason="Không có lý do"):
@@ -2362,6 +2425,7 @@ async def timeout_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 2. Deafen
 @bot.command(name="deafen")
 @is_bot_owner()
 async def deafen(ctx, member: discord.Member):
@@ -2381,6 +2445,7 @@ async def deafen_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 3. Undeafen
 @bot.command(name="undeafen")
 @is_bot_owner()
 async def undeafen(ctx, member: discord.Member):
@@ -2400,6 +2465,7 @@ async def undeafen_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 4. Move (1 người)
 @bot.command(name="move")
 @is_bot_owner()
 async def move_member(ctx, member: discord.Member, channel: discord.VoiceChannel):
@@ -2419,6 +2485,7 @@ async def move_member_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 5. Settopic
 @bot.command(name="settopic")
 @is_bot_owner()
 async def set_topic(ctx, channel: discord.TextChannel, *, topic: str):
@@ -2438,6 +2505,7 @@ async def set_topic_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 6. Setnsfw
 @bot.command(name="setnsfw")
 @is_bot_owner()
 async def set_nsfw(ctx, channel: discord.TextChannel, nsfw: bool):
@@ -2458,6 +2526,7 @@ async def set_nsfw_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 7. Createcategory
 @bot.command(name="createcategory")
 @is_bot_owner()
 async def create_category(ctx, *, name: str):
@@ -2477,6 +2546,7 @@ async def create_category_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 8. Renamechannel
 @bot.command(name="renamechannel")
 @is_bot_owner()
 async def rename_channel(ctx, channel: discord.TextChannel, *, new_name: str):
@@ -2497,6 +2567,7 @@ async def rename_channel_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 9. Listroles
 @bot.command(name="listroles")
 @is_bot_owner()
 async def list_roles(ctx):
@@ -2518,6 +2589,7 @@ async def list_roles_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 10. Listchannels
 @bot.command(name="listchannels")
 @is_bot_owner()
 async def list_channels(ctx):
@@ -2539,6 +2611,7 @@ async def list_channels_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# 11. Membercount
 @bot.command(name="membercount")
 async def member_count(ctx):
     guild = ctx.guild
@@ -2549,6 +2622,7 @@ async def member_count(ctx):
     )
     await ctx.send(embed=embed)
 
+# ==================== LỆNH AUTOCLEARUSER ====================
 @bot.command(name="autoclearuser")
 @is_bot_owner()
 async def autoclear_user(ctx, member: discord.Member):
@@ -2574,6 +2648,7 @@ async def autoclear_user_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
+# ==================== LỆNH AUTOCLEAR ====================
 @bot.command(name="autoclear")
 @is_bot_owner()
 async def autoclear_channel(ctx, limit: int = None):
@@ -2615,7 +2690,7 @@ async def autoclear_channel_error(ctx, error):
     else:
         await ctx.send(f"❌ Lỗi: {str(error)}")
 
-# ==================== HỆ THỐNG COIN & BANK ====================
+# ==================== CÁC LỆNH KINH TẾ ====================
 def get_balance(user_id):
     return user_coins.get(str(user_id), {}).get("balance", 0)
 
@@ -2846,284 +2921,6 @@ async def guithu(ctx, member: discord.Member, *, content: str):
         await ctx.send(f"✅ Đã gửi thư đến {member.mention}.")
     except discord.Forbidden:
         await ctx.send("❌ Không thể gửi tin nhắn riêng cho người này.")
-
-# ==================== SHOP 100 VẬT PHẨM (NÂNG CẤP) ====================
-def generate_shop_items():
-    items = []
-    # Vũ khí
-    weapons = [
-        ("🗡️ Kiếm gỗ", 150, "Vũ khí cơ bản, tăng 5% sát thương"),
-        ("⚔️ Kiếm sắt", 300, "Chắc chắn, tăng 10% sát thương"),
-        ("🗡️ Dao găm bạc", 500, "Vũ khí tinh xảo, tăng 12% sát thương"),
-        ("🏹 Cung dài", 700, "Tầm xa, tăng 15% sát thương"),
-        ("🪓 Rìu chiến", 900, "Sát thương lớn, tăng 20% sát thương"),
-        ("🔪 Dao phay", 1200, "Vũ khí sắc bén, tăng 18% sát thương"),
-        ("⚔️ Kiếm hai lưỡi", 1500, "Vũ khí huyền thoại, tăng 25% sát thương"),
-        ("🗡️ Thanh kiếm lửa", 2000, "Rực cháy, tăng 30% sát thương"),
-        ("🏹 Nỏ thần", 2500, "Bắn xuyên thấu, tăng 35% sát thương"),
-        ("🪓 Rìu băng", 3000, "Đóng băng kẻ thù, tăng 40% sát thương"),
-        ("⚔️ Kiếm ánh sáng", 4000, "Thánh kiếm, tăng 50% sát thương"),
-        ("🗡️ Hắc kiếm", 5000, "Bóng tối, tăng 55% sát thương"),
-        ("🏹 Cung hoàng kim", 6000, "Ánh sáng, tăng 60% sát thương"),
-        ("🪓 Rìu hủy diệt", 8000, "Hủy diệt, tăng 70% sát thương"),
-        ("⚔️ Kiếm vũ trụ", 10000, "Sức mạnh vũ trụ, tăng 80% sát thương"),
-    ]
-    # Áo giáp
-    armors = [
-        ("🛡️ Khiên gỗ", 200, "Bảo vệ cơ bản, giảm 5% sát thương"),
-        ("🛡️ Khiên sắt", 400, "Chắc chắn, giảm 10% sát thương"),
-        ("🛡️ Khiên bạc", 600, "Tinh xảo, giảm 12% sát thương"),
-        ("🛡️ Khiên vàng", 800, "Quý giá, giảm 15% sát thương"),
-        ("🛡️ Khiên kim cương", 1000, "Cứng nhất, giảm 20% sát thương"),
-        ("🛡️ Khiên huyết long", 1500, "Huyền thoại, giảm 25% sát thương"),
-        ("🛡️ Khiên thần thánh", 2500, "Thánh khiên, giảm 30% sát thương"),
-        ("🛡️ Khiên hủy diệt", 4000, "Hủy diệt, giảm 40% sát thương"),
-        ("🛡️ Khiên vũ trụ", 6000, "Vũ trụ, giảm 50% sát thương"),
-    ]
-    # Phụ kiện
-    accessories = [
-        ("💍 Nhẫn sắt", 250, "Tăng 3% may mắn"),
-        ("💍 Nhẫn bạc", 500, "Tăng 5% may mắn"),
-        ("💍 Nhẫn vàng", 750, "Tăng 8% may mắn"),
-        ("💍 Nhẫn kim cương", 1000, "Tăng 12% may mắn"),
-        ("💍 Nhẫn ngọc", 1500, "Tăng 15% may mắn"),
-        ("💍 Nhẫn hoàng gia", 2500, "Tăng 20% may mắn"),
-        ("🔮 Mắt thần", 3000, "Tăng 25% may mắn"),
-        ("🔮 Trái cầu vàng", 4000, "Tăng 30% may mắn"),
-        ("🔮 Quả cầu vũ trụ", 6000, "Tăng 40% may mắn"),
-        ("👑 Vương miện", 8000, "Tăng 50% may mắn"),
-        ("👑 Vương miện thần", 10000, "Tăng 60% may mắn"),
-    ]
-    # Vật phẩm tiêu dùng
-    consumables = [
-        ("🍎 Táo", 50, "Hồi 10 HP"),
-        ("🍞 Bánh mì", 80, "Hồi 20 HP"),
-        ("🧀 Phô mai", 120, "Hồi 30 HP"),
-        ("🍗 Đùi gà", 180, "Hồi 50 HP"),
-        ("🥩 Thịt bò", 250, "Hồi 70 HP"),
-        ("🍖 Sườn heo", 350, "Hồi 100 HP"),
-        ("🍕 Pizza", 500, "Hồi 150 HP"),
-        ("🍔 Hamburger", 700, "Hồi 200 HP"),
-        ("🌮 Taco", 900, "Hồi 250 HP"),
-        ("🍣 Sushi", 1200, "Hồi 300 HP"),
-        ("🍰 Bánh kem", 1500, "Hồi 350 HP"),
-        ("🍩 Donut", 2000, "Hồi 400 HP"),
-        ("🧁 Cupcake", 2500, "Hồi 450 HP"),
-        ("🍫 Socola", 3000, "Hồi 500 HP"),
-        ("🍬 Kẹo", 3500, "Hồi 550 HP"),
-        ("🍭 Kẹo mút", 4000, "Hồi 600 HP"),
-        ("🍪 Bánh quy", 4500, "Hồi 650 HP"),
-    ]
-    # Vật phẩm đặc biệt
-    special = [
-        ("🧪 Lọ thuốc đỏ", 500, "Hồi 100 HP"),
-        ("🧪 Lọ thuốc xanh", 500, "Hồi 100 MP"),
-        ("🧪 Lọ thuốc tím", 1000, "Hồi 200 HP & 200 MP"),
-        ("🧪 Lọ thuốc vàng", 1500, "Hồi 300 HP & 300 MP"),
-        ("🧪 Lọ thuốc cam", 2500, "Hồi 500 HP & 500 MP"),
-        ("🧪 Lọ thuốc trắng", 4000, "Hồi 800 HP & 800 MP"),
-        ("🧪 Lọ thuốc đen", 6000, "Hồi 1000 HP & 1000 MP"),
-        ("🔑 Chìa khóa vàng", 3000, "Mở rương báu"),
-        ("🔑 Chìa khóa bạc", 2000, "Mở rương bạc"),
-        ("🔑 Chìa khóa đồng", 1000, "Mở rương đồng"),
-        ("🗝️ Chìa khóa ma thuật", 5000, "Mở rương thần bí"),
-        ("💎 Ngọc bích", 2500, "Vật phẩm quý, bán được giá cao"),
-        ("💎 Ngọc đỏ", 3500, "Vật phẩm quý, bán được giá cao"),
-        ("💎 Ngọc xanh", 4500, "Vật phẩm quý, bán được giá cao"),
-        ("💎 Ngọc vàng", 5500, "Vật phẩm quý, bán được giá cao"),
-        ("💎 Kim cương", 10000, "Vật phẩm quý nhất"),
-    ]
-    # Vật phẩm giải trí
-    fun = [
-        ("🎈 Bong bóng", 200, "Làm vui vẻ"),
-        ("🎉 Pháo hoa", 400, "Bùng nổ niềm vui"),
-        ("🎊 Bánh kem", 600, "Chúc mừng sinh nhật"),
-        ("🎁 Hộp quà", 800, "Mở ra bất ngờ"),
-        ("🧸 Gấu bông", 1000, "Dễ thương"),
-        ("🎮 Tay cầm game", 1500, "Chơi game cực đã"),
-        ("🕹️ Máy chơi game", 2500, "Giải trí bất tận"),
-        ("🎧 Tai nghe", 2000, "Nghe nhạc chất lượng"),
-        ("🎤 Micro", 3000, "Hát karaoke"),
-    ]
-    all_items = weapons + armors + accessories + consumables + special + fun
-    while len(all_items) < 100:
-        all_items.append((f"🛠️ Vật phẩm #{len(all_items)+1}", random.randint(100, 5000), "Vật phẩm đặc biệt"))
-    return all_items[:100]
-
-SHOP_ITEMS = generate_shop_items()
-ITEMS_PER_PAGE = 5
-TOTAL_PAGES = math.ceil(len(SHOP_ITEMS) / ITEMS_PER_PAGE)
-
-class ShopView(discord.ui.View):
-    def __init__(self, ctx, page=0, search_query=None):
-        super().__init__(timeout=120)
-        self.ctx = ctx
-        self.page = page
-        self.search_query = search_query
-        self.filtered_items = SHOP_ITEMS
-        if search_query:
-            self.filtered_items = [item for item in SHOP_ITEMS if search_query.lower() in item[0].lower()]
-        self.total_pages = math.ceil(len(self.filtered_items) / ITEMS_PER_PAGE) if self.filtered_items else 1
-        if self.page >= self.total_pages:
-            self.page = self.total_pages - 1 if self.total_pages > 0 else 0
-
-        start = self.page * ITEMS_PER_PAGE
-        end = min(start + ITEMS_PER_PAGE, len(self.filtered_items))
-        for i in range(start, end):
-            item = self.filtered_items[i]
-            actual_index = SHOP_ITEMS.index(item)
-            button = discord.ui.Button(
-                label=f"🛒 {item[0]} ({item[1]:,} coin)",
-                style=discord.ButtonStyle.primary,
-                custom_id=f"buy_{actual_index}"
-            )
-            button.callback = self.make_buy_callback(actual_index)
-            self.add_item(button)
-
-        if self.total_pages > 1:
-            nav_buttons = []
-            if self.page > 0:
-                nav_buttons.append(discord.ui.Button(label="⏮️ Đầu", style=discord.ButtonStyle.secondary, custom_id="first"))
-                nav_buttons.append(discord.ui.Button(label="◀️ Trước", style=discord.ButtonStyle.secondary, custom_id="prev"))
-            if self.page < self.total_pages - 1:
-                nav_buttons.append(discord.ui.Button(label="Sau ▶️", style=discord.ButtonStyle.secondary, custom_id="next"))
-                nav_buttons.append(discord.ui.Button(label="Cuối ⏭️", style=discord.ButtonStyle.secondary, custom_id="last"))
-            for btn in nav_buttons:
-                btn.callback = self.nav_callback(btn.custom_id)
-                self.add_item(btn)
-
-        search_btn = discord.ui.Button(label="🔍 Tìm kiếm", style=discord.ButtonStyle.success, custom_id="search")
-        search_btn.callback = self.search_callback
-        self.add_item(search_btn)
-        close_btn = discord.ui.Button(label="❌ Đóng", style=discord.ButtonStyle.danger, custom_id="close")
-        close_btn.callback = self.close_callback
-        self.add_item(close_btn)
-
-    def make_buy_callback(self, idx):
-        async def callback(interaction: discord.Interaction):
-            item = SHOP_ITEMS[idx]
-            if not subtract_coins(interaction.user.id, item[1]):
-                await interaction.response.send_message(f"❌ Bạn không đủ {item[1]:,} coin để mua `{item[0]}`!", ephemeral=True)
-                return
-            uid = str(interaction.user.id)
-            if uid not in user_inventory:
-                user_inventory[uid] = []
-            user_inventory[uid].append(item[0])
-            save_inventory(user_inventory)
-            embed = discord.Embed(
-                title="✅ MUA HÀNG THÀNH CÔNG!",
-                description=f"🎉 Bạn vừa mua **{item[0]}** với giá {item[1]:,} coin!\n📦 Đã thêm vào túi đồ.",
-                color=0x00FF00
-            )
-            embed.set_footer(text="Hệ thống cửa hàng Boss Bảo 💖")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
-        return callback
-
-    def nav_callback(self, action):
-        async def callback(interaction: discord.Interaction):
-            if action == "first":
-                new_page = 0
-            elif action == "prev":
-                new_page = max(0, self.page - 1)
-            elif action == "next":
-                new_page = min(self.total_pages - 1, self.page + 1)
-            elif action == "last":
-                new_page = self.total_pages - 1
-            else:
-                return
-            view = ShopView(self.ctx, new_page, self.search_query)
-            embed = create_shop_embed(view)
-            await interaction.response.edit_message(embed=embed, view=view)
-        return callback
-
-    async def search_callback(self, interaction: discord.Interaction):
-        modal = discord.ui.Modal(title="Tìm kiếm vật phẩm")
-        input_field = discord.ui.TextInput(label="Nhập tên vật phẩm", placeholder="Ví dụ: kiếm, khiên, ...", required=True)
-        modal.add_item(input_field)
-        async def on_submit(interaction):
-            query = input_field.value
-            view = ShopView(self.ctx, 0, query)
-            embed = create_shop_embed(view)
-            await interaction.response.edit_message(embed=embed, view=view)
-        modal.on_submit = on_submit
-        await interaction.response.send_modal(modal)
-
-    async def close_callback(self, interaction: discord.Interaction):
-        await interaction.message.delete()
-
-def create_shop_embed(view):
-    total_items = len(view.filtered_items)
-    start = view.page * ITEMS_PER_PAGE
-    end = min(start + ITEMS_PER_PAGE, total_items)
-    embed = discord.Embed(
-        title=f"🛒 CỬA HÀNG VẬT PHẨM",
-        color=0xF1C40F
-    )
-    if view.search_query:
-        embed.title += f" (Kết quả tìm: '{view.search_query}')"
-    embed.description = f"Trang {view.page+1}/{view.total_pages if view.total_pages>0 else 1} | Hiển thị {start+1}-{end} / {total_items} vật phẩm"
-    for i in range(start, end):
-        item = view.filtered_items[i]
-        embed.add_field(
-            name=f"{item[0]}",
-            value=f"💰 {item[1]:,} coin\n📝 {item[2]}",
-            inline=False
-        )
-    embed.set_footer(text="Nhấn nút tương ứng để mua | 🔍 Tìm kiếm theo tên")
-    return embed
-
-@bot.command(name="shop")
-async def shop(ctx):
-    view = ShopView(ctx, 0)
-    embed = create_shop_embed(view)
-    await ctx.send(embed=embed, view=view)
-
-@bot.command(name="buyitem")
-async def buy_item(ctx, *, item_name: str):
-    item_name = item_name.lower()
-    found = None
-    for item in SHOP_ITEMS:
-        if item[0].lower() == item_name:
-            found = item
-            break
-    if not found:
-        await ctx.send("❌ Không tìm thấy vật phẩm! Xem danh sách với `nuked shop`.")
-        return
-    if not subtract_coins(ctx.author.id, found[1]):
-        await ctx.send(f"❌ Bạn không đủ {found[1]:,} coin để mua `{found[0]}`!")
-        return
-    uid = str(ctx.author.id)
-    if uid not in user_inventory:
-        user_inventory[uid] = []
-    user_inventory[uid].append(found[0])
-    save_inventory(user_inventory)
-    embed = discord.Embed(
-        title="✅ MUA HÀNG THÀNH CÔNG!",
-        description=f"🎉 Bạn vừa mua **{found[0]}** với giá {found[1]:,} coin!",
-        color=0x00FF00
-    )
-    await ctx.send(embed=embed)
-
-@bot.command(name="inventory", aliases=["inv"])
-async def inventory(ctx, member: discord.Member = None):
-    if member is None:
-        member = ctx.author
-    uid = str(member.id)
-    items = user_inventory.get(uid, [])
-    if not items:
-        embed = discord.Embed(
-            title="🎒 TÚI ĐỒ TRỐNG",
-            description=f"{member.mention} chưa có vật phẩm nào.",
-            color=0x808080
-        )
-    else:
-        embed = discord.Embed(
-            title=f"🎒 TÚI ĐỒ CỦA {member.display_name}",
-            description="\n".join([f"• {item}" for item in items]),
-            color=0x00CCFF
-        )
-    embed.set_footer(text="Hệ thống vật phẩm Boss Bảo 💖")
-    await ctx.send(embed=embed)
 
 @bot.command(name="buyrole")
 async def buyrole(ctx, *, role_name: str):
@@ -3361,12 +3158,315 @@ async def blackjack(ctx, bet: int):
 GIF_HUG = [
     "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
     "https://media.tenor.com/1J9k3C4d5zIAAAAM/hug.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/hug.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/hug.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/hug.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/hug.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/hug.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/hug.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/hug.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/hug.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/hug.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/hug.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/hug.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/hug.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/hug.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/hug.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/hug.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/hug.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/hug.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/hug.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/hug.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-hug.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/hug.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-hug.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/hug.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-hug.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/hug.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-hug.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/hug.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-hug.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/hug.gif"
 ]
-GIF_KISS = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif"]
-GIF_SLAP = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif"]
-GIF_PAT = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif"]
-GIF_CUDDLE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif"]
-GIF_LOVE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif"]
+GIF_KISS = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/kiss.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/kiss.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/kiss.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/kiss.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/kiss.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/kiss.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/kiss.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/kiss.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/kiss.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/kiss.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/kiss.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/kiss.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/kiss.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/kiss.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/kiss.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/kiss.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/kiss.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/kiss.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/kiss.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/kiss.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/kiss.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/kiss.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/kiss.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/kiss.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-kiss.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/kiss.gif"
+]
+GIF_SLAP = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/slap.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/slap.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/slap.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/slap.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/slap.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/slap.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/slap.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/slap.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/slap.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/slap.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/slap.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/slap.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/slap.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/slap.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/slap.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/slap.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/slap.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/slap.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/slap.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/slap.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-slap.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/slap.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-slap.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/slap.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-slap.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/slap.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-slap.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/slap.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-slap.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/slap.gif"
+]
+GIF_PAT = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/pat.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/pat.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/pat.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/pat.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/pat.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/pat.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/pat.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/pat.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/pat.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/pat.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/pat.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/pat.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/pat.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/pat.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/pat.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/pat.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/pat.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/pat.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/pat.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/pat.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-pat.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/pat.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-pat.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/pat.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-pat.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/pat.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-pat.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/pat.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-pat.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/pat.gif"
+]
+GIF_CUDDLE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/cuddle.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/cuddle.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/cuddle.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/cuddle.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/cuddle.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/cuddle.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/cuddle.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/cuddle.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/cuddle.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/cuddle.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/cuddle.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/cuddle.gif"
+]
+GIF_LOVE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
+    "https://media.tenor.com/2J9k3C4d5zIAAAAM/love.gif",
+    "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/anime-love.gif",
+    "https://media.tenor.com/9Y2m4W7x1u8AAAAM/love.gif",
+    "https://media.tenor.com/4X1n5V6y0t7AAAAM/anime-love.gif",
+    "https://media.tenor.com/6Z2o4U5z9s8AAAAM/love.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/anime-love.gif",
+    "https://media.tenor.com/2X4q6S3b0e9AAAAM/love.gif",
+    "https://media.tenor.com/5Y5r7T2c9d8AAAAM/anime-love.gif",
+    "https://media.tenor.com/3Z6s8U1b0f7AAAAM/love.gif",
+    "https://media.tenor.com/7X7t9V0a1g6AAAAM/anime-love.gif",
+    "https://media.tenor.com/1Y8u0W9z2h5AAAAM/love.gif",
+    "https://media.tenor.com/9Z9v1X8y3j4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2A0w2Y7x4k3AAAAM/love.gif",
+    "https://media.tenor.com/4B1x3Z6w5l2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6C2y4X5v6m1AAAAM/love.gif",
+    "https://media.tenor.com/8D3z5Y4u7n0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0E4a6Z3v8o9AAAAM/love.gif",
+    "https://media.tenor.com/2F5b7Y2w9p8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4G6c8Z1x0q7AAAAM/love.gif",
+    "https://media.tenor.com/6H7d9Y0w1r6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8I8e0Z9x2s5AAAAM/love.gif",
+    "https://media.tenor.com/0J9f1Y8w3t4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2K0g2Z7x4u3AAAAM/love.gif",
+    "https://media.tenor.com/4L1h3Y6w5v2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6M2i4Z5v6w1AAAAM/love.gif",
+    "https://media.tenor.com/8N3j5Y4u7x0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0O4k6Z3v8y9AAAAM/love.gif",
+    "https://media.tenor.com/2P5l7Y2w9z8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4Q6m8Z1x0a7AAAAM/love.gif",
+    "https://media.tenor.com/6R7n9Y0w1b6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8S8o0Z9x2c5AAAAM/love.gif",
+    "https://media.tenor.com/0T9p1Y8w3d4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2U0q2Z7x4e3AAAAM/love.gif",
+    "https://media.tenor.com/4V1r3Y6w5f2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6W2s4Z5v6g1AAAAM/love.gif",
+    "https://media.tenor.com/8X3t5Y4u7h0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0Y4u6Z3v8i9AAAAM/love.gif",
+    "https://media.tenor.com/2Z5v7Y2w9j8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4A6w8Z1x0k7AAAAM/love.gif",
+    "https://media.tenor.com/6B7x9Y0w1l6AAAAM/anime-love.gif",
+    "https://media.tenor.com/8C8y0Z9x2m5AAAAM/love.gif",
+    "https://media.tenor.com/0D9z1Y8w3n4AAAAM/anime-love.gif",
+    "https://media.tenor.com/2E0a2Z7x4o3AAAAM/love.gif",
+    "https://media.tenor.com/4F1b3Y6w5p2AAAAM/anime-love.gif",
+    "https://media.tenor.com/6G2c4Z5v6q1AAAAM/love.gif",
+    "https://media.tenor.com/8H3d5Y4u7r0AAAAM/anime-love.gif",
+    "https://media.tenor.com/0I4e6Z3v8s9AAAAM/love.gif",
+    "https://media.tenor.com/2J5f7Y2w9t8AAAAM/anime-love.gif",
+    "https://media.tenor.com/4K6g8Z1x0u7AAAAM/love.gif"
+]
 
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
@@ -3551,47 +3651,165 @@ async def crush(ctx, member: discord.Member = None):
 
 # ==================== MENU HELP & SETUP ====================
 HELP_CATEGORIES = {
-    "🛡️ Quản lý Mod": ["`nuked kick @user` - Kick thành viên", "`nuked ban @user` - Ban thành viên", "`nuked unban <id>` - Unban", "`nuked mute @user [tg]` - Mute", "`nuked unmute @user` - Bỏ mute", "`nuked warn @user` - Cảnh cáo", "`nuked kickall` - Kick tất cả", "`nuked massban` - Ban nhiều", "`nuked masskick` - Kick nhiều", "`nuked timeout @user <tg>` - Timeout", "`nuked autoclearuser @user` - Xóa tin nhắn user"],
-    "📢 Quản lý Kênh": ["`nuked createchannel <tên>` - Tạo kênh", "`nuked deletechannel #kênh` - Xóa kênh", "`nuked createcategory <tên>` - Tạo category", "`nuked renamechannel #kênh <tên>` - Đổi tên kênh", "`nuked lock #kênh` - Khóa", "`nuked unlock #kênh` - Mở khóa", "`nuked hide #kênh` - Ẩn", "`nuked reveal #kênh` - Hiện", "`nuked clonechannel #kênh` - Clone", "`nuked vc <tên>` - Tạo voice", "`nuked settopic #kênh <nd>` - Đặt chủ đề", "`nuked setnsfw #kênh <true/false>` - NSFW", "`nuked deleteallchannels` - Xóa hết kênh", "`nuked spamchannels` - Tạo kênh spam", "`nuked slowmode <giây>` - Slowmode"],
-    "🎭 Quản lý Role": ["`nuked addrole <tên>` - Tạo role", "`nuked role @user <role>` - Thêm role", "`nuked removerole @user <role>` - Xóa role", "`nuked spamroles` - Tạo role spam", "`nuked deleteallroles` - Xóa hết role", "`nuked listroles` - Liệt kê role"],
-    "📊 Hệ thống Level": ["`nuked setlv <level> @user` - Set level", "`nuked lv [@user]` - Xem level", "`nuked channelslv #kênh` - Cài kênh level"],
-    "🎉 Chào mừng & Tạm biệt": ["`nuked setwelcome #kênh` - Cài kênh chào", "`nuked setgoodbye #kênh` - Cài kênh tạm biệt"],
-    "📋 Log & Thông tin": ["`nuked log #kênh` - Cài log", "`nuked serverinfo` - Thông tin server", "`nuked userinfo @user` - Thông tin user", "`nuked avatar @user` - Lấy avatar", "`nuked membercount` - Số lượng", "`nuked listchannels` - Danh sách kênh"],
-    "⚠️ Spam & Nuke": ["`nuked spam @user` - Spam chửi", "`nuked stop` - Dừng spam", "`nuked spameveryone` - Spam @everyone", "`nuked nuke` - NUKE SERVER", "`nuked webhookspam` - Spam webhook"],
-    "⚙️ Cấu hình Server": ["`nuked setservername <tên>` - Đổi tên", "`nuked setservericon [url]` - Đổi icon", "`nuked rename <tên>` - Đổi tên", "`nuked icon [url]` - Đổi icon", "`nuked backup` - Backup", "`nuked restore` - Restore", "`nuked off` - Tắt bot"],
-    "👑 Quản lý Owner": ["`nuked addowner @user` - Thêm Owner", "`nuked deleteowner @user` - Xóa Owner", "`nuked showsv` - Danh sách server"],
-    "🔊 Voice & Emoji": ["`nuked moveall #voice` - Di chuyển tất cả", "`nuked move @user #voice` - Di chuyển 1", "`nuked deafen @user` - Điếc", "`nuked undeafen @user` - Bỏ điếc", "`nuked emoji` - Danh sách emoji", "`nuked steal <id> <tên>` - Copy emoji"],
-    "✉️ Tiện ích": ["`nuked guithu @user <nội dung>` - Gửi thư", "`nuked nick @user <tên>` - Đổi nickname", "`nuked resetnick @user` - Reset nick", "`nuked clear <số>` - Xóa tin nhắn", "`nuked purge all` - Xóa hết tin"],
-    "💘 Tình yêu": ["`nuked love @user1 @user2` - Tỷ lệ yêu", "`nuked hug @user` - Ôm", "`nuked kiss @user` - Hôn", "`nuked slap @user` - Tát", "`nuked pat @user` - Vỗ đầu", "`nuked cuddle @user` - Âu yếm", "`nuked marry @user` - Kết hôn", "`nuked divorce @user` - Ly hôn", "`nuked ship @user1 @user2` - Ghép đôi", "`nuked crush @user` - Tỏ tình"],
-    "🚦 Bật/Tắt lệnh": ["`nuked off <lệnh>` - Tắt lệnh", "`nuked on <lệnh>` - Bật lệnh"],
-    "💰 Coin & Giải trí": ["`nuked balance` - Xem coin", "`nuked daily` - Nhận daily", "`nuked work` - Làm việc", "`nuked give @user <số>` - Chuyển coin", "`nuked shop` - Cửa hàng", "`nuked buyitem <tên>` - Mua item", "`nuked inventory` - Túi đồ", "`nuked buyrole <tên>` - Mua role", "`nuked coinflip <số> <h/t>` - Tung đồng xu", "`nuked slots <số>` - Máy quay", "`nuked dice <số> <1-6>` - Xúc xắc", "`nuked rps <số> <r/p/s>` - Kéo búa bao", "`nuked hilo <số> <h/l>` - Cao thấp", "`nuked crash <số>` - Crash", "`nuked lottery <số>` - Xổ số", "`nuked blackjack <số>` - Blackjack", "`nuked beg` - Xin tiền", "`nuked crime` - Phạm tội", "`nuked bank deposit/withdraw <số>` - Ngân hàng", "`nuked leaderboard` - BXH", "`nuked setcoins @user <số>` - (Admin)", "`nuked addcoins @user <số>` - (Admin)", "`nuked removecoins @user <số>` - (Admin)", "`nuked resetdaily @user` - (Admin)"],
+    "🛡️ Quản lý Mod": [
+        "`nuked kick @user` - Kick thành viên",
+        "`nuked ban @user` - Ban thành viên",
+        "`nuked unban <id>` - Unban thành viên",
+        "`nuked mute @user [thời gian]` - Mute thành viên",
+        "`nuked unmute @user` - Unmute thành viên",
+        "`nuked warn @user` - Cảnh cáo thành viên",
+        "`nuked kickall` - Kick toàn bộ thành viên",
+        "`nuked massban` - Ban nhiều người",
+        "`nuked masskick` - Kick nhiều người",
+        "`nuked timeout @user <thời gian>` - Timeout thành viên",
+        "`nuked clearuser @user` - Xóa tin nhắn của user",
+    ],
+    "📢 Quản lý Kênh": [
+        "`nuked createchannel <tên>` - Tạo kênh mới",
+        "`nuked deletechannel #kênh` - Xóa kênh",
+        "`nuked createcategory <tên>` - Tạo category",
+        "`nuked renamechannel #kênh <tên mới>` - Đổi tên kênh",
+        "`nuked lock #kênh` - Khóa kênh",
+        "`nuked unlock #kênh` - Mở khóa kênh",
+        "`nuked hide #kênh` - Ẩn kênh",
+        "`nuked reveal #kênh` - Hiện kênh",
+        "`nuked clonechannel #kênh` - Clone kênh",
+        "`nuked vc <tên>` - Tạo voice channel",
+        "`nuked settopic #kênh <nội dung>` - Đặt chủ đề kênh",
+        "`nuked setnsfw #kênh <true/false>` - Bật/tắt NSFW",
+        "`nuked deleteallchannels` - Xóa tất cả kênh",
+        "`nuked spamchannels` - Tạo kênh spam",
+        "`nuked slowmode <giây>` - Bật slowmode",
+    ],
+    "🎭 Quản lý Role": [
+        "`nuked addrole <tên>` - Tạo role mới",
+        "`nuked role @user <role>` - Thêm role cho người",
+        "`nuked removerole @user <role>` - Xóa role của người",
+        "`nuked spamroles` - Tạo role spam",
+        "`nuked deleteallroles` - Xóa tất cả role",
+        "`nuked listroles` - Liệt kê role",
+    ],
+    "📊 Hệ thống Level": [
+        "`nuked setlv <level> @user` - Set level",
+        "`nuked lv [@user]` - Xem level",
+        "`nuked channelslv #kênh` - Cài kênh thông báo level",
+    ],
+    "🎉 Chào mừng & Tạm biệt": [
+        "`nuked setwelcome #kênh` - Cài kênh chào mừng",
+        "`nuked setgoodbye #kênh` - Cài kênh tạm biệt",
+    ],
+    "📋 Log & Thông tin": [
+        "`nuked log #kênh` - Cài kênh log",
+        "`nuked serverinfo` - Thông tin server",
+        "`nuked userinfo @user` - Thông tin user",
+        "`nuked avatar @user` - Lấy avatar",
+        "`nuked membercount` - Số lượng thành viên",
+        "`nuked listchannels` - Danh sách kênh",
+    ],
+    "⚠️ Spam & Nuke": [
+        "`nuked spam @user` - Spam chửi",
+        "`nuked stop` - Dừng spam",
+        "`nuked spameveryone` - Spam @everyone",
+        "`nuked nuke` - NUKE SERVER",
+        "`nuked webhookspam` - Spam qua webhook",
+    ],
+    "⚙️ Cấu hình Server": [
+        "`nuked setservername <tên>` - Đổi tên server",
+        "`nuked setservericon [url]` - Đổi icon server",
+        "`nuked rename <tên>` - Đổi tên server (alias)",
+        "`nuked icon [url]` - Đổi icon server (alias)",
+        "`nuked backup` - Backup server",
+        "`nuked restore` - Khôi phục server",
+        "`nuked off` - Tắt bot",
+    ],
+    "👑 Quản lý Owner": [
+        "`nuked addowner @user` - Thêm Owner",
+        "`nuked deleteowner @user` - Xóa Owner",
+        "`nuked showsv` - Xem danh sách server",
+    ],
+    "🔊 Voice & Emoji": [
+        "`nuked moveall #voice` - Di chuyển tất cả voice",
+        "`nuked move @user #voice` - Di chuyển 1 người",
+        "`nuked deafen @user` - Làm điếc",
+        "`nuked undeafen @user` - Bỏ điếc",
+        "`nuked emoji` - Danh sách emoji",
+        "`nuked steal <id> <tên>` - Copy emoji",
+    ],
+    "✉️ Tiện ích": [
+        "`nuked guithu @user <nội dung>` - Gửi thư cho user",
+        "`nuked nick @user <tên>` - Đổi nickname",
+        "`nuked resetnick @user` - Reset nickname",
+        "`nuked clear <số>` - Xóa tin nhắn",
+        "`nuked purge all` - Xóa toàn bộ tin nhắn server",
+    ],
+    "💘 Tình yêu": [
+        "`nuked love @user1 @user2` - Tỷ lệ tình yêu",
+        "`nuked hug @user` - Ôm",
+        "`nuked kiss @user` - Hôn",
+        "`nuked slap @user` - Tát",
+        "`nuked pat @user` - Vỗ đầu",
+        "`nuked cuddle @user` - Âu yếm",
+        "`nuked marry @user` - Kết hôn",
+        "`nuked divorce @user` - Ly hôn",
+        "`nuked ship @user1 @user2` - Ghép đôi",
+        "`nuked crush @user` - Tỏ tình",
+    ],
+    "🚦 Bật/Tắt lệnh": [
+        "`nuked off <lệnh>` - Tắt một lệnh",
+        "`nuked on <lệnh>` - Bật lại lệnh đã tắt",
+    ],
+    "💰 Coin & Giải trí": [
+        "`nuked balance` - Xem số coin",
+        "`nuked daily` - Nhận coin mỗi ngày",
+        "`nuked work` - Làm việc kiếm coin",
+        "`nuked give @user <số>` - Chuyển coin",
+        "`nuked shop` - Xem cửa hàng",
+        "`nuked buyrole <tên>` - Mua role bằng coin",
+        "`nuked coinflip <số> <h/t>` - Tung đồng xu",
+        "`nuked slots <số>` - Chơi máy đánh bạc",
+        "`nuked dice <số> <1-6>` - Xúc xắc",
+        "`nuked rps <số> <r/p/s>` - Kéo búa bao",
+        "`nuked hilo <số> <h/l>` - Cao thấp",
+        "`nuked crash <số>` - Crash game",
+        "`nuked lottery <số>` - Xổ số",
+        "`nuked blackjack <số>` - Blackjack",
+        "`nuked beg` - Xin tiền",
+        "`nuked crime` - Phạm tội",
+        "`nuked bank deposit/withdraw <số>` - Gửi/rút ngân hàng",
+        "`nuked leaderboard` - Bảng xếp hạng",
+        "`nuked setcoins @user <số>` - (Admin) Đặt coin",
+        "`nuked addcoins @user <số>` - (Admin) Cộng coin",
+        "`nuked removecoins @user <số>` - (Admin) Trừ coin",
+        "`nuked resetdaily @user` - (Admin) Reset daily",
+    ],
 }
 
 HELP_CATEGORY_DESCRIPTIONS = {
-    "🛡️ Quản lý Mod": "Quản lý thành viên: kick, ban, mute, warn, timeout...",
-    "📢 Quản lý Kênh": "Tạo, xóa, đổi tên, khóa/mở khóa kênh...",
-    "🎭 Quản lý Role": "Tạo, gán, xóa role...",
-    "📊 Hệ thống Level": "Set level, xem level, cài kênh level...",
-    "🎉 Chào mừng & Tạm biệt": "Cài kênh chào mừng và tạm biệt...",
-    "📋 Log & Thông tin": "Cài log, xem thông tin server, user...",
-    "⚠️ Spam & Nuke": "Spam, phá server, nuke...",
-    "⚙️ Cấu hình Server": "Đổi tên, đổi icon, backup, restore...",
+    "🛡️ Quản lý Mod": "Các lệnh quản lý thành viên như kick, ban, mute, warn, timeout...",
+    "📢 Quản lý Kênh": "Tạo, xóa, đổi tên, khóa/mở khóa kênh, quản lý kênh...",
+    "🎭 Quản lý Role": "Tạo role, gán role, xóa role, spam role...",
+    "📊 Hệ thống Level": "Thiết lập level, xem level, cấu hình kênh thông báo level...",
+    "🎉 Chào mừng & Tạm biệt": "Cài đặt kênh chào mừng và tạm biệt thành viên...",
+    "📋 Log & Thông tin": "Cấu hình log, xem thông tin server, user, avatar...",
+    "⚠️ Spam & Nuke": "Các lệnh spam, phá server, nuke...",
+    "⚙️ Cấu hình Server": "Đổi tên, đổi icon, backup, restore server...",
     "👑 Quản lý Owner": "Thêm/xóa owner, xem danh sách server...",
-    "🔊 Voice & Emoji": "Quản lý voice, emoji...",
-    "✉️ Tiện ích": "Gửi thư, đổi nickname, xóa tin...",
-    "💘 Tình yêu": "Các lệnh tình yêu, cặp đôi...",
-    "🚦 Bật/Tắt lệnh": "Bật/tắt lệnh của bot...",
-    "💰 Coin & Giải trí": "Kiếm coin, chơi game, giao dịch...",
+    "🔊 Voice & Emoji": "Quản lý voice, di chuyển, emoji...",
+    "✉️ Tiện ích": "Gửi thư, đổi nickname, xóa tin nhắn...",
+    "💘 Tình yêu": "Các lệnh tình yêu, cặp đôi, tương tác vui vẻ...",
+    "🚦 Bật/Tắt lệnh": "Quản lý bật/tắt các lệnh của bot (chỉ Owner).",
+    "💰 Coin & Giải trí": "Kiếm coin, chơi game, giao dịch và các lệnh admin quản lý coin.",
 }
 
+# ==================== CLASS VIEW TƯƠNG TÁC CHO HELP ====================
 class HelpView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
-        for idx, category_name in enumerate(HELP_CATEGORIES.keys()):
+        for category_name in HELP_CATEGORIES.keys():
             button = discord.ui.Button(
                 label=category_name,
                 style=discord.ButtonStyle.primary,
-                custom_id=f"help_{idx}"
+                custom_id=category_name
             )
             button.callback = self.make_callback(category_name)
             self.add_item(button)
@@ -3609,6 +3827,7 @@ class HelpView(discord.ui.View):
             await interaction.response.send_message(embed=embed, ephemeral=True)
         return callback
 
+# ==================== LỆNH SETUP (CHỈ OWNER) ====================
 @bot.command(name="setup")
 @is_bot_owner()
 async def setup(ctx):
@@ -3629,6 +3848,7 @@ async def setup_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== LỆNH HELP (CÔNG KHAI) ====================
 @bot.command(name="help")
 async def help_command(ctx):
     embed = discord.Embed(
@@ -3643,126 +3863,284 @@ async def help_command(ctx):
     view = HelpView()
     await ctx.send(embed=embed, view=view)
 
-# ==================== MENU GAME ====================
+# ==================== CLASS GUIDEVIEW (HƯỚNG DẪN CHI TIẾT) ====================
+class GuideView(discord.ui.View):
+    def __init__(self, parent_interaction):
+        super().__init__(timeout=120)
+        self.parent_interaction = parent_interaction
+        self.add_item(discord.ui.Button(label="💰 Kinh tế", style=discord.ButtonStyle.primary, custom_id="guide_economy"))
+        self.add_item(discord.ui.Button(label="🎮 Game", style=discord.ButtonStyle.success, custom_id="guide_game"))
+        self.add_item(discord.ui.Button(label="💘 Tình yêu", style=discord.ButtonStyle.danger, custom_id="guide_love"))
+        self.add_item(discord.ui.Button(label="🛠️ Admin", style=discord.ButtonStyle.secondary, custom_id="guide_admin"))
+        self.add_item(discord.ui.Button(label="❓ Lệnh cơ bản", style=discord.ButtonStyle.primary, custom_id="guide_basic"))
+        self.add_item(discord.ui.Button(label="🎯 Mẹo hay", style=discord.ButtonStyle.success, custom_id="guide_tips"))
+        back = discord.ui.Button(label="🔙 Quay lại", style=discord.ButtonStyle.danger, custom_id="guide_back")
+        back.callback = self.back_callback
+        self.add_item(back)
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        cid = interaction.data["custom_id"]
+        if cid.startswith("guide_"):
+            await self.handle_guide(interaction, cid)
+            return True
+        return False
+
+    async def handle_guide(self, interaction: discord.Interaction, cid: str):
+        embeds = {
+            "guide_economy": discord.Embed(
+                title="💰 KINH TẾ & COIN",
+                description=(
+                    "**Các lệnh kiếm và quản lý coin:**\n"
+                    "💰 `nuked balance` – Xem số dư ví và ngân hàng.\n"
+                    "🎁 `nuked daily` – Nhận thưởng mỗi ngày (100-500 coin).\n"
+                    "💼 `nuked work` – Làm việc kiếm 50-300 coin (mỗi 1h).\n"
+                    "🥺 `nuked beg` – Xin tiền người khác (mỗi 30s).\n"
+                    "🚨 `nuked crime` – Trộm cướp (mỗi 60s, 55% thành công).\n"
+                    "🏦 `nuked bank deposit <số/all>` – Gửi tiền vào ngân hàng.\n"
+                    "💸 `nuked bank withdraw <số/all>` – Rút tiền về ví.\n"
+                    "🤝 `nuked give @user <số>` – Chuyển coin cho bạn bè.\n"
+                    "🏆 `nuked leaderboard` – Xem top 10 đại gia.\n\n"
+                    "💡 **Mẹo:** Hãy dùng `daily` và `work` mỗi ngày để tích lũy nhanh."
+                ),
+                color=0xF1C40F
+            ),
+            "guide_game": discord.Embed(
+                title="🎮 TRÒ CHƠI GIẢI TRÍ",
+                description=(
+                    "**Các trò chơi may rủi (đặt cược bằng coin):**\n"
+                    "🪙 `nuked coinflip <tiền> <h/t>` – Tung đồng xu (x2).\n"
+                    "🎲 `nuked dice <tiền> <1-6>` – Đoán xúc xắc (x4).\n"
+                    "✂️ `nuked rps <tiền> <r/p/s>` – Oẳn tù tì (x2).\n"
+                    "🎴 `nuked hilo <tiền> <h/l>` – Cao / thấp hơn 7 (x1.8).\n"
+                    "🎰 `nuked slots <tiền>` – Máy quay xèng (jackpot x5).\n"
+                    "🚀 `nuked crash <tiền>` – Tên lửa – dừng đúng lúc để nhân tiền.\n"
+                    "🎫 `nuked lottery <tiền>` – Xổ số (x10 nếu trúng).\n"
+                    "🃏 `nuked blackjack <tiền>` – Xì dách 21 điểm (x2).\n\n"
+                    "💡 **MẸO:** Chơi `slots` hoặc `lottery` để có cơ hội thắng lớn, nhưng rủi ro cao!"
+                ),
+                color=0x2ECC71
+            ),
+            "guide_love": discord.Embed(
+                title="💘 TÌNH YÊU & TƯƠNG TÁC",
+                description=(
+                    "**Các lệnh tương tác vui vẻ:**\n"
+                    "💕 `nuked love @user1 @user2` – Tính tỷ lệ tình yêu.\n"
+                    "🤗 `nuked hug @user` – Ôm người khác.\n"
+                    "😘 `nuked kiss @user` – Hôn người khác.\n"
+                    "👋 `nuked slap @user` – Tát người khác.\n"
+                    "🫳 `nuked pat @user` – Vỗ đầu người khác.\n"
+                    "🥰 `nuked cuddle @user` – Âu yếm.\n"
+                    "💍 `nuked marry @user` – Kết hôn (lưu vào file).\n"
+                    "💔 `nuked divorce @user` – Ly hôn.\n"
+                    "💞 `nuked ship @user1 @user2` – Ghép đôi ngẫu nhiên.\n"
+                    "💌 `nuked crush @user` – Tỏ tình.\n\n"
+                    "💡 **VUI:** Hãy thử `marry` và `divorce` để tạo không khí hài hước!"
+                ),
+                color=0xFF1493
+            ),
+            "guide_admin": discord.Embed(
+                title="🛠️ LỆNH QUẢN TRỊ (OWNER)",
+                description=(
+                    "**Các lệnh dành riêng cho chủ bot (Boss Bảo):**\n"
+                    "👑 `nuked addowner @user` – Thêm owner.\n"
+                    "🗑️ `nuked deleteowner @user` – Xóa owner.\n"
+                    "📊 `nuked setlv <level> @user` – Set level cho user.\n"
+                    "📢 `nuked channelslv #kênh` – Cài kênh thông báo level.\n"
+                    "📋 `nuked log #kênh` – Cài kênh log sự kiện.\n"
+                    "🎉 `nuked setwelcome #kênh` – Cài kênh chào mừng.\n"
+                    "👋 `nuked setgoodbye #kênh` – Cài kênh tạm biệt.\n"
+                    "💾 `nuked backup` – Backup server.\n"
+                    "🔄 `nuked restore` – Restore server.\n"
+                    "🚫 `nuked off <lệnh>` – Tắt một lệnh.\n"
+                    "✅ `nuked on <lệnh>` – Bật lại lệnh.\n"
+                    "🛑 `nuked off` (không tham số) – Tắt toàn bộ bot.\n"
+                    "🔛 `nuked on` (không tham số) – Bật lại bot.\n\n"
+                    "💡 **LƯU Ý:** Các lệnh `setup`, `showsv`, `nuke`, `spam...` cũng thuộc nhóm này."
+                ),
+                color=0x9B59B6
+            ),
+            "guide_basic": discord.Embed(
+                title="❓ LỆNH CƠ BẢN CHO MỌI NGƯỜI",
+                description=(
+                    "**Những lệnh hữu ích hàng ngày:**\n"
+                    "📖 `nuked help` – Mở menu trợ giúp tổng hợp.\n"
+                    "🎮 `nuked games` – Mở trung tâm giải trí.\n"
+                    "👤 `nuked userinfo @user` – Xem thông tin người dùng.\n"
+                    "🖼️ `nuked avatar @user` – Xem avatar.\n"
+                    "🏰 `nuked serverinfo` – Xem thông tin server.\n"
+                    "👥 `nuked membercount` – Xem số thành viên.\n"
+                    "🎒 `nuked inventory` – Xem túi đồ của bạn.\n"
+                    "🛒 `nuked shop` – Mở cửa hàng mua vật phẩm.\n"
+                    "💳 `nuked buyitem <tên>` – Mua nhanh vật phẩm.\n"
+                    "📨 `nuked guithu @user <nội dung>` – Gửi tin nhắn riêng.\n\n"
+                    "💡 **GỢI Ý:** Hãy dùng `help` và `games` để khám phá tất cả tính năng."
+                ),
+                color=0x3498DB
+            ),
+            "guide_tips": discord.Embed(
+                title="🎯 MẸO HAY KHI CHƠI",
+                description=(
+                    "**💰 1. Tích lũy coin:**\n"
+                    "   • 📅 Nhận `daily` mỗi ngày trước khi chơi game.\n"
+                    "   • ⏰ Làm `work` mỗi giờ để có thu nhập đều.\n"
+                    "   • 🚨 Tham gia `crime` khi đã có vốn (rủi ro nhưng lợi nhuận cao).\n\n"
+                    "**🎯 2. Chơi game thông minh:**\n"
+                    "   • 💡 Bắt đầu với cược nhỏ để làm quen luật.\n"
+                    "   • 🪙 `coinflip` và ✂️ `rps` có tỷ lệ 50/50 – an toàn nhất.\n"
+                    "   • 🎰 `slots` và 🎫 `lottery` may rủi cao nhưng thưởng lớn.\n"
+                    "   • 🚀 `crash` đòi hỏi canh thời điểm – thử với cược thấp trước.\n\n"
+                    "**🛒 3. Tận dụng shop:**\n"
+                    "   • 🛍️ Mua vật phẩm có lợi thế như tăng may mắn, bảo vệ.\n"
+                    "   • 🏷️ Dùng `buyrole` để mua role đặc biệt nếu có đủ coin.\n\n"
+                    "**💬 4. Tương tác xã hội:**\n"
+                    "   • 💘 Dùng các lệnh tình yêu để tạo không khí vui vẻ.\n"
+                    "   • 📨 Gửi thư (`guithu`) để nhắn nhủ bạn bè.\n\n"
+                    "**Chúc bạn chơi vui và thắng lớn!** 🎉"
+                ),
+                color=0xE67E22
+            )
+        }
+        embed = embeds.get(cid, discord.Embed(title="⚠️ Không tìm thấy", color=0xFF0000))
+        embed.set_footer(text="Boss Bảo 💖")
+        # Thêm GIF tương ứng
+        gifs = {
+            "guide_economy": "https://media.tenor.com/9Y8pLfX1nK0AAAAM/money.gif",
+            "guide_game": "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-games.gif",
+            "guide_love": "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
+            "guide_admin": "https://media.tenor.com/8Y3p5T4a1r2AAAAM/admin.gif",
+            "guide_basic": "https://media.tenor.com/7Z5l3Q8w2v0AAAAM/help.gif",
+            "guide_tips": "https://media.tenor.com/6Z2o4U5z9s8AAAAM/tips.gif"
+        }
+        if cid in gifs:
+            embed.set_image(url=gifs[cid])
+        # Nút quay lại
+        back_button = discord.ui.Button(label="🔙 Quay lại", style=discord.ButtonStyle.danger, custom_id="guide_back")
+        back_button.callback = self.back_callback
+        view = discord.ui.View()
+        view.add_item(back_button)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    async def back_callback(self, interaction: discord.Interaction):
+        embed = discord.Embed(
+            title="📘 HƯỚNG DẪN SỬ DỤNG BOT",
+            description=(
+                "Chọn một chủ đề bên dưới để xem hướng dẫn chi tiết.\n"
+                "Mỗi chủ đề sẽ hiển thị các lệnh và mẹo liên quan."
+            ),
+            color=0x00FFFF
+        )
+        embed.set_image(url="https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif")
+        embed.set_footer(text="Boss Bảo 💖")
+        view = GuideView(interaction)
+        await interaction.response.edit_message(embed=embed, view=view)
+
+# ==================== CẬP NHẬT GAMEMENUVIEW (TÍCH HỢP GUIDEVIEW) ====================
 class GameMenuView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
         self.add_item(discord.ui.Button(label="💵 Kiếm Coin", style=discord.ButtonStyle.primary, custom_id="coin", row=0))
         self.add_item(discord.ui.Button(label="🎲 Mini Games", style=discord.ButtonStyle.success, custom_id="mini", row=0))
-        self.add_item(discord.ui.Button(label="🎰 Sòng Bạc", style=discord.ButtonStyle.danger, custom_id="casino", row=0))
-        self.add_item(discord.ui.Button(label="🛒 Shop & Vàng", style=discord.ButtonStyle.secondary, custom_id="shop", row=1))
-        self.add_item(discord.ui.Button(label="🏆 BXH", style=discord.ButtonStyle.primary, custom_id="lb", row=1))
-        self.add_item(discord.ui.Button(label="💘 Tình Yêu", style=discord.ButtonStyle.success, custom_id="love", row=2))
+        self.add_item(discord.ui.Button(label="🎰 Sòng Bạc Casino", style=discord.ButtonStyle.danger, custom_id="casino", row=0))
+        self.add_item(discord.ui.Button(label="🛒 Cửa Hàng & Vàng", style=discord.ButtonStyle.secondary, custom_id="shop", row=1))
+        self.add_item(discord.ui.Button(label="🏆 Bảng Xếp Hạng", style=discord.ButtonStyle.primary, custom_id="lb", row=1))
+        # Thêm nút Hướng dẫn dẫn tới GuideView
         self.add_item(discord.ui.Button(label="📘 Hướng Dẫn", style=discord.ButtonStyle.secondary, custom_id="guide", row=2))
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         cid = interaction.data["custom_id"]
-        embed = None
+        if cid == "guide":
+            # Mở GuideView
+            embed = discord.Embed(
+                title="📘 HƯỚNG DẪN SỬ DỤNG BOT",
+                description=(
+                    "Chọn một chủ đề bên dưới để xem hướng dẫn chi tiết.\n"
+                    "Mỗi chủ đề sẽ hiển thị các lệnh và mẹo liên quan."
+                ),
+                color=0x00FFFF
+            )
+            embed.set_image(url="https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif")
+            embed.set_footer(text="Boss Bảo 💖")
+            view = GuideView(interaction)
+            await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
+            return True
+        # Các nút khác giữ nguyên
         if cid == "coin":
             embed = discord.Embed(
-                title="💵 DANH MỤC LỆNH KIẾM COIN",
+                title="💵 DANH MỤC LỆNH KIẾM TIỀN 💵",
                 description=(
-                    "💰 `nuked balance` — Xem số dư\n"
-                    "🎁 `nuked daily` — Nhận quà mỗi ngày\n"
-                    "💼 `nuked work` — Làm việc\n"
-                    "🥺 `nuked beg` — Xin tiền\n"
-                    "🥷 `nuked crime` — Trộm cướp\n"
-                    "🏦 `nuked bank deposit <số/all>` — Gửi tiền\n"
-                    "💸 `nuked bank withdraw <số/all>` — Rút tiền\n"
-                    "🤝 `nuked give @user <số>` — Chuyển tiền"
+                    "💰 `nuked balance` — Xem số dư ví & ngân hàng 💳\n"
+                    "🎁 `nuked daily` — Nhận quà mỗi ngày (100 - 500 coin) 🌟\n"
+                    "💼 `nuked work` — Tăng ca kiếm thêm thu nhập 🛠️\n"
+                    "🥺 `nuked beg` — Xin tiền cư dân mạng 🤲\n"
+                    "🥷 `nuked crime` — Đi trộm cướp (Cẩn thận đi tù!) 🚨\n"
+                    "🏦 `nuked bank deposit <số>` — Gửi tiền gửi tiết kiệm 🔒\n"
+                    "💸 `nuked bank withdraw <số>` — Rút tiền mặt ra tiêu 🏧\n"
+                    "🤝 `nuked give @user <số>` — Chuyển tiền cho bạn bè 🎁"
                 ),
                 color=0x00FFCC
             )
         elif cid == "mini":
             embed = discord.Embed(
-                title="🎲 MINI GAMES",
+                title="🎲 DANH MỤC MINI GAMES 🎲",
                 description=(
-                    "🪙 `nuked coinflip <tiền> <h/t>` — Tung đồng xu\n"
-                    "🎲 `nuked dice <tiền> <1-6>` — Đoán xúc xắc\n"
-                    "✂️ `nuked rps <tiền> <r/p/s>` — Kéo búa bao\n"
-                    "🎴 `nuked hilo <tiền> <h/l>` — Cao thấp"
+                    "🪙 `nuked coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
+                    "🎲 `nuked dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
+                    "✂️ `nuked rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
+                    "🎴 `nuked hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
                 ),
                 color=0x2ECC71
             )
         elif cid == "casino":
             embed = discord.Embed(
-                title="🎰 CASINO",
+                title="🎰 SÒNG BẠC CASINO THỜI THƯỢNG 🎰",
                 description=(
-                    "🎰 `nuked slots <tiền>` — Máy quay\n"
-                    "🚀 `nuked crash <tiền>` — Tên lửa\n"
-                    "🎫 `nuked lottery <tiền>` — Xổ số\n"
-                    "🃏 `nuked blackjack <tiền>` — Xì dách"
+                    "🎰 `nuked slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
+                    "🚀 `nuked crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
+                    "🎫 `nuked lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
+                    "🃏 `nuked blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
                 ),
                 color=0xE74C3C
             )
         elif cid == "shop":
             embed = discord.Embed(
-                title="🛒 SHOP & VÀNG",
+                title="🛒 CỬA HÀNG & ROLE SHOP 🛒",
                 description=(
-                    "🛍️ `nuked shop` — Cửa hàng\n"
-                    "💳 `nuked buyitem <tên>` — Mua vật phẩm\n"
-                    "🎒 `nuked inventory` — Túi đồ\n"
-                    "🏷️ `nuked buyrole <tên>` — Mua role\n"
-                    "💰 `nuked setcoins/addcoins/removecoins` — (Admin)"
+                    "🛍️ `nuked shop` — Xem danh sách vật phẩm hỗ trợ 📜\n"
+                    "💳 `nuked buyitem <tên>` — Mua vật phẩm từ Shop 📦\n"
+                    "🎒 `nuked inventory` — Mở túi đồ cá nhân 🎒\n"
+                    "🏷️ `nuked buyrole <tên>` — Dùng coin mua Role VIP 👑"
                 ),
                 color=0xF1C40F
             )
         elif cid == "lb":
             embed = discord.Embed(
-                title="🏆 BẢNG XẾP HẠNG",
-                description="`nuked leaderboard` — Top 10 đại gia",
+                title="🏆 BẢNG XẾP HẠNG 🏆",
+                description="📊 `nuked leaderboard` — Top 10 đại gia server 👑",
                 color=0x9B59B6
             )
-        elif cid == "love":
-            embed = discord.Embed(
-                title="💘 TÌNH YÊU",
-                description=(
-                    "💕 `nuked love @user1 @user2` — Tỷ lệ yêu\n"
-                    "🤗 `nuked hug @user` — Ôm\n"
-                    "😘 `nuked kiss @user` — Hôn\n"
-                    "👋 `nuked slap @user` — Tát\n"
-                    "🫳 `nuked pat @user` — Vỗ đầu\n"
-                    "🥰 `nuked cuddle @user` — Âu yếm\n"
-                    "💍 `nuked marry @user` — Kết hôn\n"
-                    "💔 `nuked divorce @user` — Ly hôn\n"
-                    "💞 `nuked ship @user1 @user2` — Ghép đôi\n"
-                    "💌 `nuked crush @user` — Tỏ tình"
-                ),
-                color=0xFF1493
-            )
-        elif cid == "guide":
-            embed = discord.Embed(
-                title="📘 HƯỚNG DẪN CHUNG",
-                description=(
-                    "🎮 Chào mừng bạn đến với **Nuked Game Center**!\n"
-                    "• Tất cả lệnh đều bắt đầu bằng `nuked`.\n"
-                    "• Dùng `nuked help` để xem danh mục lệnh.\n"
-                    "• Kiếm coin qua daily, work, beg, crime.\n"
-                    "• Chơi game để nhân đôi, nhân ba tiền thưởng.\n"
-                    "• Mua vật phẩm từ shop để tăng lợi thế.\n"
-                    "• Tham gia các lệnh tình yêu để vui vẻ.\n"
-                    "• Chúc bạn có những giây phút giải trí tuyệt vời! 🌟"
-                ),
-                color=0x00BFFF
-            )
-        if embed:
-            embed.set_footer(text="Hệ thống giải trí Boss Bảo 💖")
-            await interaction.response.send_message(embed=embed, ephemeral=True)
+        else:
+            return True  # không xử lý
+
+        await interaction.response.send_message(embed=embed, ephemeral=True)
         return True
 
+# ==================== LỆNH GAMES ====================
 @bot.command(name="games", aliases=["helpgame"])
 async def games_menu(ctx):
     embed = discord.Embed(
-        title="🎮 TRUNG TÂM GIẢI TRÍ NUKED GAMES",
-        description="**Nhấn vào các nút bên dưới để xem danh mục lệnh chi tiết.**",
+        title="🎮 TRUNG TÂM GIẢI TRÍ GAME & CASINO 🎮",
+        description=(
+            "Chào mừng bạn đến với **Nuked Game Center**! 🎉\n\n"
+            "👇 **Nhấn vào các nút bấm dưới đây** để xem toàn bộ danh mục hướng dẫn và lệnh chơi chi tiết nhé!"
+        ),
         color=0x00FFFF
     )
     embed.set_image(url="https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif")
-    embed.set_footer(text="Chơi game vui vẻ, thắng lớn! 💖")
+    embed.set_footer(text="Chúc các bạn chơi game vui vẻ & thắng lớn! 💖")
     view = GameMenuView()
     await ctx.send(embed=embed, view=view)
 
-# ==================== ON_MESSAGE ====================
+# ==================== XỬ LÝ MESSAGE ====================
 @bot.event
 async def on_message(message):
     if message.author.bot:
@@ -3785,8 +4163,11 @@ async def on_message(message):
                 new_lv = user_data["level"]
                 if isinstance(message.author, discord.Member):
                     await check_and_assign_level_roles(message.author, new_lv)
+
+                # ===== THƯỞNG COIN KHI LÊN LEVEL =====
                 coin_reward = random.randint(50, 200)
                 add_coins(message.author.id, coin_reward)
+
                 level_embed = discord.Embed(
                     title="🎉 **CHÚC MỪNG LÊN LEVEL!** 🎉",
                     description=f"🌟 {message.author.mention} đã xuất sắc thăng cấp lên **Level {new_lv}**! 🚀",
@@ -3809,21 +4190,24 @@ async def on_message(message):
 
     await bot.process_commands(message)
 
+    # Phản hồi khi gõ "nuked" không hợp lệ
     if message.content.lower().startswith("nuked"):
         content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
         if content_without_prefix == "":
             await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
         else:
             ctx = await bot.get_context(message)
-            if ctx.command is None and not message.content.lower().startswith("nuked games") and not message.content.lower().startswith("nuked help"):
+            if ctx.command is None:
                 await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
+    # Xử lý tag/chữ "bảo"
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
             if user.id in BOT_OWNERS:
                 has_owner_mention = True
                 break
+
     if not has_owner_mention:
         content_lower = message.content.lower()
         if "bảo" in content_lower:
@@ -3844,8 +4228,11 @@ async def on_member_join(member):
         return
     embed_log = discord.Embed(title="👋 THÀNH VIÊN MỚI GIA NHẬP", description=f"{member.mention} đã tham gia server.", color=0x00FF00)
     await send_log_to_all(member.guild.id, embed_log)
+
+    # ===== THƯỞNG COIN KHI JOIN SERVER =====
     coin_reward = random.randint(10, 50)
     add_coins(member.id, coin_reward)
+
     guild_id = member.guild.id
     if guild_id in WELCOME_CHANNELS:
         ch_id = WELCOME_CHANNELS[guild_id]
@@ -3901,7 +4288,7 @@ async def on_member_remove(member):
 # ==================== ON_READY ====================
 @bot.event
 async def on_ready():
-    print(f"✅ Logged in as {bot.user} (ID: {bot.user.id})")
+    print(f"Logged in as {bot.user} (ID: {bot.user.id})")
     print("✨ Bot đã sẵn sàng phục vụ Boss Bảo!")
 
 if __name__ == "__main__":
