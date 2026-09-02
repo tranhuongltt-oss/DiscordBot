@@ -2571,17 +2571,37 @@ async def check_user_level(ctx, member: discord.Member = None):
 async def check_user_level_error(ctx, error):
     await ctx.send(f"❌ Cú pháp đúng: `n! lv` hoặc `n! lv @user`")
 
-# ==================== LỆNH TÌNH YÊU ====================
+# ==================== DANH SÁCH GIF TÌNH YÊU (CẬP NHẬT) ====================
 GIF_HUG = [
     "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
     "https://media.tenor.com/1J9k3C4d5zIAAAAM/hug.gif",
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-hug.gif",
+    "https://media.tenor.com/9Y8pLfX1nK0AAAAM/hug.gif",
 ]
-GIF_KISS = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif"]
-GIF_SLAP = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif"]
-GIF_PAT = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif"]
-GIF_CUDDLE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif"]
-GIF_LOVE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif"]
+GIF_KISS = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif",
+    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/kiss.gif",
+    "https://media.tenor.com/2k4z1C2d5zIAAAAM/kiss.gif",
+]
+GIF_SLAP = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif",
+    "https://media.tenor.com/1J9k3C4d5zIAAAAM/slap.gif",
+]
+GIF_PAT = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif",
+    "https://media.tenor.com/2k4z1C2d5zIAAAAM/pat.gif",
+]
+GIF_CUDDLE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif",
+    "https://media.tenor.com/1J9k3C4d5zIAAAAM/cuddle.gif",
+]
+GIF_LOVE = [
+    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
+    "https://media.tenor.com/9Y8pLfX1nK0AAAAM/love.gif",
+    "https://media.tenor.com/2k4z1C2d5zIAAAAM/love.gif",
+]
 
+# ==================== LỆNH TÌNH YÊU & TƯƠNG TÁC ====================
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
@@ -2605,7 +2625,10 @@ async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
         color=0xFF69B4
     )
     embed.set_thumbnail(url=user2.display_avatar.url)
-    embed.set_image(url=random.choice(GIF_LOVE))
+    try:
+        embed.set_image(url=random.choice(GIF_LOVE))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="hug", aliases=["om"])
@@ -2618,7 +2641,10 @@ async def hug(ctx, member: discord.Member = None):
         description=f"{ctx.author.mention} ôm {member.mention} thật chặt!",
         color=0xFFA500
     )
-    embed.set_image(url=random.choice(GIF_HUG))
+    try:
+        embed.set_image(url=random.choice(GIF_HUG))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="kiss", aliases=["hon"])
@@ -2631,7 +2657,10 @@ async def kiss(ctx, member: discord.Member = None):
         description=f"{ctx.author.mention} hôn {member.mention} say đắm!",
         color=0xFF1493
     )
-    embed.set_image(url=random.choice(GIF_KISS))
+    try:
+        embed.set_image(url=random.choice(GIF_KISS))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="slap", aliases=["tat"])
@@ -2644,7 +2673,10 @@ async def slap(ctx, member: discord.Member = None):
         description=f"{ctx.author.mention} tát {member.mention} một phát!",
         color=0xFF0000
     )
-    embed.set_image(url=random.choice(GIF_SLAP))
+    try:
+        embed.set_image(url=random.choice(GIF_SLAP))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="pat", aliases=["vodau"])
@@ -2657,7 +2689,10 @@ async def pat(ctx, member: discord.Member = None):
         description=f"{ctx.author.mention} vỗ đầu {member.mention} nhẹ nhàng.",
         color=0xFFD700
     )
-    embed.set_image(url=random.choice(GIF_PAT))
+    try:
+        embed.set_image(url=random.choice(GIF_PAT))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="cuddle", aliases=["auyem"])
@@ -2670,7 +2705,10 @@ async def cuddle(ctx, member: discord.Member = None):
         description=f"{ctx.author.mention} âu yếm {member.mention}.",
         color=0xFF69B4
     )
-    embed.set_image(url=random.choice(GIF_CUDDLE))
+    try:
+        embed.set_image(url=random.choice(GIF_CUDDLE))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="marry", aliases=["cuoi"])
@@ -2697,7 +2735,10 @@ async def marry(ctx, member: discord.Member = None):
         description=f"Chúc mừng {ctx.author.mention} và {member.mention} đã trở thành vợ chồng!",
         color=0xFF69B4
     )
-    embed.set_image(url=random.choice(GIF_LOVE))
+    try:
+        embed.set_image(url=random.choice(GIF_LOVE))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="divorce", aliases=["lyhon"])
@@ -2742,7 +2783,10 @@ async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
         description=f"{user1.mention} và {user2.mention}\n\n**{percent}%** {result}",
         color=0xFF1493
     )
-    embed.set_image(url=random.choice(GIF_LOVE))
+    try:
+        embed.set_image(url=random.choice(GIF_LOVE))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 @bot.command(name="crush", aliases=["totoinh"])
@@ -2760,7 +2804,10 @@ async def crush(ctx, member: discord.Member = None):
         description=random.choice(responses),
         color=0xFF69B4
     )
-    embed.set_image(url=random.choice(GIF_LOVE))
+    try:
+        embed.set_image(url=random.choice(GIF_LOVE))
+    except:
+        pass
     await ctx.send(embed=embed)
 
 # ==================== MENU HELP TƯƠNG TÁC ====================
