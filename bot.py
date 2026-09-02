@@ -2569,48 +2569,55 @@ async def check_user_level(ctx, member: discord.Member = None):
 async def check_user_level_error(ctx, error):
     await ctx.send(f"❌ Cú pháp đúng: `n! lv` hoặc `n! lv @user`")
 
-# ==================== DANH SÁCH GIF TỪ PINTEREST (LẤY TỪ FILE HUG.TXT) ====================
+# ==================== DANH SÁCH GIF MỚI (THEO YÊU CẦU) ====================
+GIF_LOVE = [
+    "https://i.pinimg.com/originals/75/84/17/75841749adcb1bf105c8d75a602f5751.gif",
+    "https://i.pinimg.com/originals/d4/9d/a9/d49da9f2d59c18322827e925f6880403.gif",
+    "https://i.pinimg.com/originals/a8/96/5d/a8965dd2ec2662212f783c92248c7adf.gif",
+    "https://i.pinimg.com/originals/60/bd/28/60bd28e041d83ed07ac88e00d30843d5.gif",
+    "https://i.pinimg.com/originals/5c/a5/cf/5ca5cf3c67f294e666179989e4a5ba6b.gif",
+]
 GIF_HUG = [
-    "https://i.pinimg.com/originals/85/72/a1/8572a1d1ebaa45fae290e6760b59caac.gif",
-    "https://i.pinimg.com/originals/73/ee/0e/73ee0e36d1518b3c2bc0ad74f94356e9.gif",
-    "https://i.pinimg.com/originals/07/1e/fb/071efbe10f7beaf7221b2ee16b372043.gif",
-    "https://i.pinimg.com/originals/c5/6c/9d/c56c9d1c93c8f877bb1b34680727e8eb.gif",
-    "https://i.pinimg.com/originals/69/89/bb/6989bb4aeb1b19fb1d9871f6dfe873c1.gif",
+    "https://i.pinimg.com/originals/16/f4/ef/16f4ef8659534c88264670265e2a1626.gif",
+    "https://i.pinimg.com/originals/56/c7/3f/56c73f380d3ad747ff0600eb7ea1bbc7.gif",
+    "https://i.pinimg.com/originals/0b/6b/d7/0b6bd7ba263b15094cae8450a68ff54b.gif",
+    "https://i.pinimg.com/originals/46/0c/80/460c80d4423b0ba75ed9592b05599592.gif",
+    "https://i.pinimg.com/originals/45/9c/c2/459cc283ee9bddcf14be26902c85cbd7.gif",
 ]
 GIF_KISS = [
-    "https://i.pinimg.com/originals/f5/89/c3/f589c38b2dba91769d0bc8f09493fda4.gif",
-    "https://i.pinimg.com/originals/7a/8e/9e/7a8e9ed0787b82c0bcb63da99a4f9003.gif",
-    "https://i.pinimg.com/originals/cc/50/ba/cc50ba6733e61e6d5da660d1d29a4623.gif",
-    "https://i.pinimg.com/originals/91/c2/06/91c2067a6f574d5adcb827bd61cdee20.gif",
-    "https://i.pinimg.com/originals/0e/02/a8/0e02a80559f03073ac9304133f1f67be.gif",
+    "https://i.pinimg.com/originals/10/5a/7a/105a7ad7edbe74e5ca834348025cc650.gif",
+    "https://i.pinimg.com/originals/a6/ab/46/a6ab46896615b80980ff4da911a1e167.gif",
+    "https://i.pinimg.com/originals/ef/cc/cb/efcccb410c47e35559e71c8435505dbc.gif",
+    "https://i.pinimg.com/originals/4a/38/9b/4a389bb65d9096a14992e74f83e6f55b.gif",
+    "https://i.pinimg.com/originals/df/69/25/df692538bbf513f7bd94709435e96342.gif",
 ]
 GIF_SLAP = [
-    "https://i.pinimg.com/originals/2f/0f/82/2f0f82e4fb0dee8efd75bee975496eab.gif",
-    "https://i.pinimg.com/originals/ff/58/0f/ff580f48308853e731857a046d9be852.gif",
-    "https://i.pinimg.com/originals/1c/05/3b/1c053ba7e798288a1f10920423461e87.gif",
-    "https://i.pinimg.com/originals/ce/fd/24/cefd248e5ef00e820ab335398a659915.gif",
-    "https://i.pinimg.com/originals/38/b4/a2/38b4a292ee880fd292426bfdeb46b2d4.gif",
+    "https://i.pinimg.com/originals/2b/3a/3e/2b3a3e107ac57d4f170a8f8e414fec9f.gif",
+    "https://i.pinimg.com/originals/7c/20/89/7c2089abf87dc52deb4179a6835088b6.gif",
+    "https://i.pinimg.com/originals/12/2d/46/122d469b39b533d9490334d681d6c11a.gif",
+    "https://i.pinimg.com/originals/ca/d7/62/cad7625a5c73d0c73bc67329174f9003.gif",
+    "https://i.pinimg.com/originals/96/8c/b1/968cb1f9eaa12dde1d6fdf2f6ee296ed.gif",
 ]
 GIF_PAT = [
-    "https://i.pinimg.com/originals/20/a5/ef/20a5efc113f2d52d903b957b2699dcb1.gif",
-    "https://i.pinimg.com/originals/17/9c/c2/179cc22cef1c65280d3e7238ecb719c5.gif",
-    "https://i.pinimg.com/originals/6b/be/e4/6bbee478bb31f387893ffbbdcc0266e5.gif",
-    "https://i.pinimg.com/originals/48/60/71/486071822aef93abd85ee07fcffd6e2c.gif",
-    "https://i.pinimg.com/originals/4c/f2/8f/4cf28f2b512a5a0196212061a9eb492b.gif",
+    "https://i.pinimg.com/originals/e3/e2/58/e3e2588fbae9422f2bd4813c324b1298.gif",
+    "https://i.pinimg.com/originals/95/86/e2/9586e24faa0664df1d01e3eab4a138f4.gif",
+    "https://i.pinimg.com/originals/ce/22/9e/ce229e98f5cd4944a6315acf9cc8722c.gif",
+    "https://i.pinimg.com/originals/b5/07/a4/b507a44553c871c0d7d69d8df5e414d6.gif",
+    "https://i.pinimg.com/originals/37/73/55/3773555d02b0b946a30160e54d45589a.gif",
 ]
 GIF_CUDDLE = [
-    "https://i.pinimg.com/originals/2c/e7/11/2ce711afadfecdfcbdd10e5b35fa8f0b.gif",
-    "https://i.pinimg.com/originals/25/12/a8/2512a8806c83b88ac56c26c9fffc3d9d.gif",
-    "https://i.pinimg.com/originals/9b/a2/63/9ba2634d1c2324f48362f3f3dfb89ef6.gif",
-    "https://i.pinimg.com/originals/aa/09/56/aa0956240e440e4054d2b7a7eb826358.gif",
-    "https://i.pinimg.com/originals/92/6d/5d/926d5d12ebed2e159fba6a4333b0b022.gif",
+    "https://i.pinimg.com/originals/a4/5e/ea/a45eea4151c014f6c48f20d7dd5167bb.gif",
+    "https://i.pinimg.com/originals/87/63/46/8763461fd726e1cbfcd076d04c9513fe.gif",
+    "https://i.pinimg.com/originals/8f/8b/a3/8f8ba3baeecdf28f3e0fa7d4ce1a8586.gif",
+    "https://i.pinimg.com/originals/d2/53/83/d253835a6c993c65d2aa60ea848b6bb0.gif",
+    "https://i.pinimg.com/originals/62/f5/aa/62f5aa2069259407435ee62b55962fbd.gif",
 ]
-GIF_LOVE = [
-    "https://i.pinimg.com/originals/87/93/03/879303bd7fff3788514460b020f2bc68.gif",
-    "https://i.pinimg.com/originals/fe/6b/06/fe6b06bf40e221160de5c5590961a4e1.gif",
-    "https://i.pinimg.com/originals/d6/df/90/d6df9067136e75d3fd6e13333831989a.gif",
-    "https://i.pinimg.com/originals/4a/54/02/4a54028dfe3a1fbfeb1850dec9f4d3b5.gif",
-    "https://i.pinimg.com/originals/30/70/76/30707615078b684d3138efeda781aad4.gif",
+GIF_CRUSH = [
+    "https://i.pinimg.com/originals/56/7a/66/567a666acdbccdf66f5afd02ee0fa997.gif",
+    "https://i.pinimg.com/originals/fa/ae/32/faae32dc5b2099875d71b1eb62e27c60.gif",
+    "https://i.pinimg.com/originals/7e/3b/e6/7e3be64966948331af33678199ce2089.gif",
+    "https://i.pinimg.com/originals/e8/fd/6a/e8fd6a12c3422c6d25abe2742050cc4c.gif",
+    "https://i.pinimg.com/originals/d5/33/52/d53352435cac71ab198b998146641752.gif",
 ]
 
 # ==================== LỆNH TÌNH YÊU ====================
@@ -2817,7 +2824,7 @@ async def crush(ctx, member: discord.Member = None):
         color=0xFF69B4
     )
     try:
-        embed.set_image(url=random.choice(GIF_LOVE))
+        embed.set_image(url=random.choice(GIF_CRUSH))
     except:
         pass
     await ctx.send(embed=embed)
