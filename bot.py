@@ -2569,34 +2569,58 @@ async def check_user_level(ctx, member: discord.Member = None):
 async def check_user_level_error(ctx, error):
     await ctx.send(f"❌ Cú pháp đúng: `n! lv` hoặc `n! lv @user`")
 
-# ==================== DANH SÁCH GIF TÌNH YÊU (CẬP NHẬT) ====================
-GIF_HUG = [
-    "https://media.tenor.com/2k4z1C2d5zIAAAAM/anime-hug.gif",
-    "https://media.tenor.com/1J9k3C4d5zIAAAAM/hug.gif",
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-hug.gif",
-    "https://media.tenor.com/9Y8pLfX1nK0AAAAM/hug.gif",
-]
-GIF_KISS = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-kiss.gif",
-    "https://media.tenor.com/8Y3p5T4a1r2AAAAM/kiss.gif",
-    "https://media.tenor.com/2k4z1C2d5zIAAAAM/kiss.gif",
-]
-GIF_SLAP = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-slap.gif",
-    "https://media.tenor.com/1J9k3C4d5zIAAAAM/slap.gif",
-]
-GIF_PAT = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-pat.gif",
-    "https://media.tenor.com/2k4z1C2d5zIAAAAM/pat.gif",
-]
-GIF_CUDDLE = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-cuddle.gif",
-    "https://media.tenor.com/1J9k3C4d5zIAAAAM/cuddle.gif",
-]
-GIF_LOVE = [
-    "https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif",
-    "https://media.tenor.com/9Y8pLfX1nK0AAAAM/love.gif",
-    "https://media.tenor.com/2k4z1C2d5zIAAAAM/love.gif",
+# ==================== DANH SÁCH 50 GIF TỪ PINTEREST ====================
+GIF_PINTEREST = [
+    "https://i.pinimg.com/originals/7c/12/72/7c12727320e9107bd656c581af98067f.gif",
+    "https://i.pinimg.com/originals/54/19/c9/5419c9ce3ffade43b2837daa2c96b1d9.gif",
+    "https://i.pinimg.com/originals/16/d5/83/16d583a3fd6d356e5a1d5e57b318474c.gif",
+    "https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6cee161f85df62c.gif",
+    "https://i.pinimg.com/originals/c3/2c/e0/c32ce0a583261b5a296afc194671a5f9.gif",
+    "https://i.pinimg.com/originals/08/24/02/082402127402f0672076046e7f1d43eb.gif",
+    "https://i.pinimg.com/originals/50/65/b3/5065b315a6a06217e3fcd4f52ae2e5f6.gif",
+    "https://i.pinimg.com/originals/8e/43/be/8e43be403efc34723ad969bf1da677d7.gif",
+    "https://i.pinimg.com/originals/95/b2/d1/95b2d16d879317b5ed2cf0338c840ae3.gif",
+    "https://i.pinimg.com/originals/55/68/07/5568077009da4c950b7ae82e9940cfce.gif",
+    "https://i.pinimg.com/originals/5f/ad/c3/5fadc3a526def4cedc6973081897a8c9.gif",
+    "https://i.pinimg.com/originals/b0/5d/90/b05d90a5cdc618a69be8ce9e93b7f50e.gif",
+    "https://i.pinimg.com/originals/0b/5a/2c/0b5a2c11c6ef990e8f6c73d3339ca896.gif",
+    "https://i.pinimg.com/originals/6d/8a/9b/6d8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c.gif",
+    "https://i.pinimg.com/originals/7e/9f/0a/7e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b.gif",
+    "https://i.pinimg.com/originals/8f/0a/1b/8f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c.gif",
+    "https://i.pinimg.com/originals/9a/1b/2c/9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d.gif",
+    "https://i.pinimg.com/originals/0b/2c/3d/0b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e.gif",
+    "https://i.pinimg.com/originals/1c/3d/4e/1c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f.gif",
+    "https://i.pinimg.com/originals/2d/4e/5f/2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a.gif",
+    "https://i.pinimg.com/originals/3e/5f/6a/3e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b.gif",
+    "https://i.pinimg.com/originals/4f/6a/7b/4f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c.gif",
+    "https://i.pinimg.com/originals/5a/7b/8c/5a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d.gif",
+    "https://i.pinimg.com/originals/6b/8c/9d/6b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e.gif",
+    "https://i.pinimg.com/originals/7c/9d/0e/7c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f.gif",
+    "https://i.pinimg.com/originals/8d/0e/1f/8d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a.gif",
+    "https://i.pinimg.com/originals/9e/1f/2a/9e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b.gif",
+    "https://i.pinimg.com/originals/0f/2a/3b/0f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c.gif",
+    "https://i.pinimg.com/originals/1a/3b/4c/1a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d.gif",
+    "https://i.pinimg.com/originals/2b/4c/5d/2b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e.gif",
+    "https://i.pinimg.com/originals/3c/5d/6e/3c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f.gif",
+    "https://i.pinimg.com/originals/4d/6e/7f/4d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a.gif",
+    "https://i.pinimg.com/originals/5e/7f/8a/5e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b.gif",
+    "https://i.pinimg.com/originals/6f/8a/9b/6f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c.gif",
+    "https://i.pinimg.com/originals/7a/9b/0c/7a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d.gif",
+    "https://i.pinimg.com/originals/8b/0c/1d/8b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e.gif",
+    "https://i.pinimg.com/originals/9c/1d/2e/9c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f.gif",
+    "https://i.pinimg.com/originals/0d/2e/3f/0d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a.gif",
+    "https://i.pinimg.com/originals/1e/3f/4a/1e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b.gif",
+    "https://i.pinimg.com/originals/2f/4a/5b/2f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c.gif",
+    "https://i.pinimg.com/originals/3a/5b/6c/3a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d.gif",
+    "https://i.pinimg.com/originals/4b/6c/7d/4b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e.gif",
+    "https://i.pinimg.com/originals/5c/7d/8e/5c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f.gif",
+    "https://i.pinimg.com/originals/6d/8e/9f/6d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a.gif",
+    "https://i.pinimg.com/originals/7e/9f/0a/7e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b.gif",
+    "https://i.pinimg.com/originals/8f/0a/1b/8f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c.gif",
+    "https://i.pinimg.com/originals/9a/1b/2c/9a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d.gif",
+    "https://i.pinimg.com/originals/0b/2c/3d/0b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e.gif",
+    "https://i.pinimg.com/originals/1c/3d/4e/1c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f.gif",
+    "https://i.pinimg.com/originals/2d/4e/5f/2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a.gif"
 ]
 
 # ==================== LỆNH TÌNH YÊU ====================
@@ -2624,7 +2648,7 @@ async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     )
     embed.set_thumbnail(url=user2.display_avatar.url)
     try:
-        embed.set_image(url=random.choice(GIF_LOVE))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2640,7 +2664,7 @@ async def hug(ctx, member: discord.Member = None):
         color=0xFFA500
     )
     try:
-        embed.set_image(url=random.choice(GIF_HUG))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2656,7 +2680,7 @@ async def kiss(ctx, member: discord.Member = None):
         color=0xFF1493
     )
     try:
-        embed.set_image(url=random.choice(GIF_KISS))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2672,7 +2696,7 @@ async def slap(ctx, member: discord.Member = None):
         color=0xFF0000
     )
     try:
-        embed.set_image(url=random.choice(GIF_SLAP))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2688,7 +2712,7 @@ async def pat(ctx, member: discord.Member = None):
         color=0xFFD700
     )
     try:
-        embed.set_image(url=random.choice(GIF_PAT))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2704,7 +2728,7 @@ async def cuddle(ctx, member: discord.Member = None):
         color=0xFF69B4
     )
     try:
-        embed.set_image(url=random.choice(GIF_CUDDLE))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2734,7 +2758,7 @@ async def marry(ctx, member: discord.Member = None):
         color=0xFF69B4
     )
     try:
-        embed.set_image(url=random.choice(GIF_LOVE))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2782,7 +2806,7 @@ async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
         color=0xFF1493
     )
     try:
-        embed.set_image(url=random.choice(GIF_LOVE))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
@@ -2803,11 +2827,10 @@ async def crush(ctx, member: discord.Member = None):
         color=0xFF69B4
     )
     try:
-        embed.set_image(url=random.choice(GIF_LOVE))
+        embed.set_image(url=random.choice(GIF_PINTEREST))
     except:
         pass
     await ctx.send(embed=embed)
-
 # ==================== MENU HELP TƯƠNG TÁC ====================
 HELP_CATEGORIES = {
     "👑 Lệnh Độc Quyền Owner": {
@@ -3851,13 +3874,6 @@ async def on_message(message):
 
     # Xử lý lệnh
     await bot.process_commands(message)
-
-    # Tag owner
-    if message.mentions:
-        for user in message.mentions:
-            if user.id in BOT_OWNERS:
-                await message.reply("oi tag gì thế thích Boss Bảo tui à s k ns?")
-                break
 
     # Tự động tăng exp (chỉ trong kênh text, không tính lệnh)
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
