@@ -2569,7 +2569,7 @@ async def check_user_level(ctx, member: discord.Member = None):
 async def check_user_level_error(ctx, error):
     await ctx.send(f"❌ Cú pháp đúng: `n! lv` hoặc `n! lv @user`")
 
-# ==================== DANH SÁCH GIF MỚI (THEO YÊU CẦU) ====================
+# ==================== DANH SÁCH GIF MỚI ====================
 GIF_LOVE = [
     "https://i.pinimg.com/originals/75/84/17/75841749adcb1bf105c8d75a602f5751.gif",
     "https://i.pinimg.com/originals/d4/9d/a9/d49da9f2d59c18322827e925f6880403.gif",
@@ -2618,6 +2618,109 @@ GIF_CRUSH = [
     "https://i.pinimg.com/originals/7e/3b/e6/7e3be64966948331af33678199ce2089.gif",
     "https://i.pinimg.com/originals/e8/fd/6a/e8fd6a12c3422c6d25abe2742050cc4c.gif",
     "https://i.pinimg.com/originals/d5/33/52/d53352435cac71ab198b998146641752.gif",
+]
+
+# ==================== 100 CÂU TỎ TÌNH ====================
+CRUSH_MESSAGES = [
+    "{target_name} ơi, {author_name} muốn nói rằng trái tim này đã thuộc về bạn từ lâu rồi 💘",
+    "Này {target_name}, {author_name} không biết từ khi nào lại thích bạn nhiều đến thế 🥰",
+    "{target_name} à, {author_name} có một bí mật: tớ thích cậu rất nhiều ❤️",
+    "Chào {target_name}, {author_name} chỉ muốn nói là bạn đẹp nhất trong mắt tớ 🌹",
+    "{target_name} ơi, {author_name} crush bạn mất rồi, phải làm sao đây 😳",
+    "Gửi {target_name}, {author_name} muốn bày tỏ rằng bạn là người đặc biệt nhất 💖",
+    "{target_name} à, {author_name} thích bạn đến mức không thể giấu được nữa 😊",
+    "Này {target_name}, {author_name} có thể mời bạn một ly cà phê không? ☕",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là ánh nắng trong ngày của tớ 🌞",
+    "Gửi {target_name}, {author_name} không cần cả thế giới, chỉ cần có bạn là đủ 💑",
+    "{target_name} à, {author_name} thích nụ cười của bạn, nó làm tớ tan chảy 😍",
+    "Này {target_name}, {author_name} có thể nói là bạn rất dễ thương không? 🥺",
+    "{target_name} ơi, {author_name} muốn nói rằng trái tim tớ đã có chủ rồi 💘",
+    "Gửi {target_name}, {author_name} chỉ muốn bạn biết rằng bạn rất quan trọng với tớ ❤️",
+    "{target_name} à, {author_name} thích bạn từ cái nhìn đầu tiên 👀",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là giấc mơ của tớ 🌙",
+    "{target_name} ơi, {author_name} không thể ngừng nghĩ về bạn 💭",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là điều tuyệt vời nhất từng đến với tớ 💫",
+    "{target_name} à, {author_name} thích bạn nhiều hơn cả sô cô la 🍫",
+    "Này {target_name}, {author_name} muốn được nắm tay bạn đi khắp nơi 🤝",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là lý do tớ mỉm cười mỗi ngày 😊",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn rất đặc biệt không? 🥰",
+    "{target_name} à, {author_name} thích bạn đến mức không thể tập trung làm gì khác 😅",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là ngôi sao sáng nhất trên bầu trời ⭐",
+    "{target_name} ơi, {author_name} có cảm giác như đã quen bạn từ rất lâu rồi 💞",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là tất cả những gì tớ cần ❤️",
+    "{target_name} à, {author_name} thích bạn, thích rất nhiều, thích đến điên dại 😘",
+    "Này {target_name}, {author_name} có thể nói rằng bạn làm trái tim tớ loạn nhịp không? 💓",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là món quà tuyệt vời nhất 🎁",
+    "Gửi {target_name}, {author_name} chỉ muốn bạn biết rằng tớ thích bạn 💌",
+    "{target_name} à, {author_name} thích bạn như cách hoa hướng dương luôn hướng về mặt trời 🌻",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là định mệnh của tớ 💫",
+    "{target_name} ơi, {author_name} có thể dành cả ngày chỉ để nhìn bạn cười 😊",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tuyệt vời nhất trên đời 💖",
+    "{target_name} à, {author_name} thích bạn, không cần lý do gì cả ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là giấc mơ thành hiện thực của tớ 🌠",
+    "{target_name} ơi, {author_name} muốn nói rằng trái tim tớ chỉ hướng về bạn 💘",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn rất dễ thương và tớ thích bạn không? 🥰",
+    "{target_name} à, {author_name} thích bạn nhiều hơn cả những gì tớ có thể nói 💬",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ tìm kiếm bấy lâu nay 🔍",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là ánh sáng cuối đường hầm của tớ 🕯️",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là điều đẹp đẽ nhất trong cuộc sống của tớ 🌸",
+    "{target_name} à, {author_name} thích bạn, thích cả những điều nhỏ nhặt nhất về bạn 😊",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là lý do tớ thức dậy mỗi sáng ☀️",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn dành cả đời để yêu 💑",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là niềm vui của tớ không? 🥰",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn rất lâu ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người đặc biệt nhất trong vũ trụ này 🌌",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ luôn nghĩ đến trước khi ngủ 😴",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là mảnh ghép còn thiếu của tớ 🧩",
+    "{target_name} à, {author_name} thích bạn, thích đến mức không thể giấu được nữa 😊",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn chia sẻ mọi thứ cùng 👫",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn bảo vệ và yêu thương 💖",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn nắm tay đi đến cuối đời không? 💍",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ không bao giờ hối hận về điều đó ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gặp mỗi ngày 😊",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn nói chuyện suốt đêm 🌙",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn dành tặng những điều tốt đẹp nhất 🎁",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào trái tim còn đập 💓",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn giữ chặt không bao giờ buông tay 🤝",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương bằng cả trái tim 💘",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn gọi là "người yêu" không? 😳",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không cần tớ nữa ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn ôm vào mỗi buổi sáng 🤗",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn nắm tay đi dạo dưới mưa ☔",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn cùng ngắm sao trên bầu trời ⭐",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn mỉm cười 😊",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn dành tặng nụ hôn đầu tiên 😘",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn nói lời yêu thương mỗi ngày 💌",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn che chở khỏi mọi bão giông 🌧️",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào trái đất ngừng quay 🌍",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn làm cho hạnh phúc mỗi ngày 😊",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương bằng cả trái tim và tâm hồn 💖",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn dành cả cuộc đời này để bên cạnh 💑",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn cần tớ ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gọi mỗi khi mệt mỏi 📞",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn dựa vào mỗi khi yếu đuối 🤗",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn chia sẻ cả niềm vui và nỗi buồn không? 🥺",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không còn cần tớ nữa ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn nắm tay đi hết cuộc đời này 👫",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương và trân trọng mỗi ngày 💎",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn dành tặng những điều ngọt ngào nhất 🍯",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào trái tim này còn đập vì bạn 💓",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gọi là người yêu dấu của tớ 💑",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn ôm mỗi khi trời lạnh 🧣",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn gửi trao trọn vẹn con tim này không? 💘",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không cần tớ nữa ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn cùng nhau già đi 👵👴",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương bằng cả sinh mệnh này 🌟",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn bảo vệ khỏi mọi nỗi buồn 🛡️",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn nhìn tớ bằng ánh mắt dịu dàng đó 😊",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn nắm tay đi khắp thế gian 🌍",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn gửi trao nụ cười hạnh phúc mỗi ngày 😊",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn yêu thương đến khi nào trái tim ngừng đập không? 💖",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không cần tớ nữa ❤️",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gọi là "cả thế giới" của tớ 🌎",
+    "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn dành tặng trọn vẹn tình yêu này 💘",
+    "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương và chiều chuộng mỗi ngày 🥰",
+    "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn muốn tớ ở bên cạnh ❤️",
 ]
 
 # ==================== LỆNH TÌNH YÊU ====================
@@ -2809,25 +2912,33 @@ async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
     await ctx.send(embed=embed)
 
 @bot.command(name="crush", aliases=["totoinh"])
-async def crush(ctx, member: discord.Member = None):
+async def crush(ctx, member: discord.Member = None, *, message: str = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `n! crush @user`")
+        await ctx.send("📌 Cú pháp: `n! crush @user [nội dung]`")
         return
-    responses = [
-        f"{member.mention} ơi, {ctx.author.mention} nói là thích bạn đó!",
-        f"💌 {member.mention} nhận được lời tỏ tình từ {ctx.author.mention}!",
-        f"{member.mention} có biết rằng {ctx.author.mention} crush bạn không?",
-    ]
-    embed = discord.Embed(
-        title="💘 TỎ TÌNH",
-        description=random.choice(responses),
-        color=0xFF69B4
-    )
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Bạn không thể tự tỏ tình với chính mình!")
+        return
+
+    author = ctx.author
+    target = member
+
+    if message:  # Có nội dung do người dùng cung cấp
+        dm_content = f"💌 **{target.display_name} ơi,**\n\n{author.display_name} muốn gửi đến bạn lời nhắn:\n\n{message}\n\n— {author.display_name}"
+    else:
+        # Chọn ngẫu nhiên 1 trong 100 câu
+        chosen = random.choice(CRUSH_MESSAGES)
+        dm_content = chosen.format(author_name=author.display_name, target_name=target.display_name)
+
+    # Gửi DM cho người được tỏ tình
     try:
-        embed.set_image(url=random.choice(GIF_CRUSH))
-    except:
-        pass
-    await ctx.send(embed=embed)
+        await target.send(dm_content)
+        # Thông báo cho người gửi
+        await ctx.send(f"✅ Đã gửi lời tỏ tình tới {target.mention} qua tin nhắn riêng!")
+    except discord.Forbidden:
+        await ctx.send(f"❌ Không thể gửi tin nhắn riêng cho {target.mention} (họ có thể đã chặn bot).")
+    except Exception as e:
+        await ctx.send(f"❌ Có lỗi xảy ra khi gửi tin nhắn: {e}")
 # ==================== MENU HELP TƯƠNG TÁC ====================
 HELP_CATEGORIES = {
     "👑 Lệnh Độc Quyền Owner": {
