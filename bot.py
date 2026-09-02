@@ -2683,7 +2683,7 @@ CRUSH_MESSAGES = [
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào trái tim còn đập 💓",
     "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn giữ chặt không bao giờ buông tay 🤝",
     "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương bằng cả trái tim 💘",
-    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn gọi là "người yêu" không? 😳",
+    "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn gọi là 'người yêu' không? 😳",
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không cần tớ nữa ❤️",
     "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn ôm vào mỗi buổi sáng 🤗",
     "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn nắm tay đi dạo dưới mưa ☔",
@@ -2717,12 +2717,11 @@ CRUSH_MESSAGES = [
     "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn gửi trao nụ cười hạnh phúc mỗi ngày 😊",
     "Gửi {target_name}, {author_name} có thể nói rằng bạn là người tớ muốn yêu thương đến khi nào trái tim ngừng đập không? 💖",
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn không cần tớ nữa ❤️",
-    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gọi là "cả thế giới" của tớ 🌎",
+    "Này {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn gọi là 'cả thế giới' của tớ 🌎",
     "{target_name} ơi, {author_name} muốn nói rằng bạn là người tớ muốn dành tặng trọn vẹn tình yêu này 💘",
     "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương và chiều chuộng mỗi ngày 🥰",
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn muốn tớ ở bên cạnh ❤️",
 ]
-
 # ==================== LỆNH TÌNH YÊU ====================
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
@@ -2926,14 +2925,20 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
     if message:  # Có nội dung do người dùng cung cấp
         dm_content = f"💌 **{target.display_name} ơi,**\n\n{author.display_name} muốn gửi đến bạn lời nhắn:\n\n{message}\n\n— {author.display_name}"
     else:
-        # Chọn ngẫu nhiên 1 trong 100 câu
-        chosen = random.choice(CRUSH_MESSAGES)
-        dm_content = chosen.format(author_name=author.display_name, target_name=target.display_name)
+        # Chọn ngẫu nhiên 3 câu không trùng lặp từ danh sách 100 câu
+        sample_messages = random.sample(CRUSH_MESSAGES, 3)
+        formatted_messages = [msg.format(author_name=author.display_name, target_name=target.display_name) for msg in sample_messages]
+
+        # Ghép thành cụm tỏ tình hoàn chỉnh
+        dm_content = f"💌 **{target.display_name} ơi, {author.display_name} có điều muốn nói với bạn:**\n\n"
+        dm_content += f"🌹 {formatted_messages[0]}\n\n"
+        dm_content += f"💖 {formatted_messages[1]}\n\n"
+        dm_content += f"💫 {formatted_messages[2]}\n\n"
+        dm_content += f"— {author.display_name} 💘"
 
     # Gửi DM cho người được tỏ tình
     try:
         await target.send(dm_content)
-        # Thông báo cho người gửi
         await ctx.send(f"✅ Đã gửi lời tỏ tình tới {target.mention} qua tin nhắn riêng!")
     except discord.Forbidden:
         await ctx.send(f"❌ Không thể gửi tin nhắn riêng cho {target.mention} (họ có thể đã chặn bot).")
