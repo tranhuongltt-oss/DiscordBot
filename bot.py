@@ -2929,12 +2929,12 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
         sample_messages = random.sample(CRUSH_MESSAGES, 3)
         formatted_messages = [msg.format(author_name=author.display_name, target_name=target.display_name) for msg in sample_messages]
 
-        # Ghép thành cụm tỏ tình hoàn chỉnh
+        # Ghép thành cụm tỏ tình hoàn chỉnh, kết bằng câu chốt có dấu #
         dm_content = f"💌 **{target.display_name} ơi, {author.display_name} có điều muốn nói với bạn:**\n\n"
         dm_content += f"🌹 {formatted_messages[0]}\n\n"
         dm_content += f"💖 {formatted_messages[1]}\n\n"
         dm_content += f"💫 {formatted_messages[2]}\n\n"
-        dm_content += f"— {author.display_name} 💘"
+        dm_content += f"# TỚ THÍCH CẬU, CẬU LÀM NGƯỜI YÊU TỚ ĐƯỢC KHÔNG? 💘"
 
     # Gửi DM cho người được tỏ tình
     try:
