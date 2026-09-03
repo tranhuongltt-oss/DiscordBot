@@ -3124,7 +3124,7 @@ HELP_CATEGORIES = {
             "n! crush @user": "💌 Tỏ tình"
         }
     }
-}
+},
     "👑 Owner Commands": {
         "emoji": "👑",
         "description": "Danh sách 10 lệnh quản trị game dành riêng cho Boss Bảo (ai cũng xem được, chỉ Owner dùng).",
