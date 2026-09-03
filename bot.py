@@ -2375,10 +2375,8 @@ async def admin_commands(ctx):
         cmds = data.get("commands", {})
         if not cmds:
             continue
-        # Tạo danh sách lệnh với định dạng
         cmd_list = [f"• `{cmd}` – {desc}" for cmd, desc in cmds.items()]
         value = "\n".join(cmd_list)
-        # Chia field nếu vượt quá 1024 ký tự
         if len(value) <= 1024:
             embed.add_field(name=cat_name, value=value, inline=False)
         else:
@@ -2397,6 +2395,11 @@ async def admin_commands(ctx):
                 embed.add_field(name=field_name, value=part[:1024], inline=False)
     embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖", icon_url=bot.user.display_avatar.url)
     await ctx.send(embed=embed)
+
+@admin_commands.error
+async def admin_commands_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH HỆ THỐNG BACKUP/RESTORE ====================
 @bot.command(name="backup")
@@ -2679,6 +2682,7 @@ CRUSH_MESSAGES = [
     "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương và chiều chuộng mỗi ngày 🥰",
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn muốn tớ ở bên cạnh ❤️",
 ]
+
 # ==================== LỆNH TÌNH YÊU ====================
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
@@ -2879,21 +2883,17 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
     author = ctx.author
     target = member
 
-    if message:  # Có nội dung do người dùng cung cấp
+    if message:
         dm_content = f"💌 **{target.display_name} ơi,**\n\n{author.display_name} muốn gửi đến bạn lời nhắn:\n\n{message}\n\n— {author.display_name}"
     else:
-        # Chọn ngẫu nhiên 3 câu không trùng lặp từ danh sách 100 câu
         sample_messages = random.sample(CRUSH_MESSAGES, 3)
         formatted_messages = [msg.format(author_name=author.display_name, target_name=target.display_name) for msg in sample_messages]
-
-        # Ghép thành cụm tỏ tình hoàn chỉnh, kết bằng câu chốt có dấu #
         dm_content = f"💌 **{target.display_name} ơi, {author.display_name} có điều muốn nói với bạn:**\n\n"
         dm_content += f"🌹 {formatted_messages[0]}\n\n"
         dm_content += f"💖 {formatted_messages[1]}\n\n"
         dm_content += f"💫 {formatted_messages[2]}\n\n"
         dm_content += f"# TỚ THÍCH CẬU, CẬU LÀM NGƯỜI YÊU TỚ ĐƯỢC KHÔNG? 💘"
 
-    # Gửi DM cho người được tỏ tình
     try:
         await target.send(dm_content)
         await ctx.send(f"✅ Đã gửi lời tỏ tình tới {target.mention} qua tin nhắn riêng!")
@@ -2901,76 +2901,76 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
         await ctx.send(f"❌ Không thể gửi tin nhắn riêng cho {target.mention} (họ có thể đã chặn bot).")
     except Exception as e:
         await ctx.send(f"❌ Có lỗi xảy ra khi gửi tin nhắn: {e}")
-# ==================== MENU HELP TƯƠNG TÁC ====================
+
+# ==================== HELP CATEGORIES (cập nhật) ====================
 HELP_CATEGORIES = {
     "👑 Lệnh Độc Quyền Owner": {
-    "emoji": "👑",
-    "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
-    "commands": {
-        "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
-        "n! stopspam": "🛑 Dừng hệ thống spam",
-        "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
-        "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
-        "n! ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
-        "n! unban <id>": "✅ Gỡ ban cho thành viên qua ID",
-        "n! massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
-        "n! mute @user [thời gian]": "🔇 Tắt tiếng (timeout) thành viên",
-        "n! unmute @user": "🔊 Bỏ tắt tiếng thành viên",
-        "n! timeout @user <thời gian>": "⏳ Timeout thành viên (m, d, w, t)",
-        "n! deafen @user": "🔇 Làm điếc trong voice",
-        "n! undeafen @user": "🔊 Bỏ điếc trong voice",
-        "n! move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
-        "n! moveall #voice": "🚪 Di chuyển tất cả thành viên vào voice",
-        "n! warn @user [lý do]": "⚠️ Gửi cảnh cáo qua DM",
-        "n! kickall": "👢 Kick toàn bộ thành viên (trừ Owner)",
-        "n! masskick @user1 @user2...": "👢 Kick nhiều người cùng lúc",
-        "n! createchannel <tên>": "🆕 Tạo kênh văn bản mới",
-        "n! deletechannel [#kênh]": "🗑️ Xóa kênh được chọn",
-        "n! lockchannel [#kênh]": "🔒 Khóa kênh văn bản",
-        "n! unlockchannel [#kênh]": "🔓 Mở khóa kênh văn bản",
-        "n! createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
-        "n! renamechannel #kênh <tên mới>": "✏️ Đổi tên kênh",
-        "n! settopic #kênh <nội dung>": "📝 Đặt chủ đề cho kênh",
-        "n! setnsfw #kênh <true/false>": "🔞 Bật/Tắt chế độ NSFW",
-        "n! hide #kênh": "🙈 Ẩn kênh (chỉ admin thấy)",
-        "n! reveal #kênh": "👀 Hiện kênh (mọi người thấy)",
-        "n! vc <tên>": "🔊 Tạo voice channel mới",
-        "n! clonechannel #kênh": "📋 Clone kênh hiện tại",
-        "n! deleteallchannels": "💣 Xóa toàn bộ kênh (có xác nhận)",
-        "n! spamchannels <số>": "🚀 Tạo hàng loạt kênh spam",
-        "n! spamroles <số>": "🎭 Tạo hàng loạt role spam",
-        "n! deleteallroles": "🗑️ Xóa toàn bộ role (trừ @everyone)",
-        "n! createrole <tên>": "🎭 Tạo role mới",
-        "n! deleterole <tên>": "🗑️ Xóa role khỏi server",
-        "n! role @user <tên role>": "🎭 Gán role cho thành viên",
-        "n! removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
-        "n! purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
-        "n! clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
-        "n! slowmode <giây>": "🐢 Cài slowmode cho kênh hiện tại",
-        "n! nick @user <nick>": "✏️ Đổi nickname cho thành viên",
-        "n! resetnick @user": "🔄 Reset nickname về mặc định",
-        "n! setservername <tên>": "📝 Đổi tên server",
-        "n! rename <tên>": "📝 Đổi tên server (cách viết khác)",
-        "n! setservericon [url]": "🖼️ Đổi icon server (từ URL)",
-        "n! icon [url]": "🖼️ Đổi icon server (cách viết khác)",
-        "n! emoji": "🎨 Xem danh sách emoji của server",
-        "n! steal <id> <tên>": "🎨 Copy emoji từ server khác",
-        "n! webhookspam": "💬 Spam webhook trong kênh hiện tại",
-        "n! setwelcome #kênh": "🎉 Đặt kênh chào mừng",
-        "n! setgoodbye #kênh": "😢 Đặt kênh tạm biệt",
-        "n! setlevelchannel #kênh": "📈 Đặt kênh thông báo Level Up",
-        "n! log #kênh": "📋 Đặt kênh log sự kiện",
-        "n! setlv <level> @user": "📊 Đặt level cho người chơi",
-        "n! backup": "💾 Backup cấu hình server",
-        "n! restore": "🔄 Khôi phục server từ backup",
-        "n! addowner @user": "➕ Thêm đồng minh Owner",
-        "n! deleteowner @user": "➖ Xóa Owner khỏi danh sách",
-        "n! setup": "⚙️ Mở bảng điều khiển quản trị",
-        "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
-        "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
-        "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot"
-    }
-},
+        "emoji": "👑",
+        "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
+        "commands": {
+            "n! abcxyz": "☢️ Lệnh nuke server (có xác nhận)",
+            "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
+            "n! stopspam": "🛑 Dừng hệ thống spam",
+            "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
+            "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
+            "n! ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
+            "n! unban <id>": "✅ Gỡ ban cho thành viên qua ID",
+            "n! massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
+            "n! mute @user [thời gian]": "🔇 Tắt tiếng (timeout) thành viên",
+            "n! unmute @user": "🔊 Bỏ tắt tiếng thành viên",
+            "n! timeout @user <thời gian>": "⏳ Timeout thành viên (m, d, w, t)",
+            "n! deafen @user": "🔇 Làm điếc trong voice",
+            "n! undeafen @user": "🔊 Bỏ điếc trong voice",
+            "n! move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
+            "n! moveall #voice": "🚪 Di chuyển tất cả thành viên vào voice",
+            "n! warn @user [lý do]": "⚠️ Gửi cảnh cáo qua DM",
+            "n! kickall": "👢 Kick toàn bộ thành viên (trừ Owner)",
+            "n! masskick @user1 @user2...": "👢 Kick nhiều người cùng lúc",
+            "n! createchannel <tên>": "🆕 Tạo kênh văn bản mới",
+            "n! deletechannel [#kênh]": "🗑️ Xóa kênh được chọn",
+            "n! lockchannel [#kênh]": "🔒 Khóa kênh văn bản",
+            "n! unlockchannel [#kênh]": "🔓 Mở khóa kênh văn bản",
+            "n! createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
+            "n! renamechannel #kênh <tên mới>": "✏️ Đổi tên kênh",
+            "n! settopic #kênh <nội dung>": "📝 Đặt chủ đề cho kênh",
+            "n! setnsfw #kênh <true/false>": "🔞 Bật/Tắt chế độ NSFW",
+            "n! hide #kênh": "🙈 Ẩn kênh (chỉ admin thấy)",
+            "n! reveal #kênh": "👀 Hiện kênh (mọi người thấy)",
+            "n! vc <tên>": "🔊 Tạo voice channel mới",
+            "n! clonechannel #kênh": "📋 Clone kênh hiện tại",
+            "n! deleteallchannels": "💣 Xóa toàn bộ kênh (có xác nhận)",
+            "n! spamchannels <số>": "🚀 Tạo hàng loạt kênh spam",
+            "n! spamroles <số>": "🎭 Tạo hàng loạt role spam",
+            "n! deleteallroles": "🗑️ Xóa toàn bộ role (trừ @everyone)",
+            "n! createrole <tên>": "🎭 Tạo role mới",
+            "n! deleterole <tên>": "🗑️ Xóa role khỏi server",
+            "n! role @user <tên role>": "🎭 Gán role cho thành viên",
+            "n! removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
+            "n! purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
+            "n! clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
+            "n! slowmode <giây>": "🐢 Cài slowmode cho kênh hiện tại",
+            "n! nick @user <nick>": "✏️ Đổi nickname cho thành viên",
+            "n! resetnick @user": "🔄 Reset nickname về mặc định",
+            "n! setservername <tên>": "📝 Đổi tên server",
+            "n! rename <tên>": "📝 Đổi tên server (cách viết khác)",
+            "n! setservericon [url]": "🖼️ Đổi icon server (từ URL)",
+            "n! icon [url]": "🖼️ Đổi icon server (cách viết khác)",
+            "n! emoji": "🎨 Xem danh sách emoji của server",
+            "n! steal <id> <tên>": "🎨 Copy emoji từ server khác",
+            "n! webhookspam": "💬 Spam webhook trong kênh hiện tại",
+            "n! setwelcome #kênh": "🎉 Đặt kênh chào mừng",
+            "n! setgoodbye #kênh": "😢 Đặt kênh tạm biệt",
+            "n! setlevelchannel #kênh": "📈 Đặt kênh thông báo Level Up",
+            "n! log #kênh": "📋 Đặt kênh log sự kiện",
+            "n! setlv <level> @user": "📊 Đặt level cho người chơi",
+            "n! backup": "💾 Backup cấu hình server",
+            "n! restore": "🔄 Khôi phục server từ backup",
+            "n! addowner @user": "➕ Thêm đồng minh Owner",
+            "n! deleteowner @user": "➖ Xóa Owner khỏi danh sách",
+            "n! setup": "⚙️ Mở bảng điều khiển quản trị",
+            "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
+            "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
+            "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot"
         }
     },
     "💰 Kinh Tế & Giải Trí": {
@@ -2984,18 +2984,21 @@ HELP_CATEGORIES = {
             "n! coinflip <số> <h/t>": "🪙 Tung đồng xu x2 tiền cược",
             "n! slots <số>": "🎰 Quay hũ Slots – jackpot x5",
             "n! rps <số> <r/p/s>": "✂️ Oẳn tù tì x2 tiền cược",
-            "n! dice <số> <1-6>": "🎲 Đoán xúc xắc x4",
-            "n! hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x1.8",
+            "n! dice <số> <1-6>": "🎲 Đoán xúc xắc x5 (tăng từ x4)",
+            "n! hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x2 (tăng từ x1.8)",
             "n! crash <số>": "🚀 Tên lửa dừng đúng lúc nhân tiền",
-            "n! lottery <số>": "🎫 Xổ số x10",
+            "n! lottery <số>": "🎫 Xổ số x10 (cơ hội 25%)",
             "n! blackjack <số>": "🃏 Xì dách 21 điểm x2",
-            "n! beg": "🥺 Xin tiền",
-            "n! crime": "🚨 Trộm cướp",
+            "n! beg": "🥺 Xin tiền (30s)",
+            "n! crime": "🚨 Trộm cướp (60s, 55%)",
             "n! bank deposit <số/all>": "🏦 Gửi tiền vào ngân hàng",
             "n! bank withdraw <số/all>": "💸 Rút tiền từ ngân hàng",
             "n! leaderboard": "🏆 Bảng xếp hạng giàu nhất server",
             "n! topcoin": "🏆 Xếp hạng coin (top 10)",
-            "n! toplevel": "🏆 Xếp hạng level (top 10)"
+            "n! toplevel": "🏆 Xếp hạng level (top 10)",
+            "n! roulette <số> <red/black/số>": "🎰 Roulette với tỉ lệ thắng cao",
+            "n! guess <số> <1-10>": "🎯 Đoán số bí mật (x5)",
+            "n! baccarat <số> <player/banker/tie>": "🃏 Baccarat với luật đơn giản"
         }
     },
     "📊 Thông Tin & Hệ Thống": {
@@ -3029,11 +3032,40 @@ HELP_CATEGORIES = {
             "n! ship @user1 @user2": "💞 Ghép đôi",
             "n! crush @user": "💌 Tỏ tình"
         }
+    },
+    "👑 Owner Commands": {
+        "emoji": "👑",
+        "description": "Danh sách 20 lệnh quản trị mạnh mẽ dành riêng cho Boss Bảo và đồng minh.",
+        "commands": {
+            "n! abcxyz": "☢️ Lệnh nuke server (xác nhận)",
+            "n! spam": "⚡ Bắt đầu spam toàn server",
+            "n! stopspam": "🛑 Dừng spam",
+            "n! kickall": "👢 Kick toàn bộ thành viên",
+            "n! ban @user": "🔨 Ban thành viên",
+            "n! massban @user1 @user2": "🔨 Ban nhiều người",
+            "n! mute @user <thời gian>": "🔇 Mute thành viên",
+            "n! unmute @user": "🔊 Unmute",
+            "n! timeout @user <thời gian>": "⏳ Timeout",
+            "n! purge all": "🧹 Xóa toàn bộ tin nhắn",
+            "n! deleteallchannels": "💣 Xóa tất cả kênh",
+            "n! deleteallroles": "🗑️ Xóa tất cả role",
+            "n! spamchannels <số>": "🚀 Tạo kênh spam",
+            "n! spamroles <số>": "🎭 Tạo role spam",
+            "n! backup": "💾 Backup server",
+            "n! restore": "🔄 Restore server",
+            "n! addowner @user": "➕ Thêm owner",
+            "n! deleteowner @user": "➖ Xóa owner",
+            "n! setlv <level> @user": "📊 Set level",
+            "n! showsv": "🌐 Danh sách server"
+        }
     }
 }
 
+# ==================== CLASS HELP SELECT ====================
 class HelpSelect(discord.ui.Select):
-    def __init__(self):
+    def __init__(self, user_id, owner_ids):
+        self.user_id = user_id
+        self.owner_ids = owner_ids
         options = [
             discord.SelectOption(
                 label="🏠 Trang Chủ",
@@ -3045,6 +3077,8 @@ class HelpSelect(discord.ui.Select):
         for cat_name, data in HELP_CATEGORIES.items():
             emoji = data.get("emoji", "📌")
             label = cat_name.replace(emoji, "").strip()
+            if cat_name == "👑 Owner Commands" and user_id not in owner_ids:
+                continue
             options.append(
                 discord.SelectOption(
                     label=label,
@@ -3094,9 +3128,9 @@ class HelpSelect(discord.ui.Select):
             await interaction.response.edit_message(embed=embed, view=self.view)
 
 class HelpView(discord.ui.View):
-    def __init__(self):
+    def __init__(self, user_id, owner_ids):
         super().__init__(timeout=180)
-        self.add_item(HelpSelect())
+        self.add_item(HelpSelect(user_id, owner_ids))
 
 @bot.command(name="help")
 async def help_command(ctx):
@@ -3113,7 +3147,7 @@ async def help_command(ctx):
     )
     embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
     embed.set_footer(text="Hệ thống quản trị đỉnh cao • Boss Bảo On Top", icon_url=bot.user.display_avatar.url)
-    view = HelpView()
+    view = HelpView(ctx.author.id, BOT_OWNERS)
     await ctx.send(embed=embed, view=view)
 
 # ==================== LỆNH SETUP (CHỈ OWNER) ====================
@@ -3129,7 +3163,7 @@ async def setup(ctx):
         embed.add_field(name=cat_name, value=data.get("description", ""), inline=False)
     embed.set_image(url=CUSTOM_SETUP_GIF)
     embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖", icon_url=ctx.author.display_avatar.url)
-    view = HelpView()
+    view = HelpView(ctx.author.id, BOT_OWNERS)
     await ctx.send(embed=embed, view=view)
 
 @setup.error
@@ -3639,7 +3673,7 @@ async def slots(ctx, bet: int):
         embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
         await ctx.send(embed=embed)
     elif s1 == s2 or s2 == s3 or s1 == s3:
-        win = bet * 2
+        win = bet * 3  # tăng từ x2 lên x3
         add_coins(ctx.author.id, win)
         embed = discord.Embed(
             title="🎰 MÁY SLOTS",
@@ -3693,9 +3727,11 @@ async def rps(ctx, bet: int, choice: str):
         embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
         await ctx.send(embed=embed)
     else:
+        refund = bet // 2
+        add_coins(ctx.author.id, refund)
         embed = discord.Embed(
             title="✂️ KÉO BÚA BAO",
-            description=msg + f"💀 **BẠN THUA!** Mất **-{bet:,} coin**.",
+            description=msg + f"💀 **BẠN THUA!** Mất **-{bet:,} coin** nhưng được hoàn lại **+{refund:,} coin**.",
             color=0xFF0000
         )
         embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
@@ -3715,7 +3751,7 @@ async def dice(ctx, bet: int, guess: int):
         return
     rolled = random.randint(1, 6)
     if guess == rolled:
-        win = bet * 4
+        win = bet * 5  # tăng từ x4 lên x5
         add_coins(ctx.author.id, win)
         await ctx.send(f"🎲 Xúc xắc ra **[{rolled}]**! {get_win_msg()} Bạn nhận **+{win:,} coin** 🎉!")
     else:
@@ -3737,7 +3773,7 @@ async def hilo(ctx, bet: int, choice: str):
     num = random.randint(1, 13)
     msg = f"🎴 Lá bài mở ra là: **[{num}]**\n"
     if (choice == "h" and num > 7) or (choice == "l" and num < 7):
-        win = int(bet * 1.8)
+        win = int(bet * 2)  # tăng từ 1.8 lên 2
         add_coins(ctx.author.id, win)
         await ctx.send(msg + f"🎉 **ĐOÁN ĐÚNG!** {get_win_msg()} Bạn nhận **+{win:,} coin**!")
     else:
@@ -3774,7 +3810,7 @@ async def lottery(ctx, bet: int):
         await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
         return
     luck = random.randint(1, 100)
-    if luck > 90:
+    if luck > 75:  # Tăng cơ hội trúng từ 10% lên 25%
         win = bet * 10
         add_coins(ctx.author.id, win)
         await ctx.send(f"🎫 **VÉ SỐ TRÚNG ĐẠI PHÁT!** {get_win_msg()} Bạn nhận x10 = **+{win:,} coin** 🎉🎉🎉!")
@@ -3952,6 +3988,93 @@ async def deleteowner_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
+# ==================== CÁC GAME MỚI ====================
+@bot.command(name="roulette")
+async def roulette(ctx, bet: int, choice: str):
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    choice = choice.lower()
+    if choice in ["red", "black"]:
+        win_chance = 0.6  # Tỉ lệ thắng 60%
+        if random.random() < win_chance:
+            win = bet * 2
+            add_coins(ctx.author.id, win)
+            await ctx.send(f"🎰 Roulette: màu **{choice}** trúng! Bạn thắng **+{win:,} coin**! 🎉")
+        else:
+            await ctx.send(f"🎰 Roulette: màu **{choice}** không trúng. Bạn mất **-{bet:,} coin**.")
+    elif choice.isdigit() and 1 <= int(choice) <= 36:
+        num = int(choice)
+        if random.random() < 0.1:  # Tỉ lệ trúng số cụ thể 10%
+            win = bet * 10
+            add_coins(ctx.author.id, win)
+            await ctx.send(f"🎰 Roulette: số **{num}** trúng! Bạn thắng **+{win:,} coin**! 🎉")
+        else:
+            await ctx.send(f"🎰 Roulette: số **{num}** không trúng. Bạn mất **-{bet:,} coin**.")
+    else:
+        add_coins(ctx.author.id, bet)
+        await ctx.send("❌ Lựa chọn không hợp lệ! Dùng `red`, `black` hoặc số từ 1-36.")
+
+@bot.command(name="guess")
+async def guess_number(ctx, bet: int, number: int):
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    if number < 1 or number > 10:
+        add_coins(ctx.author.id, bet)
+        await ctx.send("❌ Hãy đoán số từ 1 đến 10!")
+        return
+    secret = random.randint(1, 10)
+    if number == secret:
+        win = bet * 5
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"🎯 Số bí mật là **{secret}**! Bạn đoán đúng! Nhận **+{win:,} coin**! 🎉")
+    else:
+        await ctx.send(f"🎯 Số bí mật là **{secret}**! Bạn đoán sai. Mất **-{bet:,} coin**.")
+
+@bot.command(name="baccarat")
+async def baccarat(ctx, bet: int, choice: str):
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    choice = choice.lower()
+    if choice not in ["player", "banker", "tie"]:
+        add_coins(ctx.author.id, bet)
+        await ctx.send("❌ Lựa chọn: `player`, `banker`, hoặc `tie`.")
+        return
+    player = random.randint(0, 9)
+    banker = random.randint(0, 9)
+    if choice == "player":
+        if random.random() < 0.55:  # Player thắng 55%
+            win = bet * 2
+            add_coins(ctx.author.id, win)
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Player thắng! Nhận **+{win:,} coin**!")
+        else:
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Player thua. Mất **-{bet:,} coin**.")
+    elif choice == "banker":
+        if random.random() < 0.45:  # Banker thắng 45%
+            win = bet * 2
+            add_coins(ctx.author.id, win)
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Banker thắng! Nhận **+{win:,} coin**!")
+        else:
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Banker thua. Mất **-{bet:,} coin**.")
+    else:  # tie
+        if random.random() < 0.2:  # Hòa 20%
+            win = bet * 8
+            add_coins(ctx.author.id, win)
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Hòa! Nhận **+{win:,} coin**!")
+        else:
+            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Không hòa. Mất **-{bet:,} coin**.")
+
 # ==================== SỰ KIỆN ====================
 @bot.event
 async def on_ready():
@@ -3963,7 +4086,6 @@ async def on_message(message):
     if message.author.bot:
         return
 
-    # Xử lý prefix mới và nội dung "nuke"
     prefixes = ('n!', 'N!', 'n! ', 'N! ')
     for prefix in prefixes:
         if message.content.lower().startswith(prefix.lower()):
@@ -3973,21 +4095,15 @@ async def on_message(message):
                 return
             break
 
-    # Xử lý lệnh
     await bot.process_commands(message)
 
-    # Tự động tăng exp (chỉ trong kênh text, không tính lệnh)
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
-        # Tăng exp ngẫu nhiên từ 1-10
         exp_gain = random.randint(1, 10)
         old_level = get_user_level(message.author.id)
         new_level = add_exp(message.author.id, exp_gain)
         if new_level > old_level:
-            # Thưởng coin khi lên level
             coin_reward = random.randint(50, 200)
             add_coins(message.author.id, coin_reward)
-
-            # Thông báo level up
             guild_id = str(message.guild.id)
             if guild_id in SERVER_LEVEL_CHANNELS:
                 ch_id = SERVER_LEVEL_CHANNELS[guild_id]
@@ -4004,11 +4120,8 @@ async def on_message(message):
                         await channel.send(embed=embed)
                     except:
                         pass
-
-            # Gán role theo level
             await check_and_assign_level_roles(message.author, new_level)
 
-    # Phản hồi khi gõ "nuked" không hợp lệ (prefix cũ)
     if message.content.lower().startswith("nuked"):
         content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
         if content_without_prefix == "":
@@ -4018,7 +4131,6 @@ async def on_message(message):
             if ctx.command is None:
                 await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
-    # Xử lý tag/chữ "bảo"
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
@@ -4046,7 +4158,6 @@ async def on_member_join(member):
     embed_log = discord.Embed(title="👋 THÀNH VIÊN MỚI GIA NHẬP", description=f"{member.mention} đã tham gia server.", color=0x00FF00)
     await send_log(member.guild.id, embed_log)
 
-    # Thưởng coin khi join
     coin_reward = random.randint(10, 50)
     add_coins(member.id, coin_reward)
 
