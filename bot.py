@@ -2366,80 +2366,37 @@ async def showsv_error(ctx, error):
 @bot.command(name="admincmd")
 @is_bot_owner()
 async def admin_commands(ctx):
-    all_commands = [
-        "`n! kick @user` - Kick thành viên",
-        "`n! ban @user` - Ban thành viên",
-        "`n! unban <id>` - Unban thành viên",
-        "`n! createchannel <tên>` - Tạo kênh mới",
-        "`n! deletechannel #kênh` - Xóa kênh",
-        "`n! purge all` - Xóa toàn bộ tin nhắn",
-        "`n! role @user <role>` - Thêm role",
-        "`n! removerole @user <role>` - Xóa role",
-        "`n! lock #kênh` - Khóa kênh",
-        "`n! unlock #kênh` - Mở khóa kênh",
-        "`n! mute @user [thời gian]` - Mute thành viên",
-        "`n! unmute @user` - Unmute thành viên",
-        "`n! warn @user` - Cảnh cáo thành viên",
-        "`n! clear <số>` - Xóa tin nhắn",
-        "`n! spam @user` - Spam chửi",
-        "`n! stop` - Dừng spam",
-        "`n! kickall` - Kick toàn bộ",
-        "`n! deleteallchannels` - Xóa tất cả kênh",
-        "`n! deleteallroles` - Xóa tất cả role",
-        "`n! spamroles` - Tạo role spam",
-        "`n! spamchannels` - Tạo kênh spam",
-        "`n! setservername` - Đổi tên server",
-        "`n! setservericon` - Đổi icon server",
-        "`n! addrole <tên>` - Tạo role mới",
-        "`n! showsv` - Xem danh sách server",
-        "`n! setup` - Bảng điều khiển",
-        "`n! log #kênh` - Cài kênh log",
-        "`n! channelslv #kênh` - Cài kênh level",
-        "`n! setlv <level> @user` - Set level",
-        "`n! lv @user` - Xem level",
-        "`n! setwelcome #kênh` - Cài kênh chào mừng",
-        "`n! setgoodbye #kênh` - Cài kênh tạm biệt",
-        "`n! backup` - Backup server",
-        "`n! restore` - Khôi phục server từ backup",
-        "`n! slowmode <giây>` - Bật slowmode",
-        "`n! nick @user <tên>` - Đổi nickname",
-        "`n! resetnick @user` - Reset nickname",
-        "`n! vc <tên>` - Tạo voice channel",
-        "`n! hide #kênh` - Ẩn kênh",
-        "`n! reveal #kênh` - Hiện kênh",
-        "`n! rename <tên>` - Đổi tên server",
-        "`n! icon [url]` - Đổi icon server",
-        "`n! emoji` - Xem danh sách emoji",
-        "`n! steal <id> <tên>` - Copy emoji",
-        "`n! moveall #voice` - Di chuyển tất cả voice",
-        "`n! massban <@user1 @user2 ...>` - Ban nhiều người",
-        "`n! masskick <@user1 @user2 ...>` - Kick nhiều người",
-        "`n! clonechannel #kênh` - Clone kênh",
-        "`n! webhookspam` - Spam qua webhook",
-        "`n! serverinfo` - Thông tin server",
-        "`n! userinfo @user` - Thông tin user",
-        "`n! avatar @user` - Lấy avatar",
-        "`n! off [lệnh]` - Tắt lệnh hoặc bot",
-        "`n! on [lệnh]` - Bật lệnh hoặc thông báo bot đang hoạt động"
-    ]
     embed = discord.Embed(
-        title="👑 DANH SÁCH LỆNH QUẢN TRỊ",
-        description="📋 Tất cả lệnh dành cho Boss Bảo (mỗi field hiển thị một phần):",
+        title="👑 DANH SÁCH LỆNH QUẢN TRỊ ĐẦY ĐỦ",
+        description="Tất cả lệnh dành cho Boss Bảo và Owners, phân loại theo danh mục:",
         color=0xFFD700
     )
-    chunk_size = 15
-    for i in range(0, len(all_commands), chunk_size):
-        chunk = all_commands[i:i+chunk_size]
-        field_name = f"📌 Nhóm {i//chunk_size + 1}"
-        field_value = "\n".join(chunk)
-        embed.add_field(name=field_name, value=field_value, inline=False)
-    embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖")
+    for cat_name, data in HELP_CATEGORIES.items():
+        cmds = data.get("commands", {})
+        if not cmds:
+            continue
+        # Tạo danh sách lệnh với định dạng
+        cmd_list = [f"• `{cmd}` – {desc}" for cmd, desc in cmds.items()]
+        value = "\n".join(cmd_list)
+        # Chia field nếu vượt quá 1024 ký tự
+        if len(value) <= 1024:
+            embed.add_field(name=cat_name, value=value, inline=False)
+        else:
+            parts = []
+            current = ""
+            for line in cmd_list:
+                if len(current) + len(line) + 2 > 1024:
+                    parts.append(current)
+                    current = line
+                else:
+                    current += "\n" + line if current else line
+            if current:
+                parts.append(current)
+            for i, part in enumerate(parts):
+                field_name = f"{cat_name} (phần {i+1})" if len(parts) > 1 else cat_name
+                embed.add_field(name=field_name, value=part[:1024], inline=False)
+    embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖", icon_url=bot.user.display_avatar.url)
     await ctx.send(embed=embed)
-
-@admin_commands.error
-async def admin_commands_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH HỆ THỐNG BACKUP/RESTORE ====================
 @bot.command(name="backup")
@@ -2947,42 +2904,73 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
 # ==================== MENU HELP TƯƠNG TÁC ====================
 HELP_CATEGORIES = {
     "👑 Lệnh Độc Quyền Owner": {
-        "emoji": "👑",
-        "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
-        "commands": {
-            "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
-            "n! stopspam": "🛑 Dừng hệ thống spam",
-            "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
-            "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
-            "n! ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
-            "n! unban <id>": "✅ Gỡ ban cho thành viên qua ID",
-            "n! massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
-            "n! mute @user [phút]": "🔇 Tắt tiếng (timeout) thành viên",
-            "n! unmute @user": "🔊 Bỏ tắt tiếng thành viên",
-            "n! createchannel <tên>": "🆕 Tạo kênh văn bản mới",
-            "n! deletechannel [#channel]": "🗑️ Xóa kênh được chọn",
-            "n! lockchannel [#channel]": "🔒 Khóa kênh văn bản",
-            "n! unlockchannel [#channel]": "🔓 Mở khóa kênh văn bản",
-            "n! createrole <tên>": "🎭 Tạo role mới",
-            "n! deleterole <tên>": "🗑️ Xóa role khỏi server",
-            "n! role @user <tên role>": "🎭 Gán role cho thành viên",
-            "n! removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
-            "n! purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
-            "n! clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
-            "n! createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
-            "n! move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
-            "n! settopic #channel <nội dung>": "📝 Đặt chủ đề cho kênh",
-            "n! setnsfw #channel <true/false>": "🔞 Bật/Tắt chế độ NSFW",
-            "n! setwelcome #channel": "🎉 Đặt kênh chào mừng",
-            "n! setgoodbye #channel": "😢 Đặt kênh tạm biệt",
-            "n! setlevelchannel #channel": "📈 Đặt kênh thông báo Level Up",
-            "n! log #channel": "📋 Đặt kênh log sự kiện",
-            "n! setlv <level> @user": "📊 Đặt level cho người chơi",
-            "n! backup": "💾 Backup server",
-            "n! restore": "🔄 Khôi phục server từ backup",
-            "n! addrole <tên>": "👑 Tạo role với quyền của bot",
-            "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
-            "n! admincmd": "📋 Xem toàn bộ lệnh quản trị"
+    "emoji": "👑",
+    "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
+    "commands": {
+        "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
+        "n! stopspam": "🛑 Dừng hệ thống spam",
+        "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
+        "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
+        "n! ban @user [lý do]": "🔨 Cấm thành viên khỏi server",
+        "n! unban <id>": "✅ Gỡ ban cho thành viên qua ID",
+        "n! massban @user1 @user2...": "🔨 Cấm nhiều người cùng lúc",
+        "n! mute @user [thời gian]": "🔇 Tắt tiếng (timeout) thành viên",
+        "n! unmute @user": "🔊 Bỏ tắt tiếng thành viên",
+        "n! timeout @user <thời gian>": "⏳ Timeout thành viên (m, d, w, t)",
+        "n! deafen @user": "🔇 Làm điếc trong voice",
+        "n! undeafen @user": "🔊 Bỏ điếc trong voice",
+        "n! move @user #voice": "🚪 Di chuyển thành viên sang voice khác",
+        "n! moveall #voice": "🚪 Di chuyển tất cả thành viên vào voice",
+        "n! warn @user [lý do]": "⚠️ Gửi cảnh cáo qua DM",
+        "n! kickall": "👢 Kick toàn bộ thành viên (trừ Owner)",
+        "n! masskick @user1 @user2...": "👢 Kick nhiều người cùng lúc",
+        "n! createchannel <tên>": "🆕 Tạo kênh văn bản mới",
+        "n! deletechannel [#kênh]": "🗑️ Xóa kênh được chọn",
+        "n! lockchannel [#kênh]": "🔒 Khóa kênh văn bản",
+        "n! unlockchannel [#kênh]": "🔓 Mở khóa kênh văn bản",
+        "n! createcategory <tên>": "📁 Tạo Danh mục (Category) mới",
+        "n! renamechannel #kênh <tên mới>": "✏️ Đổi tên kênh",
+        "n! settopic #kênh <nội dung>": "📝 Đặt chủ đề cho kênh",
+        "n! setnsfw #kênh <true/false>": "🔞 Bật/Tắt chế độ NSFW",
+        "n! hide #kênh": "🙈 Ẩn kênh (chỉ admin thấy)",
+        "n! reveal #kênh": "👀 Hiện kênh (mọi người thấy)",
+        "n! vc <tên>": "🔊 Tạo voice channel mới",
+        "n! clonechannel #kênh": "📋 Clone kênh hiện tại",
+        "n! deleteallchannels": "💣 Xóa toàn bộ kênh (có xác nhận)",
+        "n! spamchannels <số>": "🚀 Tạo hàng loạt kênh spam",
+        "n! spamroles <số>": "🎭 Tạo hàng loạt role spam",
+        "n! deleteallroles": "🗑️ Xóa toàn bộ role (trừ @everyone)",
+        "n! createrole <tên>": "🎭 Tạo role mới",
+        "n! deleterole <tên>": "🗑️ Xóa role khỏi server",
+        "n! role @user <tên role>": "🎭 Gán role cho thành viên",
+        "n! removerole @user <tên role>": "🎭 Xóa role khỏi thành viên",
+        "n! purge all": "🧹 Xóa sạch toàn bộ tin nhắn server",
+        "n! clear <số>": "🧹 Xóa tin nhắn trong kênh (tối đa 1000)",
+        "n! slowmode <giây>": "🐢 Cài slowmode cho kênh hiện tại",
+        "n! nick @user <nick>": "✏️ Đổi nickname cho thành viên",
+        "n! resetnick @user": "🔄 Reset nickname về mặc định",
+        "n! setservername <tên>": "📝 Đổi tên server",
+        "n! rename <tên>": "📝 Đổi tên server (cách viết khác)",
+        "n! setservericon [url]": "🖼️ Đổi icon server (từ URL)",
+        "n! icon [url]": "🖼️ Đổi icon server (cách viết khác)",
+        "n! emoji": "🎨 Xem danh sách emoji của server",
+        "n! steal <id> <tên>": "🎨 Copy emoji từ server khác",
+        "n! webhookspam": "💬 Spam webhook trong kênh hiện tại",
+        "n! setwelcome #kênh": "🎉 Đặt kênh chào mừng",
+        "n! setgoodbye #kênh": "😢 Đặt kênh tạm biệt",
+        "n! setlevelchannel #kênh": "📈 Đặt kênh thông báo Level Up",
+        "n! log #kênh": "📋 Đặt kênh log sự kiện",
+        "n! setlv <level> @user": "📊 Đặt level cho người chơi",
+        "n! backup": "💾 Backup cấu hình server",
+        "n! restore": "🔄 Khôi phục server từ backup",
+        "n! addowner @user": "➕ Thêm đồng minh Owner",
+        "n! deleteowner @user": "➖ Xóa Owner khỏi danh sách",
+        "n! setup": "⚙️ Mở bảng điều khiển quản trị",
+        "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
+        "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
+        "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot"
+    }
+},
         }
     },
     "💰 Kinh Tế & Giải Trí": {
