@@ -3053,6 +3053,7 @@ HELP_CATEGORIES = {
         "emoji": "💰",
         "description": "Hệ thống mini-game, cá cược, kiếm coin và chuyển tiền phong phú.",
         "commands": {
+            "n! shop:🛒xem hệ thống cửa hàng của game",
             "n! balance [@user]": "💰 Xem số dư coin của bạn hoặc người khác",
             "n! daily": "🎁 Nhận quà coin miễn phí mỗi ngày (24h)",
             "n! work": "🛠️ Làm việc kiếm coin",
