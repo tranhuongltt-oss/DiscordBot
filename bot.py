@@ -3122,9 +3122,8 @@ HELP_CATEGORIES = {
             "n! divorce @user": "💔 Ly hôn",
             "n! ship @user1 @user2": "💞 Ghép đôi",
             "n! crush @user": "💌 Tỏ tình"
-        }
-    }
-},
+}
+    },
     "👑 Owner Commands": {
         "emoji": "👑",
         "description": "Danh sách 10 lệnh quản trị game dành riêng cho Boss Bảo (ai cũng xem được, chỉ Owner dùng).",
