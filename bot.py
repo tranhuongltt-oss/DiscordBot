@@ -3245,7 +3245,347 @@ async def setup(ctx):
 async def setup_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+# ==================== HỆ THỐNG SHOP 20 VẬT PHẨM ====================
 
+# ---------- 20 VẬT PHẨM ----------
+SHOP_ITEMS = {
+    "🍀 Lá Cỏ May Mắn": {
+        "price": 500,
+        "effect_type": "win_rate_boost",
+        "effect_value": 0.1,
+        "duration": 1,
+        "desc": "Tăng 10% tỉ lệ thắng cho 1 ván chơi"
+    },
+    "🍀 Bùa May Mắn Cấp 2": {
+        "price": 1200,
+        "effect_type": "win_rate_boost",
+        "effect_value": 0.2,
+        "duration": 1,
+        "desc": "Tăng 20% tỉ lệ thắng cho 1 ván chơi"
+    },
+    "💰 Nhẫn Nhân Đôi": {
+        "price": 800,
+        "effect_type": "bonus_multiplier",
+        "effect_value": 2.0,
+        "duration": 1,
+        "desc": "Nhân đôi tiền thắng ở ván tiếp theo"
+    },
+    "💰 Nhẫn Nhân Ba": {
+        "price": 2000,
+        "effect_type": "bonus_multiplier",
+        "effect_value": 3.0,
+        "duration": 1,
+        "desc": "Nhân ba tiền thắng ở ván tiếp theo"
+    },
+    "🛡️ Khiên Bảo Vệ Cấp 1": {
+        "price": 600,
+        "effect_type": "shield",
+        "effect_value": 1,
+        "duration": 1,
+        "desc": "Bảo vệ khỏi mất coin khi thua 1 lần"
+    },
+    "🛡️ Khiên Bảo Vệ Cấp 2": {
+        "price": 1500,
+        "effect_type": "shield",
+        "effect_value": 3,
+        "duration": 3,
+        "desc": "Bảo vệ khỏi mất coin khi thua 3 lần"
+    },
+    "💫 Bùa Hồi Sinh": {
+        "price": 1000,
+        "effect_type": "refund",
+        "effect_value": 0.5,
+        "duration": 1,
+        "desc": "Hoàn lại 50% tiền cược khi thua 1 lần"
+    },
+    "📚 Sách Kinh Nghiệm": {
+        "price": 700,
+        "effect_type": "instant_exp",
+        "effect_value": 50,
+        "duration": 0,
+        "desc": "Tăng 50 EXP ngay lập tức"
+    },
+    "📚 Sách Kinh Nghiệm Lớn": {
+        "price": 2000,
+        "effect_type": "instant_exp",
+        "effect_value": 200,
+        "duration": 0,
+        "desc": "Tăng 200 EXP ngay lập tức"
+    },
+    "⏳ Đồng Hồ Cát": {
+        "price": 1200,
+        "effect_type": "reset_cooldown",
+        "effect_value": "daily",
+        "duration": 0,
+        "desc": "Reset cooldown nhận daily"
+    },
+    "🎭 Mặt Nạ Ăn Xin": {
+        "price": 400,
+        "effect_type": "reset_cooldown",
+        "effect_value": "beg",
+        "duration": 0,
+        "desc": "Reset cooldown lệnh beg"
+    },
+    "🥷 Áo Choàng Tàng Hình": {
+        "price": 800,
+        "effect_type": "reset_cooldown",
+        "effect_value": "crime",
+        "duration": 0,
+        "desc": "Reset cooldown lệnh crime"
+    },
+    "🎰 Mắt Thần Slots": {
+        "price": 2500,
+        "effect_type": "slots_boost",
+        "effect_value": 2.0,
+        "duration": 3,
+        "desc": "Tăng tỉ lệ trúng slots (cho 3 ván)"
+    },
+    "🎲 Xúc Xắc May Mắn": {
+        "price": 1500,
+        "effect_type": "dice_boost",
+        "effect_value": 0.6,
+        "duration": 2,
+        "desc": "Tăng tỉ lệ đoán dice lên 60% (cho 2 ván)"
+    },
+    "✂️ Găng Tay Đấm Bốc": {
+        "price": 1000,
+        "effect_type": "rps_boost",
+        "effect_value": 0.7,
+        "duration": 2,
+        "desc": "Tăng tỉ lệ thắng RPS lên 70% (cho 2 ván)"
+    },
+    "🪙 Đồng Xu Hai Mặt": {
+        "price": 800,
+        "effect_type": "coinflip_boost",
+        "effect_value": 0.6,
+        "duration": 2,
+        "desc": "Tăng tỉ lệ thắng coinflip lên 60% (cho 2 ván)"
+    },
+    "🃏 Bộ Bài Át": {
+        "price": 1800,
+        "effect_type": "blackjack_boost",
+        "effect_value": 22,
+        "duration": 2,
+        "desc": "Tăng điểm tối đa trong Blackjack lên 22 (cho 2 ván)"
+    },
+    "🍀 Vé Số May Mắn": {
+        "price": 1200,
+        "effect_type": "lottery_boost",
+        "effect_value": 0.4,
+        "duration": 1,
+        "desc": "Tăng tỉ lệ trúng lottery lên 40% (1 lần)"
+    },
+    "🚀 Tên Lửa Tăng Áp": {
+        "price": 1400,
+        "effect_type": "crash_boost",
+        "effect_value": 5.0,
+        "duration": 1,
+        "desc": "Tăng hệ số tối đa trong crash lên 5.0 (1 lần)"
+    },
+    "🎴 Kính Lúp Hilo": {
+        "price": 1000,
+        "effect_type": "hilo_boost",
+        "effect_value": 0.55,
+        "duration": 2,
+        "desc": "Tăng tỉ lệ thắng Hilo lên 55% (cho 2 ván)"
+    }
+}
+
+# ---------- LƯU HIỆU ỨNG ----------
+player_effects = {}  # user_id -> {effect_type: {'value': x, 'duration': y}}
+EFFECT_FILE = "effects.json"
+
+def load_effects():
+    global player_effects
+    player_effects = load_json(EFFECT_FILE, {})
+
+def save_effects():
+    save_json(EFFECT_FILE, player_effects)
+
+load_effects()
+
+def add_effect(user_id, effect_type, effect_value, duration):
+    uid = str(user_id)
+    if uid not in player_effects:
+        player_effects[uid] = {}
+    if effect_type in player_effects[uid]:
+        old_dur = player_effects[uid][effect_type]['duration']
+        player_effects[uid][effect_type]['duration'] = old_dur + duration
+    else:
+        player_effects[uid][effect_type] = {'value': effect_value, 'duration': duration}
+    save_effects()
+
+def consume_effect(user_id, effect_type):
+    uid = str(user_id)
+    if uid not in player_effects or effect_type not in player_effects[uid]:
+        return None
+    effect = player_effects[uid][effect_type]
+    if effect['duration'] <= 0:
+        del player_effects[uid][effect_type]
+        save_effects()
+        return None
+    effect['duration'] -= 1
+    value = effect['value']
+    if effect['duration'] <= 0:
+        del player_effects[uid][effect_type]
+    save_effects()
+    return value
+
+def has_effect(user_id, effect_type):
+    uid = str(user_id)
+    if uid not in player_effects or effect_type not in player_effects[uid]:
+        return False
+    return player_effects[uid][effect_type]['duration'] > 0
+
+# ---------- LỆNH SHOP ----------
+@bot.command(name="shop")
+async def show_shop(ctx):
+    """Hiển thị 20 vật phẩm trong cửa hàng"""
+    embed = discord.Embed(
+        title="🛒 CỬA HÀNG VẬT PHẨM (20 MÓN)",
+        description="Dùng `n! buyitem <tên> [số lượng]` để mua.",
+        color=0x00FFCC
+    )
+    for name, item in SHOP_ITEMS.items():
+        embed.add_field(
+            name=name,
+            value=f"💰 {item['price']:,} coin\n📌 {item['desc']}",
+            inline=False
+        )
+    embed.set_footer(text="Hệ thống cửa hàng Boss Bảo 💖")
+    await ctx.send(embed=embed)
+
+# ---------- LỆNH MUA ----------
+@bot.command(name="buyitem")
+async def buy_item(ctx, *, item_name: str, quantity: int = 1):
+    if quantity <= 0:
+        await ctx.send("❌ Số lượng phải lớn hơn 0!")
+        return
+    found_name = None
+    for name in SHOP_ITEMS:
+        if name.lower() == item_name.lower():
+            found_name = name
+            break
+    if not found_name:
+        await ctx.send(f"❌ Không tìm thấy vật phẩm `{item_name}`!")
+        return
+    item = SHOP_ITEMS[found_name]
+    total = item['price'] * quantity
+    if not subtract_coins(ctx.author.id, total):
+        await ctx.send(f"❌ Bạn không đủ {total:,} coin!")
+        return
+    uid = str(ctx.author.id)
+    if uid not in user_inventory:
+        user_inventory[uid] = {}
+    user_inventory[uid][found_name] = user_inventory[uid].get(found_name, 0) + quantity
+    save_json(INVENTORY_FILE, user_inventory)
+    await ctx.send(f"✅ Bạn đã mua **{quantity} {found_name}** với giá **{total:,} coin**!")
+
+# ---------- LỆNH XEM TỦ ĐỒ ----------
+@bot.command(name="inventory", aliases=["tui", "bag", "tudod"])
+async def show_inventory(ctx, member: discord.Member = None):
+    target = member or ctx.author
+    uid = str(target.id)
+    inv = user_inventory.get(uid, {})
+    if not inv:
+        await ctx.send(f"📭 {target.mention} chưa có vật phẩm nào.")
+        return
+    embed = discord.Embed(
+        title=f"🎒 TỦ ĐỒ CỦA {target.display_name}",
+        color=0xFFD700
+    )
+    for name, qty in inv.items():
+        embed.add_field(name=name, value=f"Số lượng: {qty}", inline=True)
+    embed.set_footer(text="Dùng `n! useitem <tên> [số lượng]` để sử dụng.")
+    await ctx.send(embed=embed)
+
+# ---------- LỆNH SỬ DỤNG ĐỒ ----------
+@bot.command(name="useitem")
+async def use_item(ctx, *, item_name: str, quantity: int = 1):
+    if quantity <= 0:
+        await ctx.send("❌ Số lượng phải lớn hơn 0!")
+        return
+    uid = str(ctx.author.id)
+    inv = user_inventory.get(uid, {})
+    found_name = None
+    for name in inv:
+        if name.lower() == item_name.lower():
+            found_name = name
+            break
+    if not found_name:
+        await ctx.send(f"❌ Bạn không có `{item_name}` trong tủ!")
+        return
+    if inv[found_name] < quantity:
+        await ctx.send(f"❌ Bạn chỉ có {inv[found_name]} {found_name}, không đủ!")
+        return
+    item = SHOP_ITEMS.get(found_name)
+    if not item:
+        await ctx.send(f"⚠️ Vật phẩm `{found_name}` không có hiệu ứng.")
+        inv[found_name] -= quantity
+        if inv[found_name] <= 0:
+            del inv[found_name]
+        save_json(INVENTORY_FILE, user_inventory)
+        return
+    effect_type = item['effect_type']
+    effect_value = item['effect_value']
+    duration = item['duration'] * quantity
+
+    inv[found_name] -= quantity
+    if inv[found_name] <= 0:
+        del inv[found_name]
+    save_json(INVENTORY_FILE, user_inventory)
+
+    msg = ""
+    if effect_type == "instant_exp":
+        old_level = get_user_level(ctx.author.id)
+        new_level = add_exp(ctx.author.id, int(effect_value * quantity))
+        msg = f"📚 Bạn nhận **{int(effect_value * quantity)} EXP**! Level: {old_level} → {new_level}"
+    elif effect_type == "reset_cooldown":
+        if effect_value == "daily":
+            if uid in daily_cooldowns:
+                del daily_cooldowns[uid]
+                save_json(DAILY_FILE, daily_cooldowns)
+            msg = "⏳ Đã reset daily! Bạn có thể nhận daily ngay."
+        elif effect_value == "beg":
+            if uid in daily_cooldowns and 'last_beg' in daily_cooldowns[uid]:
+                del daily_cooldowns[uid]['last_beg']
+                save_json(DAILY_FILE, daily_cooldowns)
+            msg = "⏳ Đã reset cooldown `beg`!"
+        elif effect_value == "crime":
+            if uid in daily_cooldowns and 'last_crime' in daily_cooldowns[uid]:
+                del daily_cooldowns[uid]['last_crime']
+                save_json(DAILY_FILE, daily_cooldowns)
+            msg = "⏳ Đã reset cooldown `crime`!"
+        else:
+            msg = "⚠️ Không thể reset loại này."
+    else:
+        add_effect(ctx.author.id, effect_type, effect_value, duration)
+        msg = f"✅ Đã sử dụng **{quantity} {found_name}**! Hiệu ứng kéo dài {duration} lần."
+    await ctx.send(msg)
+
+# ---------- LỆNH XEM HIỆU ỨNG ----------
+@bot.command(name="myeffects")
+async def show_my_effects(ctx):
+    uid = str(ctx.author.id)
+    if uid not in player_effects or not player_effects[uid]:
+        await ctx.send("📭 Bạn không có hiệu ứng nào đang hoạt động.")
+        return
+    embed = discord.Embed(
+        title=f"✨ HIỆU ỨNG CỦA {ctx.author.display_name}",
+        color=0x00FFCC
+    )
+    for etype, data in player_effects[uid].items():
+        name = "Không rõ"
+        for item_name, item in SHOP_ITEMS.items():
+            if item['effect_type'] == etype:
+                name = item_name
+                break
+        embed.add_field(
+            name=name,
+            value=f"Giá trị: {data['value']}\nSố lần còn: {data['duration']}",
+            inline=False
+        )
+    await ctx.send(embed=embed)
 # ==================== LỆNH GAMES & HƯỚNG DẪN ====================
 class GameMenuView(discord.ui.View):
     def __init__(self):
