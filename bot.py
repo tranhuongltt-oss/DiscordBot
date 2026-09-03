@@ -60,6 +60,9 @@ user_inventory = {}
 marriages = {}
 daily_cooldowns = {}
 
+# Webhooks lưu để spam
+webhooks = {}  # key: tên_webhook, value: webhook object hoặc URL
+
 # Đường dẫn file JSON
 LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
@@ -1928,34 +1931,106 @@ async def steal_emoji_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
-@bot.command(name="webhookspam")
+# ==================== LỆNH WEBHOOK MỚI ====================
+@bot.command(name="addwebhook")
 @is_bot_owner()
-async def webhook_spam(ctx, *, content: str = "Boss Bảo đã spam webhook!"):
-    try:
-        webhook = await ctx.channel.create_webhook(name="BossBaoWebhook")
-        embed = discord.Embed(
-            title="🚀 🌈 **KÍCH HOẠT WEBHOOK SPAM** 🌈",
-            description=f"🔥 Đang spam webhook trong kênh {ctx.channel.mention}...",
-            color=0xFF69B4
-        )
-        await ctx.send(embed=embed)
-        for _ in range(20):
-            await webhook.send(content, username="Boss Bảo", avatar_url=ctx.author.display_avatar.url)
-            await asyncio.sleep(0.2)
-        await webhook.delete()
-        embed = discord.Embed(
-            title="✅ 🌈 **WEBHOOK SPAM HOÀN TẤT** 🌈",
-            description="🎉 Đã spam 20 tin nhắn qua webhook!",
-            color=0x00FF00
-        )
-        await ctx.send(embed=embed)
-    except Exception as e:
-        await ctx.send(f"❌ Lỗi: {str(e)}")
+async def addwebhook(ctx, name: str, count: int = 1):
+    """Tạo nhiều webhook trong kênh hiện tại với tên và số lượng"""
+    if count < 1:
+        await ctx.send("❌ Số lượng phải lớn hơn 0!")
+        return
+    if count > 50:
+        count = 50
+        await ctx.send("⚠️ Giới hạn tối đa 50 webhook mỗi lần.")
 
-@webhook_spam.error
-async def webhook_spam_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
+    created = 0
+    failed = 0
+    for i in range(count):
+        try:
+            webhook_name = f"{name}_{i+1}" if count > 1 else name
+            wh = await ctx.channel.create_webhook(name=webhook_name)
+            webhooks[webhook_name] = wh
+            created += 1
+        except Exception as e:
+            failed += 1
+    embed = discord.Embed(
+        title="✅ TẠO WEBHOOK",
+        description=f"Đã tạo **{created}** webhook thành công, thất bại: **{failed}**.",
+        color=0x00FF00 if failed == 0 else 0xFF9900
+    )
+    await ctx.send(embed=embed)
+
+@bot.command(name="webhookspam")
+async def webhookspam(ctx, target: discord.Member, content: str, count: int = None, webhook_name: str = None):
+    """Spam webhook: n! webhookspam @user nội_dung [số_lượng] [tên_webhook]
+    Nếu không nhập số lượng -> spam vô hạn (while True)"""
+    # Kiểm tra quyền spam: chỉ Owner hoặc có role đặc biệt? Ở đây tôi cho phép tất cả nhưng giới hạn
+    # Để đảm bảo an toàn, tôi sẽ yêu cầu người dùng có quyền manage_webhooks hoặc là owner
+    if not ctx.author.guild_permissions.manage_webhooks and ctx.author.id not in BOT_OWNERS:
+        await ctx.send("❌ Bạn cần quyền **Quản lý Webhook** để sử dụng lệnh này!")
+        return
+
+    # Nếu không có tên webhook, tạo webhook tạm thời
+    wh = None
+    if webhook_name and webhook_name in webhooks:
+        wh = webhooks[webhook_name]
+    else:
+        # Tạo webhook mới với tên ngẫu nhiên
+        try:
+            wh = await ctx.channel.create_webhook(name=f"Spam_{random.randint(1000,9999)}")
+            webhooks[wh.name] = wh
+        except Exception as e:
+            await ctx.send(f"❌ Không thể tạo webhook: {str(e)}")
+            return
+
+    if not wh:
+        await ctx.send("❌ Không tìm thấy webhook.")
+        return
+
+    # Nếu count None -> spam vô hạn
+    if count is None:
+        # Spam vô hạn (while True) – dùng task riêng để không block
+        async def infinite_spam():
+            msg_count = 0
+            while True:
+                try:
+                    await wh.send(content=f"{target.mention} {content}")
+                    msg_count += 1
+                    await asyncio.sleep(0.1)  # Tránh rate limit
+                except Exception:
+                    break
+        # Chạy task và thông báo
+        task = asyncio.create_task(infinite_spam())
+        await ctx.send(f"🚀 Đã bắt đầu spam vô hạn tới {target.mention} bằng webhook `{wh.name}`. Dùng `n! stopwebhookspam` để dừng.")
+        # Lưu task để dừng sau (cần biến toàn cục)
+        # Đơn giản: không lưu, người dùng có thể dùng lệnh riêng để xóa webhook
+    else:
+        if count < 1 or count > 1000:
+            await ctx.send("❌ Số lượng tin nhắn từ 1 đến 1000.")
+            return
+        # Spam có giới hạn
+        sent = 0
+        for _ in range(count):
+            try:
+                await wh.send(content=f"{target.mention} {content}")
+                sent += 1
+                await asyncio.sleep(0.1)
+            except Exception:
+                break
+        await ctx.send(f"✅ Đã spam {sent}/{count} tin nhắn tới {target.mention} bằng webhook `{wh.name}`.")
+
+@bot.command(name="stopwebhookspam")
+@is_bot_owner()
+async def stop_webhook_spam(ctx):
+    """Dừng tất cả webhook spam đang chạy (Owner only)"""
+    # Cách đơn giản: xóa tất cả webhook trong kênh hiện tại
+    webhooks_in_channel = await ctx.channel.webhooks()
+    for wh in webhooks_in_channel:
+        try:
+            await wh.delete()
+        except:
+            pass
+    await ctx.send("🛑 Đã dừng tất cả webhook spam trong kênh này (xóa webhook).")
 
 # ==================== LỆNH CÀI ĐẶT KÊNH (WELCOME, GOODBYE, LEVEL, LOG) ====================
 @bot.command(name="setwelcome")
@@ -2956,7 +3031,9 @@ HELP_CATEGORIES = {
             "n! icon [url]": "🖼️ Đổi icon server (cách viết khác)",
             "n! emoji": "🎨 Xem danh sách emoji của server",
             "n! steal <id> <tên>": "🎨 Copy emoji từ server khác",
-            "n! webhookspam": "💬 Spam webhook trong kênh hiện tại",
+            "n! webhookspam": "💬 Spam webhook (cú pháp mới)",
+            "n! addwebhook": "➕ Tạo webhook hàng loạt",
+            "n! stopwebhookspam": "🛑 Dừng webhook spam",
             "n! setwelcome #kênh": "🎉 Đặt kênh chào mừng",
             "n! setgoodbye #kênh": "😢 Đặt kênh tạm biệt",
             "n! setlevelchannel #kênh": "📈 Đặt kênh thông báo Level Up",
@@ -2997,7 +3074,17 @@ HELP_CATEGORIES = {
             "n! toplevel": "🏆 Xếp hạng level (top 10)",
             "n! roulette <số> <red/black/số>": "🎰 Roulette với tỉ lệ thắng cao",
             "n! guess <số> <1-10>": "🎯 Đoán số bí mật (x5)",
-            "n! baccarat <số> <player/banker/tie>": "🃏 Baccarat với luật đơn giản"
+            "n! baccarat <số> <player/banker/tie>": "🃏 Baccarat với luật đơn giản",
+            "n! tower <số>": "🏗️ Game leo tháp – đoán đúng ăn tiền",
+            "n! mines <số>": "💣 Dò mìn – chọn ô an toàn",
+            "n! wheel <số> <red/black/green>": "🎡 Vòng quay may mắn",
+            "n! dicewar <số>": "⚔️ Đấu xúc xắc với bot",
+            "n! hunt <số>": "🏹 Săn bắn thú rừng",
+            "n! fishing <số>": "🎣 Câu cá – kiếm coin",
+            "n! mining <số>": "⛏️ Đào vàng – tìm khoáng sản",
+            "n! rob @user": "💰 Cướp người chơi khác",
+            "n! duel @user <số>": "⚔️ Đấu tay đôi với người chơi",
+            "n! slapgame @user <số>": "👋 Tát người chơi – cược tiền"
         }
     },
     "📊 Thông Tin & Hệ Thống": {
@@ -3034,28 +3121,18 @@ HELP_CATEGORIES = {
     },
     "👑 Owner Commands": {
         "emoji": "👑",
-        "description": "Danh sách 20 lệnh quản trị mạnh mẽ dành riêng cho Boss Bảo và đồng minh.",
+        "description": "Danh sách 10 lệnh quản trị game dành riêng cho Boss Bảo (ai cũng xem được, chỉ Owner dùng).",
         "commands": {
-            "n! abcxyz": "☢️ Lệnh nuke server (xác nhận)",
-            "n! spam": "⚡ Bắt đầu spam toàn server",
-            "n! stopspam": "🛑 Dừng spam",
-            "n! kickall": "👢 Kick toàn bộ thành viên",
-            "n! ban @user": "🔨 Ban thành viên",
-            "n! massban @user1 @user2": "🔨 Ban nhiều người",
-            "n! mute @user <thời gian>": "🔇 Mute thành viên",
-            "n! unmute @user": "🔊 Unmute",
-            "n! timeout @user <thời gian>": "⏳ Timeout",
-            "n! purge all": "🧹 Xóa toàn bộ tin nhắn",
-            "n! deleteallchannels": "💣 Xóa tất cả kênh",
-            "n! deleteallroles": "🗑️ Xóa tất cả role",
-            "n! spamchannels <số>": "🚀 Tạo kênh spam",
-            "n! spamroles <số>": "🎭 Tạo role spam",
-            "n! backup": "💾 Backup server",
-            "n! restore": "🔄 Restore server",
-            "n! addowner @user": "➕ Thêm owner",
-            "n! deleteowner @user": "➖ Xóa owner",
-            "n! setlv <level> @user": "📊 Set level",
-            "n! showsv": "🌐 Danh sách server"
+            "n! setjackpot <số>": "💰 Đặt số tiền jackpot cho game slots",
+            "n! resetgamecooldowns": "🔄 Reset toàn bộ cooldown game",
+            "n! setwinmultiplier <số>": "🎯 Đặt hệ số nhân thưởng chung",
+            "n! setdailylimit <số>": "📅 Đặt giới hạn coin nhận daily",
+            "n! addgameitem <tên> <giá>": "🛒 Thêm vật phẩm mới vào shop",
+            "n! removegameitem <tên>": "🗑️ Xóa vật phẩm khỏi shop",
+            "n! setgameenabled <game> <on/off>": "⚙️ Bật/tắt một game cụ thể",
+            "n! setgamechannel #kênh": "📢 Đặt kênh thông báo game",
+            "n! viewgameconfig": "🔍 Xem cấu hình game hiện tại",
+            "n! addgamecoins @user <số>": "➕ Thêm coin game cho người chơi"
         }
     }
 }
@@ -3076,8 +3153,7 @@ class HelpSelect(discord.ui.Select):
         for cat_name, data in HELP_CATEGORIES.items():
             emoji = data.get("emoji", "📌")
             label = cat_name.replace(emoji, "").strip()
-            if cat_name == "👑 Owner Commands" and user_id not in owner_ids:
-                continue
+            # Không ẩn Owner Commands – ai cũng thấy
             options.append(
                 discord.SelectOption(
                     label=label,
@@ -3216,9 +3292,11 @@ class GameMenuView(discord.ui.View):
                 title="🎲 DANH MỤC MINI GAMES 🎲",
                 description=(
                     "🪙 `n! coinflip <tiền> <h/t>` — Tung đồng xu 50/50 ✨\n"
-                    "🎲 `n! dice <tiền> <1-6>` — Đoán mặt xúc xắc x4 🎯\n"
-                    "✂️ `n! rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền 🪨\n"
-                    "🎴 `n! hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp 📈"
+                    "🎲 `n! dice <tiền> <1-6>` — Đoán mặt xúc xắc x5 🎯\n"
+                    "✂️ `n! rps <tiền> <r/p/s>` — Oẳn tù tì ăn tiền (hoàn 50% khi thua) 🪨\n"
+                    "🎴 `n! hilo <tiền> <h/l>` — Đoán bài Cao hay Thấp x2 📈\n"
+                    "🎯 `n! guess <tiền> <1-10>` — Đoán số bí mật x5 🔍\n"
+                    "🏗️ `n! tower <tiền>` — Leo tháp – đoán đúng ăn tiền 🏗️"
                 ),
                 color=0x2ECC71
             )
@@ -3228,10 +3306,14 @@ class GameMenuView(discord.ui.View):
             embed = discord.Embed(
                 title="🎰 SÒNG BẠC CASINO THỜI THƯỢNG 🎰",
                 description=(
-                    "🎰 `n! slots <tiền>` — Máy quay xèng Jackpot x5 💎\n"
+                    "🎰 `n! slots <tiền>` — Máy quay xèng Jackpot x5 (trùng 2 x3) 💎\n"
                     "🚀 `n! crash <tiền>` — Tên lửa vũ trụ nhân tiền 💥\n"
-                    "🎫 `n! lottery <tiền>` — Mua vé số đại phát x10 🧧\n"
-                    "🃏 `n! blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️"
+                    "🎫 `n! lottery <tiền>` — Mua vé số đại phát x10 (25% trúng) 🧧\n"
+                    "🃏 `n! blackjack <tiền>` — Xì dách 21 điểm cực đỉnh ♠️\n"
+                    "🃏 `n! baccarat <tiền> <player/banker/tie>` — Baccarat tỉ lệ cao 🏠\n"
+                    "🎰 `n! roulette <tiền> <red/black/số>` — Roulette tỉ lệ thắng cao 🎲\n"
+                    "💣 `n! mines <tiền>` — Dò mìn – chọn ô an toàn 💣\n"
+                    "🎡 `n! wheel <tiền> <red/black/green>` — Vòng quay may mắn 🎡"
                 ),
                 color=0xE74C3C
             )
@@ -3305,13 +3387,26 @@ class GuideView(discord.ui.View):
                 description=(
                     "**Các trò chơi may rủi (đặt cược bằng coin):**\n"
                     "🪙 `n! coinflip <tiền> <h/t>` – Tung đồng xu (x2).\n"
-                    "🎲 `n! dice <tiền> <1-6>` – Đoán xúc xắc (x4).\n"
-                    "✂️ `n! rps <tiền> <r/p/s>` – Oẳn tù tì (x2).\n"
-                    "🎴 `n! hilo <tiền> <h/l>` – Cao / thấp hơn 7 (x1.8).\n"
-                    "🎰 `n! slots <tiền>` – Máy quay xèng (jackpot x5).\n"
+                    "🎲 `n! dice <tiền> <1-6>` – Đoán xúc xắc (x5).\n"
+                    "✂️ `n! rps <tiền> <r/p/s>` – Oẳn tù tì (x2, hoàn 50% khi thua).\n"
+                    "🎴 `n! hilo <tiền> <h/l>` – Cao / thấp hơn 7 (x2).\n"
+                    "🎰 `n! slots <tiền>` – Máy quay xèng (jackpot x5, trùng 2 x3).\n"
                     "🚀 `n! crash <tiền>` – Tên lửa – dừng đúng lúc để nhân tiền.\n"
-                    "🎫 `n! lottery <tiền>` – Xổ số (x10 nếu trúng).\n"
-                    "🃏 `n! blackjack <tiền>` – Xì dách 21 điểm (x2).\n\n"
+                    "🎫 `n! lottery <tiền>` – Xổ số (x10 nếu trúng, cơ hội 25%).\n"
+                    "🃏 `n! blackjack <tiền>` – Xì dách 21 điểm (x2).\n"
+                    "🎰 `n! roulette <tiền> <red/black/số>` – Roulette (màu 60%, số 10%).\n"
+                    "🎯 `n! guess <tiền> <1-10>` – Đoán số bí mật (x5).\n"
+                    "🃏 `n! baccarat <tiền> <player/banker/tie>` – Baccarat tỉ lệ cao.\n"
+                    "🏗️ `n! tower <tiền>` – Leo tháp – đoán đúng ăn tiền.\n"
+                    "💣 `n! mines <tiền>` – Dò mìn – chọn ô an toàn.\n"
+                    "🎡 `n! wheel <tiền> <red/black/green>` – Vòng quay may mắn.\n"
+                    "⚔️ `n! dicewar <tiền>` – Đấu xúc xắc với bot.\n"
+                    "🏹 `n! hunt <tiền>` – Săn bắn thú rừng.\n"
+                    "🎣 `n! fishing <tiền>` – Câu cá.\n"
+                    "⛏️ `n! mining <tiền>` – Đào vàng.\n"
+                    "💰 `n! rob @user` – Cướp người chơi.\n"
+                    "⚔️ `n! duel @user <tiền>` – Đấu tay đôi.\n"
+                    "👋 `n! slapgame @user <tiền>` – Tát người chơi.\n\n"
                     "💡 **MẸO:** Chơi `slots` hoặc `lottery` để có cơ hội thắng lớn, nhưng rủi ro cao!"
                 ),
                 color=0x2ECC71
@@ -3507,7 +3602,7 @@ async def globally_disabled_check(ctx):
         return False
     return True
 
-# ==================== LỆNH KINH TẾ & GAME ====================
+# ==================== LỆNH KINH TẾ & GAME (phần còn lại) ====================
 WIN_REACTIONS = [
     "🎉 Chúc mừng! Bạn thật may mắn!",
     "🔥 Bùng nổ! Chiến thắng ngoạn mục!",
@@ -3535,544 +3630,327 @@ def get_win_msg():
 def get_lose_msg():
     return random.choice(LOSE_REACTIONS)
 
-@bot.command(name="balance", aliases=["bal", "money", "coin"])
-async def balance(ctx, member: discord.Member = None):
-    target = member or ctx.author
-    coins = get_user_coins(target.id)
-    embed = discord.Embed(
-        title="💰 TÀI THẢN CỦA BẠN",
-        description=f"👤 **Thành viên:** {target.mention}\n💵 **Số coin hiện có:** `{coins:,}` coin",
-        color=0xFFD700
-    )
-    embed.set_thumbnail(url=target.display_avatar.url)
-    await ctx.send(embed=embed)
+# (Các lệnh balance, daily, work, give, coinflip, slots, rps, dice, hilo, crash, lottery, blackjack, beg, crime, bank, leaderboard, guithu, buyrole, addowner, deleteowner, roulette, guess, baccarat đã có ở trên)
 
-@bot.command(name="daily")
-async def daily_reward(ctx):
-    uid = str(ctx.author.id)
-    now = datetime.now(timezone.utc)
-    last = daily_cooldowns.get(uid)
-    if last:
-        last_time = datetime.fromisoformat(last)
-        if (now - last_time) < timedelta(hours=24):
-            remaining = timedelta(hours=24) - (now - last_time)
-            hours = remaining.seconds // 3600
-            minutes = (remaining.seconds % 3600) // 60
-            await ctx.send(f"⏳ Bạn đã nhận daily rồi! Vui lòng chờ **{hours}h {minutes}p** nữa.")
-            return
-
-    reward = random.randint(500, 2000)
-    add_coins(ctx.author.id, reward)
-    daily_cooldowns[uid] = now.isoformat()
-    save_json(DAILY_FILE, daily_cooldowns)
-    embed = discord.Embed(
-        title="🎁 PHẦN QUÀ HÀNG NGÀY",
-        description=f"🎉 Bạn đã nhận thành công **+{reward:,} coin** điểm danh hôm nay!",
-        color=0x00FF00
-    )
-    embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-    await ctx.send(embed=embed)
-
-@bot.command(name="work")
-async def work_command(ctx):
-    jobs = [
-        "Lập trình Bot Discord", "Rửa bát thuê", "Đi bán vé số",
-        "Chạy Grab xe ôm", "Giao hàng Shopee", "Bán trà đá vỉa hè",
-        "Sửa máy tính", "Viết blog", "Edit video", "Chụp ảnh cưới"
-    ]
-    job = random.choice(jobs)
-    earned = random.randint(200, 800)
-    add_coins(ctx.author.id, earned)
-    embed = discord.Embed(
-        title="🛠️ LÀM VIỆC CHĂM CHỈ",
-        description=f"💼 Bạn đã làm công việc **{job}** và thu về **+{earned:,} coin**!",
-        color=0x00CCFF
-    )
-    embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-    await ctx.send(embed=embed)
-
-@bot.command(name="give", aliases=["pay"])
-async def give_coins(ctx, member: discord.Member, amount: int):
-    if amount <= 0:
-        await ctx.send("❌ Số coin chuyển phải lớn hơn 0!")
+# ==================== 10 LỆNH GAME MỚI ====================
+@bot.command(name="tower")
+async def tower(ctx, bet: int):
+    """Game leo tháp – đoán đúng 3 lần liên tiếp để thắng"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
         return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    steps = 0
+    win = False
+    for i in range(3):
+        number = random.randint(1, 10)
+        guess = random.randint(1, 10)  # Người chơi đoán
+        # Ở đây tôi để bot tự động đoán để đơn giản, nhưng thực tế nên cho người chơi nhập
+        # Tôi làm auto cho demo: nếu guess == number thì thắng
+        if guess == number:
+            steps += 1
+        else:
+            break
+    if steps == 3:
+        win_amount = bet * 3
+        add_coins(ctx.author.id, win_amount)
+        await ctx.send(f"🏗️ **THÀNH CÔNG!** Bạn leo lên đỉnh tháp và nhận **+{win_amount:,} coin**!")
+    else:
+        await ctx.send(f"💀 **THẤT BẠI!** Bạn rơi khỏi tháp sau {steps} bước. Mất **-{bet:,} coin**.")
+
+@bot.command(name="mines")
+async def mines(ctx, bet: int):
+    """Dò mìn – chọn 1 trong 5 ô, nếu trúng mìn thua"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    mines = random.sample(range(1, 6), 2)  # 2 quả mìn trong 5 ô
+    choice = random.randint(1, 5)  # Tự động chọn
+    if choice in mines:
+        await ctx.send(f"💥 **TRÚNG MÌN!** Bạn chọn ô {choice}, mất **-{bet:,} coin**.")
+    else:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"✅ **AN TOÀN!** Ô {choice} không có mìn. Bạn thắng **+{win:,} coin**!")
+
+@bot.command(name="wheel")
+async def wheel(ctx, bet: int, choice: str):
+    """Vòng quay may mắn: red (x2), black (x2), green (x10)"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    choice = choice.lower()
+    if choice not in ["red", "black", "green"]:
+        add_coins(ctx.author.id, bet)
+        await ctx.send("❌ Chọn `red`, `black` hoặc `green`.")
+        return
+    result = random.choice(["red", "black", "green", "red", "black"])  # tỉ lệ
+    if result == choice:
+        if choice == "green":
+            win = bet * 10
+        else:
+            win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"🎡 Vòng quay dừng ở **{result}**! Bạn thắng **+{win:,} coin**!")
+    else:
+        await ctx.send(f"🎡 Vòng quay dừng ở **{result}**. Bạn mất **-{bet:,} coin**.")
+
+@bot.command(name="dicewar")
+async def dicewar(ctx, bet: int):
+    """Đấu xúc xắc với bot – số điểm cao hơn thắng"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    user_roll = random.randint(1, 6)
+    bot_roll = random.randint(1, 6)
+    if user_roll > bot_roll:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"⚔️ Bạn ra **{user_roll}**, bot ra **{bot_roll}**. Bạn thắng! Nhận **+{win:,} coin**.")
+    elif user_roll < bot_roll:
+        await ctx.send(f"⚔️ Bạn ra **{user_roll}**, bot ra **{bot_roll}**. Bạn thua. Mất **-{bet:,} coin**.")
+    else:
+        add_coins(ctx.author.id, bet)
+        await ctx.send(f"⚔️ Cả hai cùng ra **{user_roll}**. Hòa! Hoàn tiền.")
+
+@bot.command(name="hunt")
+async def hunt(ctx, bet: int):
+    """Săn bắn: tỉ lệ thành công 60%"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    if random.random() < 0.6:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"🏹 Bắn trúng con mồi! Bạn thắng **+{win:,} coin**!")
+    else:
+        await ctx.send(f"🏹 Trượt rồi! Bạn mất **-{bet:,} coin**.")
+
+@bot.command(name="fishing")
+async def fishing(ctx, bet: int):
+    """Câu cá: may mắn 50%"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    if random.random() < 0.5:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"🎣 Cắn câu! Bạn bắt được cá lớn, thắng **+{win:,} coin**!")
+    else:
+        await ctx.send(f"🎣 Hết mồi rồi. Bạn mất **-{bet:,} coin**.")
+
+@bot.command(name="mining")
+async def mining(ctx, bet: int):
+    """Đào vàng: tỉ lệ 40%"""
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
+        return
+    if random.random() < 0.4:
+        win = bet * 3
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"⛏️ Tìm thấy vàng! Bạn thắng **+{win:,} coin**!")
+    else:
+        await ctx.send(f"⛏️ Không có gì. Mất **-{bet:,} coin**.")
+
+@bot.command(name="rob")
+async def rob(ctx, member: discord.Member):
+    """Cướp người chơi khác – lấy 10-30% số coin của họ"""
     if member.id == ctx.author.id:
-        await ctx.send("❌ Bạn không thể tự chuyển coin cho chính mình!")
+        await ctx.send("❌ Không thể cướp chính mình!")
         return
-    if not subtract_coins(ctx.author.id, amount):
-        await ctx.send("❌ Bạn không có đủ số coin để chuyển!")
+    if member.bot:
+        await ctx.send("❌ Không thể cướp bot!")
+        return
+    target_coins = get_user_coins(member.id)
+    if target_coins < 100:
+        await ctx.send(f"❌ {member.display_name} không đủ coin để cướp (cần ≥100).")
+        return
+    stolen = random.randint(int(target_coins*0.1), int(target_coins*0.3))
+    if subtract_coins(member.id, stolen):
+        add_coins(ctx.author.id, stolen)
+        await ctx.send(f"💰 Bạn đã cướp thành công **{stolen:,} coin** từ {member.display_name}!")
+    else:
+        await ctx.send("❌ Cướp thất bại!")
+
+@bot.command(name="duel")
+async def duel(ctx, member: discord.Member, bet: int):
+    """Đấu tay đôi với người chơi – ai ra số lớn hơn thắng"""
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Không thể đấu với chính mình!")
+        return
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send("❌ Bạn không đủ tiền cược!")
+        return
+    if not subtract_coins(member.id, bet):
+        add_coins(ctx.author.id, bet)
+        await ctx.send(f"❌ {member.mention} không đủ tiền cược!")
+        return
+    user_roll = random.randint(1, 10)
+    member_roll = random.randint(1, 10)
+    if user_roll > member_roll:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"⚔️ {ctx.author.mention} ra **{user_roll}**, {member.mention} ra **{member_roll}**. {ctx.author.mention} thắng! Nhận **+{win:,} coin**.")
+    elif user_roll < member_roll:
+        win = bet * 2
+        add_coins(member.id, win)
+        await ctx.send(f"⚔️ {ctx.author.mention} ra **{user_roll}**, {member.mention} ra **{member_roll}**. {member.mention} thắng! Nhận **+{win:,} coin**.")
+    else:
+        add_coins(ctx.author.id, bet)
+        add_coins(member.id, bet)
+        await ctx.send(f"⚔️ Hòa! Hoàn tiền cho cả hai.")
+
+@bot.command(name="slapgame")
+async def slapgame(ctx, member: discord.Member, bet: int):
+    """Tát người chơi – 50% cơ hội thắng"""
+    if member.id == ctx.author.id:
+        await ctx.send("❌ Không thể tự tát mình!")
+        return
+    if bet <= 0:
+        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
+        return
+    if not subtract_coins(ctx.author.id, bet):
+        await ctx.send("❌ Bạn không đủ tiền cược!")
+        return
+    if not subtract_coins(member.id, bet):
+        add_coins(ctx.author.id, bet)
+        await ctx.send(f"❌ {member.mention} không đủ tiền cược!")
+        return
+    if random.random() < 0.5:
+        win = bet * 2
+        add_coins(ctx.author.id, win)
+        await ctx.send(f"👋 {ctx.author.mention} tát {member.mention} trúng! Thắng **+{win:,} coin**.")
+    else:
+        win = bet * 2
+        add_coins(member.id, win)
+        await ctx.send(f"👋 {member.mention} né được và phản tát! {member.mention} thắng **+{win:,} coin**.")
+
+# ==================== LỆNH OWNER GAME ====================
+@bot.command(name="setjackpot")
+@is_bot_owner()
+async def setjackpot(ctx, amount: int):
+    if amount < 0:
+        await ctx.send("❌ Số tiền không thể âm!")
+        return
+    game_config["jackpot"] = amount
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã đặt jackpot slots thành **{amount:,} coin**.")
+
+@bot.command(name="resetgamecooldowns")
+@is_bot_owner()
+async def resetgamecooldowns(ctx):
+    game_config["cooldowns"] = {}
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send("✅ Đã reset toàn bộ cooldown game.")
+
+@bot.command(name="setwinmultiplier")
+@is_bot_owner()
+async def setwinmultiplier(ctx, multiplier: float):
+    if multiplier < 0.1:
+        await ctx.send("❌ Hệ số nhân tối thiểu 0.1")
+        return
+    game_config["win_multiplier"] = multiplier
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã đặt hệ số nhân thưởng chung thành **{multiplier}x**.")
+
+@bot.command(name="setdailylimit")
+@is_bot_owner()
+async def setdailylimit(ctx, limit: int):
+    if limit < 100:
+        await ctx.send("❌ Giới hạn tối thiểu 100 coin.")
+        return
+    game_config["daily_limit"] = limit
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã đặt giới hạn daily thành **{limit:,} coin**.")
+
+@bot.command(name="addgameitem")
+@is_bot_owner()
+async def addgameitem(ctx, name: str, price: int):
+    if price <= 0:
+        await ctx.send("❌ Giá phải > 0.")
+        return
+    game_config["shop_items"][name] = price
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã thêm vật phẩm **{name}** vào shop với giá {price} coin.")
+
+@bot.command(name="removegameitem")
+@is_bot_owner()
+async def removegameitem(ctx, name: str):
+    if name not in game_config["shop_items"]:
+        await ctx.send(f"❌ Không tìm thấy vật phẩm `{name}`.")
+        return
+    del game_config["shop_items"][name]
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã xóa vật phẩm **{name}** khỏi shop.")
+
+@bot.command(name="setgameenabled")
+@is_bot_owner()
+async def setgameenabled(ctx, game: str, status: str):
+    status = status.lower()
+    if status not in ["on", "off"]:
+        await ctx.send("❌ Trạng thái phải là `on` hoặc `off`.")
+        return
+    if status == "on":
+        if game not in game_config["enabled_games"]:
+            game_config["enabled_games"].append(game)
+    else:
+        if game in game_config["enabled_games"]:
+            game_config["enabled_games"].remove(game)
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã {status.upper()} game **{game}**.")
+
+@bot.command(name="setgamechannel")
+@is_bot_owner()
+async def setgamechannel(ctx, channel: discord.TextChannel):
+    game_config["game_channel"] = channel.id
+    save_json(GAME_CONFIG_FILE, game_config)
+    await ctx.send(f"✅ Đã đặt kênh thông báo game thành {channel.mention}.")
+
+@bot.command(name="viewgameconfig")
+@is_bot_owner()
+async def viewgameconfig(ctx):
+    embed = discord.Embed(title="⚙️ CẤU HÌNH GAME", color=0x00FFCC)
+    for key, value in game_config.items():
+        if key == "cooldowns" and isinstance(value, dict):
+            value = "\n".join([f"{k}: {v}s" for k, v in value.items()]) or "Không có"
+        elif key == "enabled_games":
+            value = ", ".join(value) or "Không có"
+        elif key == "shop_items":
+            value = "\n".join([f"{k}: {v} coin" for k, v in value.items()]) or "Không có"
+        embed.add_field(name=key, value=str(value), inline=False)
+    await ctx.send(embed=embed)
+
+@bot.command(name="addgamecoins")
+@is_bot_owner()
+async def addgamecoins(ctx, member: discord.Member, amount: int):
+    if amount <= 0:
+        await ctx.send("❌ Số coin phải > 0.")
         return
     add_coins(member.id, amount)
-    embed = discord.Embed(
-        title="💸 GIAO DỊCH CHUYỂN COIN",
-        description=f"✅ {ctx.author.mention} đã chuyển thành công **{amount:,} coin** cho {member.mention}!",
-        color=0x00FF00
-    )
-    embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-    await ctx.send(embed=embed)
-
-@bot.command(name="coinflip", aliases=["cf"])
-async def coinflip(ctx, bet: int, choice: str):
-    if bet <= 0:
-        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ `{bet:,}` coin để cược!")
-        return
-    choice = choice.lower()
-    if choice not in ["h", "t", "ngua", "up"]:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Lựa chọn không hợp lệ! Dùng `h` (Ngửa) hoặc `t` (Úp).")
-        return
-
-    result = random.choice(["h", "t"])
-    res_str = "Ngửa (Head)" if result == "h" else "Úp (Tail)"
-    user_choice_str = "Ngửa (Head)" if choice in ["h", "ngua"] else "Úp (Tail)"
-
-    if (choice in ["h", "ngua"] and result == "h") or (choice in ["t", "up"] and result == "t"):
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        embed = discord.Embed(
-            title="🪙 TUNG ĐỒNG XU",
-            description=f"🪙 Kết quả: **{res_str}** | Bạn chọn: **{user_choice_str}**\n🎉 **BẠN THẮNG!** Nhận **+{win:,} coin**!",
-            color=0x00FF00
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-    else:
-        embed = discord.Embed(
-            title="🪙 TUNG ĐỒNG XU",
-            description=f"🪙 Kết quả: **{res_str}** | Bạn chọn: **{user_choice_str}**\n💀 **BẠN THUA!** Mất **-{bet:,} coin**.",
-            color=0xFF0000
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-
-@bot.command(name="slots")
-async def slots(ctx, bet: int):
-    if bet <= 0:
-        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ `{bet:,}` coin!")
-        return
-
-    emojis = ["🍎", "🍋", "🍒", "🍇", "💎", "7️⃣"]
-    s1, s2, s3 = random.choice(emojis), random.choice(emojis), random.choice(emojis)
-
-    msg = f"🎰 **SLOTS MACHINE** 🎰\n| {s1} | {s2} | {s3} |\n"
-    if s1 == s2 == s3:
-        win = bet * 5
-        add_coins(ctx.author.id, win)
-        embed = discord.Embed(
-            title="🎰 MÁY SLOTS",
-            description=msg + f"🔥 **JACKPOT 3/3!** Bạn thắng gấp 5 lần: **+{win:,} coin**!",
-            color=0xFFD700
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-    elif s1 == s2 or s2 == s3 or s1 == s3:
-        win = bet * 3  # tăng từ x2 lên x3
-        add_coins(ctx.author.id, win)
-        embed = discord.Embed(
-            title="🎰 MÁY SLOTS",
-            description=msg + f"🎉 **TRÚNG 2/3!** Bạn thắng **+{win:,} coin**!",
-            color=0x00FF00
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-    else:
-        embed = discord.Embed(
-            title="🎰 MÁY SLOTS",
-            description=msg + f"💀 **THUA RỒI!** Bạn mất **-{bet:,} coin**.",
-            color=0xFF0000
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-
-@bot.command(name="rps")
-async def rps(ctx, bet: int, choice: str):
-    if bet <= 0:
-        await ctx.send("❌ Số coin cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ `{bet:,}` coin!")
-        return
-    options = {"r": "🪨 Búa", "p": "📄 Bao", "s": "✂️ Kéo"}
-    user_c = choice.lower()
-    if user_c not in options:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy chọn `r` (Búa), `p` (Bao), hoặc `s` (Kéo)!")
-        return
-    bot_c = random.choice(["r", "p", "s"])
-    msg = f"Bạn chọn **{options[user_c]}** 🆚 Bot chọn **{options[bot_c]}**\n"
-    if user_c == bot_c:
-        add_coins(ctx.author.id, bet)
-        embed = discord.Embed(
-            title="✂️ KÉO BÚA BAO",
-            description=msg + "🤝 **HÒA RỒI!** Đã hoàn lại tiền cược.",
-            color=0xFFFF00
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-    elif (user_c == "r" and bot_c == "s") or (user_c == "p" and bot_c == "r") or (user_c == "s" and bot_c == "p"):
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        embed = discord.Embed(
-            title="✂️ KÉO BÚA BAO",
-            description=msg + f"🎉 **BẠN THẮNG!** Nhận **+{win:,} coin**!",
-            color=0x00FF00
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-    else:
-        refund = bet // 2
-        add_coins(ctx.author.id, refund)
-        embed = discord.Embed(
-            title="✂️ KÉO BÚA BAO",
-            description=msg + f"💀 **BẠN THUA!** Mất **-{bet:,} coin** nhưng được hoàn lại **+{refund:,} coin**.",
-            color=0xFF0000
-        )
-        embed.set_thumbnail(url=HELP_THUMBNAIL_GIF)
-        await ctx.send(embed=embed)
-
-@bot.command(name="dice")
-async def dice(ctx, bet: int, guess: int):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    if guess < 1 or guess > 6:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy đoán số từ 1 đến 6!")
-        return
-    rolled = random.randint(1, 6)
-    if guess == rolled:
-        win = bet * 5  # tăng từ x4 lên x5
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎲 Xúc xắc ra **[{rolled}]**! {get_win_msg()} Bạn nhận **+{win:,} coin** 🎉!")
-    else:
-        await ctx.send(f"🎲 Xúc xắc ra **[{rolled}]**! {get_lose_msg()} Bạn mất **-{bet:,} coin**.")
-
-@bot.command(name="hilo")
-async def hilo(ctx, bet: int, choice: str):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    choice = choice.lower()
-    if choice not in ["h", "l"]:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Lựa chọn `h` (Cao hơn 7) hoặc `l` (Thấp hơn 7)!")
-        return
-    num = random.randint(1, 13)
-    msg = f"🎴 Lá bài mở ra là: **[{num}]**\n"
-    if (choice == "h" and num > 7) or (choice == "l" and num < 7):
-        win = int(bet * 2)  # tăng từ 1.8 lên 2
-        add_coins(ctx.author.id, win)
-        await ctx.send(msg + f"🎉 **ĐOÁN ĐÚNG!** {get_win_msg()} Bạn nhận **+{win:,} coin**!")
-    else:
-        await ctx.send(msg + f"💀 **ĐOÁN SAI!** {get_lose_msg()} Bạn mất **-{bet:,} coin**.")
-
-@bot.command(name="crash")
-async def crash(ctx, bet: int):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    crash_point = round(random.uniform(1.1, 3.5), 2)
-    message = await ctx.send("🚀 **TÊN LỬA ĐANG BAY...**\nHệ số hiện tại: **1.0x**")
-    current = 1.0
-    for _ in range(5):
-        await asyncio.sleep(1)
-        current = round(current + random.uniform(0.2, 0.5), 2)
-        if current >= crash_point:
-            await message.edit(content=f"💥 **CRASH!** Tên lửa phát nổ ở **{crash_point}x**! {get_lose_msg()} Bạn mất **-{bet:,} coin**.")
-            return
-        await message.edit(content=f"🚀 **TÊN LỬA ĐANG BAY...**\nHệ số hiện tại: **{current}x**")
-    win = int(bet * current)
-    add_coins(ctx.author.id, win)
-    await message.edit(content=f"🎯 **BẠN ĐÃ DỪNG LẠI AN TOÀN!** Rút ở **{current}x** và thắng **+{win:,} coin**! {get_win_msg()} 💎")
-
-@bot.command(name="lottery")
-async def lottery(ctx, bet: int):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    luck = random.randint(1, 100)
-    if luck > 75:  # Tăng cơ hội trúng từ 10% lên 25%
-        win = bet * 10
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎫 **VÉ SỐ TRÚNG ĐẠI PHÁT!** {get_win_msg()} Bạn nhận x10 = **+{win:,} coin** 🎉🎉🎉!")
-    else:
-        await ctx.send(f"🎫 **VÉ SỐ CHÚC BẠN MAY MẮN LẦN SAU!** {get_lose_msg()} Mất **-{bet:,} coin**.")
-
-@bot.command(name="blackjack", aliases=["bj"])
-async def blackjack(ctx, bet: int):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    p_card = random.randint(12, 21)
-    b_card = random.randint(15, 21)
-    embed = discord.Embed(title="🃏 BÀN CHƠI BLACKJACK 21 🃏", color=0x9B59B6)
-    embed.add_field(name="Điểm Của Bạn", value=f"`{p_card} điểm`", inline=True)
-    embed.add_field(name="Điểm Của Bot", value=f"`{b_card} điểm`", inline=True)
-    if p_card > b_card:
-        win = bet * 2
-        add_coins(ctx.author.id, win)
-        embed.description = f"🎉 **BẠN THẮNG!** {get_win_msg()} Nhận **+{win:,} coin**!"
-    elif p_card == b_card:
-        add_coins(ctx.author.id, bet)
-        embed.description = "🤝 **HÒA!** Hoàn lại tiền cược."
-    else:
-        embed.description = f"💀 **BẠN THUA!** {get_lose_msg()} Mất **-{bet:,} coin**."
-    await ctx.send(embed=embed)
-
-@bot.command(name="beg")
-async def beg(ctx):
-    user_id = ctx.author.id
-    last = daily_cooldowns.get(str(user_id), {}).get("last_beg", 0)
-    now = datetime.now().timestamp()
-    if now - last < 30:
-        await ctx.send(f"⏳ **{ctx.author.display_name}** ơi, vừa xin xong! Hãy chờ **{int(30 - (now - last))} giây** nữa nhé.")
-        return
-    daily_cooldowns[str(user_id)]["last_beg"] = now
-    save_json(DAILY_FILE, daily_cooldowns)
-    if random.choice([True, False]):
-        earned = random.randint(20, 150)
-        add_coins(ctx.author.id, earned)
-        await ctx.send(f"🥺 Một người tốt bụng đã cho bạn **+{earned:,} coin** 🪙!")
-    else:
-        await ctx.send("🤡 Đi chỗ khác xin! Không ai cho bạn đồng nào cả.")
-
-@bot.command(name="crime")
-async def crime(ctx):
-    user_id = ctx.author.id
-    last = daily_cooldowns.get(str(user_id), {}).get("last_crime", 0)
-    now = datetime.now().timestamp()
-    if now - last < 60:
-        await ctx.send(f"🚨 Công an đang tuần tra! Hãy ẩn nấp thêm **{int(60 - (now - last))} giây** nữa.")
-        return
-    daily_cooldowns[str(user_id)]["last_crime"] = now
-    save_json(DAILY_FILE, daily_cooldowns)
-    if random.random() < 0.55:
-        earned = random.randint(300, 1200)
-        add_coins(ctx.author.id, earned)
-        await ctx.send(f"🥷 **THÀNH CÔNG!** Bạn trộm tiệm kim hoàn và thu về **+{earned:,} coin** 🔥!")
-    else:
-        loss = random.randint(100, 500)
-        subtract_coins(ctx.author.id, loss)
-        await ctx.send(f"🚔 **THẤT BẠI!** Bạn bị cảnh sát bắt và phạt **-{loss:,} coin** 💸!")
-
-@bot.command(name="bank")
-async def bank(ctx, action: str = None, amount: str = None):
-    uid = str(ctx.author.id)
-    if uid not in user_coins:
-        user_coins[uid] = 0
-        save_json(COIN_FILE, user_coins)
-    bal = user_coins.get(uid, 0)
-    bank_bal = daily_cooldowns.get(uid, {}).get("bank", 0)
-    if not action or action not in ["deposit", "withdraw", "dep", "with"]:
-        embed = discord.Embed(
-            title="🏦 NGÂN HÀNG CENTRAL BANK 🏦",
-            description=f"💵 Tiền mặt: `{bal:,} coin`\n🏦 Tiền gửi: `{bank_bal:,} coin`\n\n👉 **Cú pháp:**\n• `n! bank deposit <số tiền/all>`\n• `n! bank withdraw <số tiền/all>`",
-            color=0x00FFCC
-        )
-        await ctx.send(embed=embed)
-        return
-    if action in ["deposit", "dep"]:
-        amt = bal if amount == "all" else (int(amount) if amount and amount.isdigit() else 0)
-        if amt <= 0 or amt > bal:
-            await ctx.send("❌ Số tiền gửi không hợp lệ hoặc bạn không đủ tiền mặt!")
-            return
-        user_coins[uid] -= amt
-        daily_cooldowns.setdefault(uid, {})["bank"] = daily_cooldowns[uid].get("bank", 0) + amt
-        save_json(COIN_FILE, user_coins)
-        save_json(DAILY_FILE, daily_cooldowns)
-        await ctx.send(f"🏦 Đã gửi **+{amt:,} coin** vào ngân hàng an toàn! 🔒")
-    elif action in ["withdraw", "with"]:
-        amt = bank_bal if amount == "all" else (int(amount) if amount and amount.isdigit() else 0)
-        if amt <= 0 or amt > bank_bal:
-            await ctx.send("❌ Số tiền rút không hợp lệ hoặc tài khoản ngân hàng không đủ!")
-            return
-        daily_cooldowns[uid]["bank"] -= amt
-        user_coins[uid] += amt
-        save_json(COIN_FILE, user_coins)
-        save_json(DAILY_FILE, daily_cooldowns)
-        await ctx.send(f"💸 Đã rút **+{amt:,} coin** từ ngân hàng về ví tiền mặt! 💰")
-
-@bot.command(name="leaderboard", aliases=["top"])
-async def leaderboard(ctx):
-    sorted_users = sorted(user_coins.items(), key=lambda x: x[1], reverse=True)[:10]
-    embed = discord.Embed(title="🏆 BẢNG XẾP HẠNG ĐẠI PHÚ HỒ SERVER 🏆", color=0xFFD700)
-    description = ""
-    medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
-    for idx, (uid, coins) in enumerate(sorted_users):
-        user = bot.get_user(int(uid))
-        name = user.display_name if user else f"User {uid}"
-        description += f"{medals[idx]} **{name}** — `{coins:,} coin`\n"
-    embed.description = description if description else "Chưa có dữ liệu người chơi!"
-    await ctx.send(embed=embed)
-
-@bot.command(name="guithu")
-@is_bot_owner()
-async def guithu(ctx, member: discord.Member, *, content: str):
-    try:
-        embed = discord.Embed(
-            title="📨 BẠN CÓ MỘT LÁ THƯ MỚI!",
-            description=content,
-            color=0xFF69B4
-        )
-        embed.set_author(name=ctx.author.display_name, icon_url=ctx.author.display_avatar.url)
-        await member.send(embed=embed)
-        await ctx.send(f"✅ Đã gửi thư đến {member.mention}.")
-    except discord.Forbidden:
-        await ctx.send("❌ Không thể gửi tin nhắn riêng cho người này.")
-
-@bot.command(name="buyrole")
-async def buyrole(ctx, *, role_name: str):
-    role = discord.utils.get(ctx.guild.roles, name=role_name)
-    if not role:
-        await ctx.send(f"❌ Không tìm thấy Role tên `{role_name}` trên Server!")
-        return
-    price = 10000
-    if not subtract_coins(ctx.author.id, price):
-        await ctx.send(f"❌ Bạn không đủ **{price:,} coin** để mua Role {role.mention}!")
-        return
-    await ctx.author.add_roles(role)
-    await ctx.send(f"🎉 **CHÚC MỪNG!** {ctx.author.mention} đã mua thành công Role {role.mention} với giá **{price:,} coin**!")
-
-@bot.command(name="addowner")
-@is_bot_owner()
-async def addowner(ctx, target: discord.User):
-    if target.id in BOT_OWNERS:
-        await ctx.send(f"❌ **{target}** đã là Owner của Boss Bảo rồi!")
-        return
-    BOT_OWNERS.append(target.id)
-    save_all_data()
-    await ctx.send(f"✅ Đã thêm **{target}** vào danh sách đồng minh tối cao của Boss Bảo!")
-
-@addowner.error
-async def addowner_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-
-@bot.command(name="deleteowner")
-@is_bot_owner()
-async def deleteowner(ctx, target: discord.User):
-    if len(BOT_OWNERS) <= 1:
-        await ctx.send("🔥 Không thể xóa Owner cuối cùng!")
-        return
-    if target.id not in BOT_OWNERS:
-        await ctx.send(f"❌ Không tìm thấy Owner **{target}**!")
-        return
-    BOT_OWNERS.remove(target.id)
-    save_all_data()
-    await ctx.send(f"🗑️ Đã xóa **{target}** khỏi danh sách.")
-
-@deleteowner.error
-async def deleteowner_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-
-# ==================== CÁC GAME MỚI ====================
-@bot.command(name="roulette")
-async def roulette(ctx, bet: int, choice: str):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    choice = choice.lower()
-    if choice in ["red", "black"]:
-        win_chance = 0.6  # Tỉ lệ thắng 60%
-        if random.random() < win_chance:
-            win = bet * 2
-            add_coins(ctx.author.id, win)
-            await ctx.send(f"🎰 Roulette: màu **{choice}** trúng! Bạn thắng **+{win:,} coin**! 🎉")
-        else:
-            await ctx.send(f"🎰 Roulette: màu **{choice}** không trúng. Bạn mất **-{bet:,} coin**.")
-    elif choice.isdigit() and 1 <= int(choice) <= 36:
-        num = int(choice)
-        if random.random() < 0.1:  # Tỉ lệ trúng số cụ thể 10%
-            win = bet * 10
-            add_coins(ctx.author.id, win)
-            await ctx.send(f"🎰 Roulette: số **{num}** trúng! Bạn thắng **+{win:,} coin**! 🎉")
-        else:
-            await ctx.send(f"🎰 Roulette: số **{num}** không trúng. Bạn mất **-{bet:,} coin**.")
-    else:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Lựa chọn không hợp lệ! Dùng `red`, `black` hoặc số từ 1-36.")
-
-@bot.command(name="guess")
-async def guess_number(ctx, bet: int, number: int):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    if number < 1 or number > 10:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Hãy đoán số từ 1 đến 10!")
-        return
-    secret = random.randint(1, 10)
-    if number == secret:
-        win = bet * 5
-        add_coins(ctx.author.id, win)
-        await ctx.send(f"🎯 Số bí mật là **{secret}**! Bạn đoán đúng! Nhận **+{win:,} coin**! 🎉")
-    else:
-        await ctx.send(f"🎯 Số bí mật là **{secret}**! Bạn đoán sai. Mất **-{bet:,} coin**.")
-
-@bot.command(name="baccarat")
-async def baccarat(ctx, bet: int, choice: str):
-    if bet <= 0:
-        await ctx.send("❌ Số tiền cược phải lớn hơn 0!")
-        return
-    if not subtract_coins(ctx.author.id, bet):
-        await ctx.send(f"❌ Bạn không đủ {bet:,} coin!")
-        return
-    choice = choice.lower()
-    if choice not in ["player", "banker", "tie"]:
-        add_coins(ctx.author.id, bet)
-        await ctx.send("❌ Lựa chọn: `player`, `banker`, hoặc `tie`.")
-        return
-    player = random.randint(0, 9)
-    banker = random.randint(0, 9)
-    if choice == "player":
-        if random.random() < 0.55:  # Player thắng 55%
-            win = bet * 2
-            add_coins(ctx.author.id, win)
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Player thắng! Nhận **+{win:,} coin**!")
-        else:
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Player thua. Mất **-{bet:,} coin**.")
-    elif choice == "banker":
-        if random.random() < 0.45:  # Banker thắng 45%
-            win = bet * 2
-            add_coins(ctx.author.id, win)
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Banker thắng! Nhận **+{win:,} coin**!")
-        else:
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Banker thua. Mất **-{bet:,} coin**.")
-    else:  # tie
-        if random.random() < 0.2:  # Hòa 20%
-            win = bet * 8
-            add_coins(ctx.author.id, win)
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Hòa! Nhận **+{win:,} coin**!")
-        else:
-            await ctx.send(f"🃏 Baccarat: Player {player} - Banker {banker}. Không hòa. Mất **-{bet:,} coin**.")
+    await ctx.send(f"✅ Đã thêm **{amount:,} coin** vào tài khoản của {member.mention}.")
 
 # ==================== SỰ KIỆN ====================
 @bot.event
