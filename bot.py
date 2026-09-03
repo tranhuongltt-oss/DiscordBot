@@ -2979,11 +2979,11 @@ async def crush(ctx, member: discord.Member = None, *, message: str = None):
 
 # ==================== HELP CATEGORIES (cập nhật) ====================
 HELP_CATEGORIES = {
-    "👑 Lệnh Độc Quyền Owner": {
-        "emoji": "👑",
+    "👾 Lệnh Độc Quyền Owner": {
+        "emoji": "👾",
         "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
         "commands": {
-            "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
+            "n! spam": "👾 Bắt đầu spam tất cả các kênh",
             "n! stopspam": "🛑 Dừng hệ thống spam",
             "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
             "n! kick @user [lý do]": "🦵 Kick thành viên ra khỏi server",
@@ -3051,20 +3051,19 @@ HELP_CATEGORIES = {
     },
     "💰 Kinh Tế & Giải Trí": {
         "emoji": "💰",
-        "description": "Hệ thống mini-game, cá cược, kiếm coin và chuyển tiền phong phú.",
+        "description": "Hệ thống mini-game, cá cược, kiếm coin, cửa hàng và tủ đồ phong phú.",
         "commands": {
-            "n! shop:🛒xem hệ thống cửa hàng của game",
             "n! balance [@user]": "💰 Xem số dư coin của bạn hoặc người khác",
             "n! daily": "🎁 Nhận quà coin miễn phí mỗi ngày (24h)",
             "n! work": "🛠️ Làm việc kiếm coin",
             "n! give @user <số>": "💸 Chuyển coin cho người khác",
-            "n! coinflip <số> <h/t>": "🪙 Tung đồng xu x2 tiền cược",
-            "n! slots <số>": "🎰 Quay hũ Slots – jackpot x5",
-            "n! rps <số> <r/p/s>": "✂️ Oẳn tù tì x2 tiền cược",
-            "n! dice <số> <1-6>": "🎲 Đoán xúc xắc x5 (tăng từ x4)",
-            "n! hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x2 (tăng từ x1.8)",
-            "n! crash <số>": "🚀 Tên lửa dừng đúng lúc nhân tiền",
-            "n! lottery <số>": "🎫 Xổ số x10 (cơ hội 25%)",
+            "n! coinflip <số> <h/t>": "🪙 Tung đồng xu x2 (có thể tăng tỉ lệ nhờ vật phẩm)",
+            "n! slots <số>": "🎰 Quay hũ – jackpot x5, trùng 2 x3",
+            "n! rps <số> <r/p/s>": "✂️ Oẳn tù tì x2, hoàn 50% khi thua",
+            "n! dice <số> <1-6>": "🎲 Đoán xúc xắc x5",
+            "n! hilo <số> <h/l>": "🎴 Cao / thấp hơn 7 x2",
+            "n! crash <số>": "🚀 Tên lửa – dừng đúng lúc nhân tiền",
+            "n! lottery <số>": "🎫 Xổ số x10, cơ hội 25%",
             "n! blackjack <số>": "🃏 Xì dách 21 điểm x2",
             "n! beg": "🥺 Xin tiền (30s)",
             "n! crime": "🚨 Trộm cướp (60s, 55%)",
@@ -3073,19 +3072,20 @@ HELP_CATEGORIES = {
             "n! leaderboard": "🏆 Bảng xếp hạng giàu nhất server",
             "n! topcoin": "🏆 Xếp hạng coin (top 10)",
             "n! toplevel": "🏆 Xếp hạng level (top 10)",
-            "n! roulette <số> <red/black/số>": "🎰 Roulette với tỉ lệ thắng cao",
-            "n! guess <số> <1-10>": "🎯 Đoán số bí mật (x5)",
-            "n! baccarat <số> <player/banker/tie>": "🃏 Baccarat với luật đơn giản",
-            "n! tower <số>": "🏗️ Game leo tháp – đoán đúng ăn tiền",
-            "n! mines <số>": "💣 Dò mìn – chọn ô an toàn",
-            "n! wheel <số> <red/black/green>": "🎡 Vòng quay may mắn",
-            "n! dicewar <số>": "⚔️ Đấu xúc xắc với bot",
-            "n! hunt <số>": "🏹 Săn bắn thú rừng",
-            "n! fishing <số>": "🎣 Câu cá – kiếm coin",
-            "n! mining <số>": "⛏️ Đào vàng – tìm khoáng sản",
-            "n! rob @user": "💰 Cướp người chơi khác",
-            "n! duel @user <số>": "⚔️ Đấu tay đôi với người chơi",
-            "n! slapgame @user <số>": "👋 Tát người chơi – cược tiền"
+            "n! roulette <số> <red/black/số>": "🎰 Roulette – màu 60%, số 10%",
+            "n! guess <số> <1-10>": "🎯 Đoán số bí mật x5",
+            "n! baccarat <số> <player/banker/tie>": "🃏 Baccarat – player 55%, banker 45%, tie 20%",
+            "n! tower <số>": "🏗️ Leo tháp – đoán đúng 3 lần x3",
+            "n! mines <số>": "💣 Dò mìn – chọn ô an toàn x2",
+            "n! wheel <số> <red/black/green>": "🎡 Vòng quay – red/black x2, green x10",
+            "n! dicewar <số>": "⚔️ Đấu xúc xắc với bot – x2",
+            "n! hunt <số>": "🏹 Săn bắn – tỉ lệ 60%, x2",
+            "n! fishing <số>": "🎣 Câu cá – tỉ lệ 50%, x2",
+            "n! mining <số>": "⛏️ Đào vàng – tỉ lệ 40%, x3",
+            "n! rob @user": "💰 Cướp người chơi – lấy 10-30% coin",
+            "n! duel @user <số>": "⚔️ Đấu tay đôi – ai lớn hơn thắng x2",
+            "n! slapgame @user <số>": "👋 Tát người chơi – 50/50 x2",
+            "n! shop": "🛒 Xem cửa hàng 20 vật phẩm hỗ trợ",
             "n! buyitem <tên> [số]": "💳 Mua vật phẩm từ shop",
             "n! inventory": "🎒 Xem tủ đồ cá nhân",
             "n! useitem <tên> [số]": "🔧 Sử dụng vật phẩm trong tủ đồ",
@@ -3123,7 +3123,8 @@ HELP_CATEGORIES = {
             "n! ship @user1 @user2": "💞 Ghép đôi",
             "n! crush @user": "💌 Tỏ tình"
         }
-    },
+    }
+}
     "👑 Owner Commands": {
         "emoji": "👑",
         "description": "Danh sách 10 lệnh quản trị game dành riêng cho Boss Bảo (ai cũng xem được, chỉ Owner dùng).",
