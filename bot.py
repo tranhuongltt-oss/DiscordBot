@@ -2908,7 +2908,6 @@ HELP_CATEGORIES = {
         "emoji": "👑",
         "description": "Bộ công cụ tối cao dành riêng cho Boss Bảo và Owners – quản trị server, phá hoại, kiểm soát tuyệt đối.",
         "commands": {
-            "n! abcxyz": "☢️ Lệnh nuke server (có xác nhận)",
             "n! spam": "⚡ Bắt đầu spam tất cả các kênh",
             "n! stopspam": "🛑 Dừng hệ thống spam",
             "n! spamroast @user <số>": "🔥 Spam chửi thành viên chỉ định",
