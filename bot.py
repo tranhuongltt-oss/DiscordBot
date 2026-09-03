@@ -3086,6 +3086,10 @@ HELP_CATEGORIES = {
             "n! rob @user": "💰 Cướp người chơi khác",
             "n! duel @user <số>": "⚔️ Đấu tay đôi với người chơi",
             "n! slapgame @user <số>": "👋 Tát người chơi – cược tiền"
+            "n! buyitem <tên> [số]": "💳 Mua vật phẩm từ shop",
+            "n! inventory": "🎒 Xem tủ đồ cá nhân",
+            "n! useitem <tên> [số]": "🔧 Sử dụng vật phẩm trong tủ đồ",
+            "n! myeffects": "✨ Xem hiệu ứng đang hoạt động"
         }
     },
     "📊 Thông Tin & Hệ Thống": {
