@@ -3181,12 +3181,6 @@ HELP_CATEGORIES = {
             "n!explain <code>": "📖 Giải thích đoạn code",
             "n!resetai": "🔄 Xóa lịch sử hội thoại của bạn",
             "n!aiinfo": "📊 Xem trạng thái AI"
-        }
-    },
-    "🛠️ Tiện Ích & Công Cụ": {
-        "emoji": "🛠️",
-        "description": "Các lệnh tiện ích tra cứu thời tiết, dịch thuật và tính toán.",
-        "commands": {
             "n!weather <thành phố>": "🌤️ Tra cứu thông tin thời tiết",
             "n!translate <văn bản>": "🌍 Dịch thuật văn bản qua AI",
             "n!define <từ ngữ>": "📖 Tra cứu định nghĩa từ/thuật ngữ",
