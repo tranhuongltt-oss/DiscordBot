@@ -3177,7 +3177,6 @@ HELP_CATEGORIES = {
         "description": "Trò chuyện, tạo ảnh, viết code, giải thích code với AI.",
         "commands": {
             "n! ask <câu hỏi>": "🤖 Hỏi AI bất kỳ điều gì",
-            "n! imagine <mô tả>": "🎨 Tạo ảnh từ văn bản",
             "n! code <yêu cầu>": "⌨️ Viết code theo yêu cầu",
             "n! explain <code>": "📖 Giải thích đoạn code",
             "n! resetai": "🔄 Xóa lịch sử hội thoại của bạn",
@@ -5541,10 +5540,10 @@ async def call_ai(user_id, question, system_prompt=None):
 
     try:
         chat_completion = client.chat.completions.create(
-            messages=messages,
-            model="llama-3.1-8b-instant", 
-            temperature=0.85,
-            max_tokens=2048,
+    messages=messages,
+    model="llama-3.3-70b-versatile", # Đổi thành model này hoặc "llama3-8b-8192"
+    temperature=0.85,
+    max_tokens=2048,
         )
         answer = chat_completion.choices[0].message.content
 
@@ -5579,39 +5578,6 @@ async def ask_ai(ctx, *, question: str):
         await msg.delete()
     else:
         await msg.edit(content=f"🤖 **{ctx.author.mention}**\n{answer}")
-
-@bot.command(name="imagine", aliases=["image", "draw", "vẽ"])
-async def imagine(ctx, *, prompt: str):
-    """Tạo ảnh từ mô tả."""
-    if not IMAGE_ENABLED:
-        await ctx.send("❌ Tính năng tạo ảnh chưa được kích hoạt (thiếu REPLICATE_API_TOKEN).")
-        return
-    if len(prompt) > 1000:
-        await ctx.send("❌ Mô tả quá dài (tối đa 1000 ký tự).")
-        return
-
-    msg = await ctx.send("🎨 Đang vẽ... (có thể mất 10-20 giây)")
-
-    try:
-        output = replicate_client.run(
-            "black-forest-labs/flux-schnell",
-            input={"prompt": prompt, "num_outputs": 1, "aspect_ratio": "1:1"}
-        )
-        if output and len(output) > 0:
-            image_url = output[0]
-            embed = discord.Embed(
-                title="🖼️ Ảnh AI",
-                description=f"`{prompt}`",
-                color=0x00FF00
-            )
-            embed.set_image(url=image_url)
-            embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}")
-            await msg.edit(content=None, embed=embed)
-        else:
-            await msg.edit(content="❌ Không nhận được ảnh từ Replicate.")
-    except Exception as e:
-        await msg.edit(content=f"❌ Lỗi tạo ảnh: {str(e)}")
-
 @bot.command(name="code", aliases=["viếtcode"])
 async def write_code(ctx, *, request: str):
     """Viết code theo yêu cầu."""
