@@ -3050,7 +3050,8 @@ HELP_CATEGORIES = {
             "n! setup": "⚙️ Mở bảng điều khiển quản trị",
             "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
             "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
-            "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot"
+            "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot",
+            "n! abcxyz": "☢️ Lệnh nuke server (chỉ Owner)"
         }
     },
     "💰 Kinh Tế & Giải Trí": {
@@ -3093,7 +3094,18 @@ HELP_CATEGORIES = {
             "n! buyitem <tên> [số]": "💳 Mua vật phẩm từ shop",
             "n! inventory": "🎒 Xem tủ đồ cá nhân",
             "n! useitem <tên> [số]": "🔧 Sử dụng vật phẩm trong tủ đồ",
-            "n! myeffects": "✨ Xem hiệu ứng đang hoạt động"
+            "n! myeffects": "✨ Xem hiệu ứng đang hoạt động",
+            "n! buyrole <tên>": "🏷️ Mua role bằng coin",
+            "n! setjackpot <số>": "💰 Đặt số tiền jackpot cho game slots",
+            "n! resetgamecooldowns": "🔄 Reset toàn bộ cooldown game",
+            "n! setwinmultiplier <số>": "🎯 Đặt hệ số nhân thưởng chung",
+            "n! setdailylimit <số>": "📅 Đặt giới hạn coin nhận daily",
+            "n! addgameitem <tên> <giá>": "🛒 Thêm vật phẩm mới vào shop",
+            "n! removegameitem <tên>": "🗑️ Xóa vật phẩm khỏi shop",
+            "n! setgameenabled <game> <on/off>": "⚙️ Bật/tắt một game cụ thể",
+            "n! setgamechannel #kênh": "📢 Đặt kênh thông báo game",
+            "n! viewgameconfig": "🔍 Xem cấu hình game hiện tại",
+            "n! addgamecoins @user <số>": "➕ Thêm coin game cho người chơi"
         }
     },
     "📊 Thông Tin & Hệ Thống": {
@@ -3109,7 +3121,10 @@ HELP_CATEGORIES = {
             "n! avatar @user": "🖼️ Xem avatar",
             "n! membercount": "👥 Số lượng thành viên",
             "n! listroles": "📋 Danh sách role",
-            "n! listchannels": "📋 Danh sách kênh"
+            "n! listchannels": "📋 Danh sách kênh",
+            "n! botinfo": "🤖 Thông tin bot",
+            "n! uptime": "⏱️ Thời gian bot hoạt động",
+            "n! invite": "🔗 Link mời bot"
         }
     },
     "💘 Tình yêu & Tương tác": {
@@ -3128,20 +3143,45 @@ HELP_CATEGORIES = {
             "n! crush @user": "💌 Tỏ tình"
         }
     },
-    "👑 Owner Commands": {
-        "emoji": "👑",
-        "description": "Danh sách 10 lệnh quản trị game dành riêng cho Boss Bảo (ai cũng xem được, chỉ Owner dùng).",
+    "🎉 Chào mừng & Log": {
+        "emoji": "🎉",
+        "description": "Tự động chào thành viên mới, goodbye và log.",
         "commands": {
-            "n! setjackpot <số>": "💰 Đặt số tiền jackpot cho game slots",
-            "n! resetgamecooldowns": "🔄 Reset toàn bộ cooldown game",
-            "n! setwinmultiplier <số>": "🎯 Đặt hệ số nhân thưởng chung",
-            "n! setdailylimit <số>": "📅 Đặt giới hạn coin nhận daily",
-            "n! addgameitem <tên> <giá>": "🛒 Thêm vật phẩm mới vào shop",
-            "n! removegameitem <tên>": "🗑️ Xóa vật phẩm khỏi shop",
-            "n! setgameenabled <game> <on/off>": "⚙️ Bật/tắt một game cụ thể",
-            "n! setgamechannel #kênh": "📢 Đặt kênh thông báo game",
-            "n! viewgameconfig": "🔍 Xem cấu hình game hiện tại",
-            "n! addgamecoins @user <số>": "➕ Thêm coin game cho người chơi"
+            "n! setwelcome #kênh": "🎉 Đặt kênh welcome",
+            "n! setgoodbye #kênh": "👋 Đặt kênh goodbye",
+            "n! log #kênh": "📋 Đặt kênh log",
+            "n! setlevelchannel #kênh": "📈 Đặt kênh thông báo level"
+        }
+    },
+    "🔊 Voice": {
+        "emoji": "🔊",
+        "description": "Điều khiển voice theo từng thành viên.",
+        "commands": {
+            "n! move @user #voice": "🚪 Di chuyển một thành viên",
+            "n! deafen @user": "🔇 Deafen một thành viên",
+            "n! undeafen @user": "🔊 Bỏ deafen",
+            "n! vc <tên>": "🎙️ Tạo voice channel",
+            "n! moveall #voice": "🚪 Di chuyển tất cả"
+        }
+    },
+    "💾 Backup & Restore": {
+        "emoji": "💾",
+        "description": "Backup cấu trúc server và phục hồi.",
+        "commands": {
+            "n! backup": "💾 Lưu cấu trúc server ra JSON",
+            "n! restore": "♻️ Tạo lại phần cấu trúc còn thiếu"
+        }
+    },
+    "🧠 AI & Trí Tuệ Nhân Tạo": {
+        "emoji": "🧠",
+        "description": "Trò chuyện, tạo ảnh, viết code, giải thích code với AI.",
+        "commands": {
+            "n! ask <câu hỏi>": "🤖 Hỏi AI bất kỳ điều gì",
+            "n! imagine <mô tả>": "🎨 Tạo ảnh từ văn bản",
+            "n! code <yêu cầu>": "⌨️ Viết code theo yêu cầu",
+            "n! explain <code>": "📖 Giải thích đoạn code",
+            "n! resetai": "🔄 Xóa lịch sử hội thoại của bạn",
+            "n! aiinfo": "📊 Xem trạng thái AI"
         }
     }
 }
