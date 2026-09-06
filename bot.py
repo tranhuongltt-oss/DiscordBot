@@ -3174,24 +3174,22 @@ HELP_CATEGORIES = {
     },
    "🧠 AI & Trí Tuệ Nhân Tạo": {
         "emoji": "🧠",
-        "description": "Trò chuyện, viết code, giải thích code với AI.",
+        "description": "Trò chuyện, viết code, giải thích code, tra cứu thời tiết, dịch thuật và tính toán với AI.",
         "commands": {
             "n!ask <câu hỏi>": "🤖 Hỏi AI bất kỳ điều gì",
             "n!code <yêu cầu>": "⌨️ Viết code theo yêu cầu",
             "n!explain <code>": "📖 Giải thích đoạn code",
             "n!resetai": "🔄 Xóa lịch sử hội thoại của bạn",
-            "n!aiinfo": "📊 Xem trạng thái AI"
+            "n!aiinfo": "📊 Xem trạng thái AI",
             "n!weather <thành phố>": "🌤️ Tra cứu thông tin thời tiết",
             "n!translate <văn bản>": "🌍 Dịch thuật văn bản qua AI",
             "n!define <từ ngữ>": "📖 Tra cứu định nghĩa từ/thuật ngữ",
-            "n!calculate <biểu thức>": "🧮 Tính toán biểu thức toán học an toàn",
+            "n!calculate <biểu thức>": "🧮 Tính toán biểu thức toán học",
             "n!math": "📐 Hướng dẫn cách dùng lệnh tính toán",
             "n!suggestion <góp ý>": "💡 Gửi góp ý cho quản trị viên",
             "n!report <thành viên> <lý do>": "🚨 Báo cáo vi phạm"
         }
     }
-}
-
 # ==================== CLASS HELP SELECT ====================
 class HelpSelect(discord.ui.Select):
     def __init__(self, user_id, owner_ids):
