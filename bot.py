@@ -5546,12 +5546,17 @@ async def globally_disabled_check(ctx):
         await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
         return False
     return True
-# ==================== AI VỚI GROQ (NHÂN CÁCH 50 YÊU CẦU) ====================
+# ==================== PHẦN AI TÍCH HỢP ĐẦY ĐỦ ====================
+# Yêu cầu: pip install groq replicate python-dotenv aiohttp
+
 import os
 import aiohttp
+import json
+from datetime import datetime
 from groq import Groq
 import replicate
 
+# ===== LẤY API KEY =====
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
 AI_ENABLED = False
@@ -5578,7 +5583,7 @@ if REPLICATE_API_KEY:
 else:
     print("⚠️ Chưa có REPLICATE_API_KEY – tính năng tạo ảnh bị tắt.")
 
-# System Prompt chi tiết (50 yêu cầu)
+# ===== NHÂN CÁCH AI (đáp ứng 50 yêu cầu) =====
 SYSTEM_PROMPT = (
     "Bạn là một trợ lý AI thông minh, hiền lành, tốt bụng và cực kỳ thân thiện. "
     "Bạn xưng hô với chủ nhân là 'Chủ nhân' hoặc 'Boss' và tự xưng là 'tôi' hoặc 'em'. "
@@ -5607,12 +5612,50 @@ SYSTEM_PROMPT = (
     "Bạn là một trợ lý ảo hoàn hảo, đáng tin cậy và luôn đồng hành cùng chủ nhân."
 )
 
-# Lưu lịch sử hội thoại (tạm thời trong RAM)
-conversation_history = {}
+# ===== LƯU LỊCH SỬ HỘI THOẠI =====
+conversation_history = {}  # {user_id: [messages]}
 
+# ===== HÀM GỌI AI =====
+async def call_ai(user_id, question, system_prompt=None):
+    if not AI_ENABLED:
+        return "❌ AI chưa được kích hoạt. Vui lòng liên hệ admin."
+
+    if system_prompt is None:
+        system_prompt = SYSTEM_PROMPT
+
+    # Lấy lịch sử của user (tối đa 10 tin nhắn)
+    history = conversation_history.get(user_id, [])
+    history = history[-10:]  # giới hạn 10 tin
+
+    messages = [{"role": "system", "content": system_prompt}]
+    for h in history:
+        messages.append(h)
+    messages.append({"role": "user", "content": question})
+
+    try:
+        # Gọi Groq API
+        chat_completion = client.chat.completions.create(
+            messages=messages,
+            model="mixtral-8x7b-32768",  # hoặc llama3-70b-8192
+            temperature=0.85,
+            max_tokens=2048,
+        )
+        answer = chat_completion.choices[0].message.content
+
+        # Lưu lịch sử
+        conversation_history[user_id] = history + [
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": answer}
+        ]
+
+        return answer
+    except Exception as e:
+        return f"❌ Lỗi khi gọi AI: {str(e)}"
+
+# ===== LỆNH ASK (HỎI ĐÁP TỔNG QUÁT) =====
 @bot.command(name="ask", aliases=["ai", "gpt", "hỏi"])
 async def ask_ai(ctx, *, question: str):
-    """Hỏi AI bất kỳ điều gì. AI sẽ trả lời với nhân cách riêng."""
+    """Hỏi AI bất kỳ điều gì."""
     if not AI_ENABLED:
         await ctx.send("❌ AI chưa được kích hoạt. Vui lòng liên hệ admin.")
         return
@@ -5622,49 +5665,20 @@ async def ask_ai(ctx, *, question: str):
         return
 
     msg = await ctx.send("🤔 Đang suy nghĩ...")
+    answer = await call_ai(str(ctx.author.id), question)
 
-    # Lấy lịch sử của user (tối đa 10 tin nhắn gần nhất)
-    user_id = str(ctx.author.id)
-    history = conversation_history.get(user_id, [])
-    # Giới hạn 10 tin nhắn để tiết kiệm token
-    history = history[-10:]
+    if len(answer) > 2000:
+        # Chia nhỏ
+        for i in range(0, len(answer), 1990):
+            await ctx.send(f"📝 {answer[i:i+1990]}")
+        await msg.delete()
+    else:
+        await msg.edit(content=f"🤖 **{ctx.author.mention}**\n{answer}")
 
-    # Xây dựng messages cho API
-    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-    for h in history:
-        messages.append(h)
-    messages.append({"role": "user", "content": question})
-
-    try:
-        chat_completion = client.chat.completions.create(
-            messages=messages,
-            model="mixtral-8x7b-32768",  # Hoặc "llama3-70b-8192"
-            temperature=0.85,
-            max_tokens=2048,
-        )
-
-        answer = chat_completion.choices[0].message.content
-
-        # Lưu lịch sử
-        conversation_history[user_id] = history + [
-            {"role": "user", "content": question},
-            {"role": "assistant", "content": answer}
-        ]
-
-        # Nếu câu trả lời quá dài (> 2000 ký tự), chia nhỏ
-        if len(answer) > 2000:
-            for i in range(0, len(answer), 1990):
-                await ctx.send(f"📝 {answer[i:i+1990]}")
-            await msg.delete()
-        else:
-            await msg.edit(content=f"🤖 **Trả lời:**\n{answer}")
-
-    except Exception as e:
-        await msg.edit(content=f"❌ Lỗi khi gọi AI: {str(e)}")
-
+# ===== LỆNH IMAGINE (TẠO ẢNH) =====
 @bot.command(name="imagine", aliases=["image", "draw", "vẽ"])
 async def imagine(ctx, *, prompt: str):
-    """Tạo ảnh từ mô tả (sử dụng Flux trên Replicate)."""
+    """Tạo ảnh từ mô tả."""
     if not IMAGE_ENABLED:
         await ctx.send("❌ Tính năng tạo ảnh chưa được kích hoạt (thiếu REPLICATE_API_KEY).")
         return
@@ -5675,12 +5689,11 @@ async def imagine(ctx, *, prompt: str):
     msg = await ctx.send("🎨 Đang vẽ... (có thể mất 10-20 giây)")
 
     try:
-        # Dùng mô hình Flux-schnell (miễn phí, nhanh)
+        # Sử dụng Flux Schnell (nhanh, miễn phí)
         output = replicate.run(
             "black-forest-labs/flux-schnell",
             input={"prompt": prompt, "num_outputs": 1, "size": "512x512"}
         )
-        # output là list các URL
         if output and len(output) > 0:
             image_url = output[0]
             embed = discord.Embed(
@@ -5689,11 +5702,73 @@ async def imagine(ctx, *, prompt: str):
                 color=0x00FF00
             )
             embed.set_image(url=image_url)
+            embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}")
             await msg.edit(content=None, embed=embed)
         else:
             await msg.edit(content="❌ Không nhận được ảnh từ Replicate.")
     except Exception as e:
         await msg.edit(content=f"❌ Lỗi tạo ảnh: {str(e)}")
+
+# ===== LỆNH CODE (VIẾT CODE THEO YÊU CẦU) =====
+@bot.command(name="code", aliases=["viếtcode"])
+async def write_code(ctx, *, request: str):
+    """Viết code theo yêu cầu."""
+    if not AI_ENABLED:
+        await ctx.send("❌ AI chưa được kích hoạt.")
+        return
+
+    prompt = f"Hãy viết code cho yêu cầu sau, kèm giải thích chi tiết:\n{request}"
+    msg = await ctx.send("⌨️ Đang viết code...")
+    answer = await call_ai(str(ctx.author.id), prompt)
+
+    if len(answer) > 2000:
+        for i in range(0, len(answer), 1990):
+            await ctx.send(f"```\n{answer[i:i+1990]}\n```")
+        await msg.delete()
+    else:
+        await msg.edit(content=f"```\n{answer}\n```")
+
+# ===== LỆNH EXPLAIN (GIẢI THÍCH CODE) =====
+@bot.command(name="explain", aliases=["giảithích"])
+async def explain_code(ctx, *, code: str):
+    """Giải thích đoạn code được gửi."""
+    if not AI_ENABLED:
+        await ctx.send("❌ AI chưa được kích hoạt.")
+        return
+
+    prompt = f"Hãy giải thích đoạn code sau một cách chi tiết, dễ hiểu, bằng tiếng Việt:\n\n{code}"
+    msg = await ctx.send("🔍 Đang phân tích...")
+    answer = await call_ai(str(ctx.author.id), prompt)
+
+    if len(answer) > 2000:
+        for i in range(0, len(answer), 1990):
+            await ctx.send(f"📝 {answer[i:i+1990]}")
+        await msg.delete()
+    else:
+        await msg.edit(content=f"📖 **Giải thích:**\n{answer}")
+
+# ===== LỆNH RESET (XÓA LỊCH SỬ) =====
+@bot.command(name="resetai")
+async def reset_ai(ctx):
+    """Xóa lịch sử hội thoại của bạn."""
+    if str(ctx.author.id) in conversation_history:
+        del conversation_history[str(ctx.author.id)]
+        await ctx.send("✅ Đã xóa lịch sử hội thoại của bạn.")
+    else:
+        await ctx.send("ℹ️ Bạn chưa có lịch sử hội thoại nào.")
+
+# ===== LỆNH AIINFO =====
+@bot.command(name="aiinfo")
+async def ai_info(ctx):
+    """Xem trạng thái AI."""
+    embed = discord.Embed(title="🤖 Thông tin AI", color=0x00FFFF)
+    embed.add_field(name="Trạng thái", value="🟢 Đang hoạt động" if AI_ENABLED else "🔴 Tắt", inline=True)
+    embed.add_field(name="Tạo ảnh", value="🟢 Sẵn sàng" if IMAGE_ENABLED else "🔴 Tắt", inline=True)
+    embed.add_field(name="Model", value="Mixtral-8x7b-32768", inline=True)
+    embed.add_field(name="Nhân cách", value="Hiền lành, nói nhiều, đa năng", inline=False)
+    embed.add_field(name="Lịch sử", value=f"{len(conversation_history)} người dùng", inline=True)
+    embed.set_footer(text="Groq + Replicate")
+    await ctx.send(embed=embed)
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
