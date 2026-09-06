@@ -5444,7 +5444,7 @@ async def add_xp(ctx, member: discord.Member, amount: int):
 @is_bot_owner()
 async def set_xp(ctx, member: discord.Member, xp: int):
     if xp < 0:
-        aait ctx.send("❌ XP không thể âm.")
+       await ctx.send("❌ XP không thể âm.")
         return
     uid = str(member.id)
     if uid not in USER_LEVELS:
