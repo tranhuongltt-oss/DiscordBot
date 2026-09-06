@@ -5532,7 +5532,7 @@ async def call_ai(user_id, question, system_prompt=None):
     try:
         chat_completion = client.chat.completions.create(
             messages=messages,
-            model="llama-3.3-70b-versatile", 
+            model="llama-3.1-70b-versatile",  # <--- Đổi thành model này hoặc llama3-70b-8192
             temperature=0.85,
             max_tokens=2048,
         )
