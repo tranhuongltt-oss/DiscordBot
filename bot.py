@@ -12,11 +12,6 @@ import re
 import time
 from typing import Optional, Union
 
-# ===== THÊM IMPORT CHO AI =====
-import replicate
-from groq import Groq
-from dotenv import load_dotenv
-
 # ==================== KEEP_ALIVE ====================
 try:
     from keep_alive import keep_alive
