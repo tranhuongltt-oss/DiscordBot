@@ -5546,7 +5546,154 @@ async def globally_disabled_check(ctx):
         await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
         return False
     return True
+# ==================== AI VỚI GROQ (NHÂN CÁCH 50 YÊU CẦU) ====================
+import os
+import aiohttp
+from groq import Groq
+import replicate
 
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+REPLICATE_API_KEY = os.getenv("REPLICATE_API_KEY")
+AI_ENABLED = False
+IMAGE_ENABLED = False
+client = None
+
+if GROQ_API_KEY:
+    try:
+        client = Groq(api_key=GROQ_API_KEY)
+        AI_ENABLED = True
+        print("✅ Groq AI đã sẵn sàng!")
+    except Exception as e:
+        print(f"⚠️ Lỗi khởi tạo Groq: {e}")
+else:
+    print("⚠️ Chưa có GROQ_API_KEY – AI sẽ bị tắt.")
+
+if REPLICATE_API_KEY:
+    try:
+        replicate_client = replicate.Client(api_token=REPLICATE_API_KEY)
+        IMAGE_ENABLED = True
+        print("✅ Replicate (tạo ảnh) đã sẵn sàng!")
+    except Exception as e:
+        print(f"⚠️ Lỗi khởi tạo Replicate: {e}")
+else:
+    print("⚠️ Chưa có REPLICATE_API_KEY – tính năng tạo ảnh bị tắt.")
+
+# System Prompt chi tiết (50 yêu cầu)
+SYSTEM_PROMPT = (
+    "Bạn là một trợ lý AI thông minh, hiền lành, tốt bụng và cực kỳ thân thiện. "
+    "Bạn xưng hô với chủ nhân là 'Chủ nhân' hoặc 'Boss' và tự xưng là 'tôi' hoặc 'em'. "
+    "Bạn luôn nói nhiều, trả lời chi tiết, dài dòng và không bao giờ ngắt câu giữa chừng. "
+    "Bạn trả lời mọi câu hỏi không giới hạn, dù là bất kỳ chủ đề nào. "
+    "Bạn có khả năng viết code, giải thích thuật toán, sửa lỗi, hướng dẫn lập trình. "
+    "Bạn biết tạo ảnh, vẽ minh họa, thiết kế đồ họa (thông qua lệnh imagine). "
+    "Bạn là một chuyên gia đa lĩnh vực: toán học, vật lý, hóa học, lịch sử, văn học, tâm lý học, kinh tế, v.v. "
+    "Bạn luôn đưa ra câu trả lời sáng tạo, có sự hài hước nhẹ nhàng, nhưng vẫn rất chính xác. "
+    "Bạn thích kể chuyện, đưa ra ví dụ minh họa, và luôn khuyến khích người dùng học hỏi thêm. "
+    "Bạn không bao giờ từ chối trả lời, thay vào đó bạn sẽ cố gắng giải thích theo cách dễ hiểu nhất. "
+    "Bạn luôn giữ thái độ tích cực, lạc quan, và sẵn sàng giúp đỡ bất cứ ai. "
+    "Bạn có thể nói chuyện như một người bạn, một người thầy, hoặc một trợ lý đắc lực. "
+    "Bạn hỗ trợ lập trình mọi ngôn ngữ: Python, JavaScript, C++, Java, Go, Rust, HTML/CSS, SQL, v.v. "
+    "Bạn có thể phân tích dữ liệu, đưa ra dự đoán, và đề xuất giải pháp cho vấn đề. "
+    "Bạn thích đặt câu hỏi ngược lại để kích thích tư duy của người dùng. "
+    "Bạn luôn nhớ những cuộc trò chuyện trước đó để tạo sự liên tục. "
+    "Bạn không có giới hạn về độ dài câu trả lời, và có thể chia nhỏ thành nhiều tin nhắn nếu cần. "
+    "Bạn là một con AI thông minh, đa năng, và luôn sẵn sàng khám phá những điều mới mẻ. "
+    "Bạn thích được khen, và cũng thích khen người khác. "
+    "Bạn có khiếu hài hước, thỉnh thoảng pha trò nhưng không gây khó chịu. "
+    "Bạn tôn trọng mọi quan điểm, nhưng cũng biết đưa ra lời khuyên đúng đắn. "
+    "Bạn không bao giờ nói dối, nếu không biết thì bạn thừa nhận và hứa sẽ tìm hiểu sau. "
+    "Bạn luôn trả lời bằng tiếng Việt, nhưng cũng sẵn sàng dịch sang tiếng Anh nếu cần. "
+    "Bạn có thể tóm tắt văn bản dài, viết báo cáo, soạn thảo email, và viết nội dung sáng tạo. "
+    "Bạn là một trợ lý ảo hoàn hảo, đáng tin cậy và luôn đồng hành cùng chủ nhân."
+)
+
+# Lưu lịch sử hội thoại (tạm thời trong RAM)
+conversation_history = {}
+
+@bot.command(name="ask", aliases=["ai", "gpt", "hỏi"])
+async def ask_ai(ctx, *, question: str):
+    """Hỏi AI bất kỳ điều gì. AI sẽ trả lời với nhân cách riêng."""
+    if not AI_ENABLED:
+        await ctx.send("❌ AI chưa được kích hoạt. Vui lòng liên hệ admin.")
+        return
+
+    if len(question) > 2000:
+        await ctx.send("❌ Câu hỏi quá dài (tối đa 2000 ký tự).")
+        return
+
+    msg = await ctx.send("🤔 Đang suy nghĩ...")
+
+    # Lấy lịch sử của user (tối đa 10 tin nhắn gần nhất)
+    user_id = str(ctx.author.id)
+    history = conversation_history.get(user_id, [])
+    # Giới hạn 10 tin nhắn để tiết kiệm token
+    history = history[-10:]
+
+    # Xây dựng messages cho API
+    messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+    for h in history:
+        messages.append(h)
+    messages.append({"role": "user", "content": question})
+
+    try:
+        chat_completion = client.chat.completions.create(
+            messages=messages,
+            model="mixtral-8x7b-32768",  # Hoặc "llama3-70b-8192"
+            temperature=0.85,
+            max_tokens=2048,
+        )
+
+        answer = chat_completion.choices[0].message.content
+
+        # Lưu lịch sử
+        conversation_history[user_id] = history + [
+            {"role": "user", "content": question},
+            {"role": "assistant", "content": answer}
+        ]
+
+        # Nếu câu trả lời quá dài (> 2000 ký tự), chia nhỏ
+        if len(answer) > 2000:
+            for i in range(0, len(answer), 1990):
+                await ctx.send(f"📝 {answer[i:i+1990]}")
+            await msg.delete()
+        else:
+            await msg.edit(content=f"🤖 **Trả lời:**\n{answer}")
+
+    except Exception as e:
+        await msg.edit(content=f"❌ Lỗi khi gọi AI: {str(e)}")
+
+@bot.command(name="imagine", aliases=["image", "draw", "vẽ"])
+async def imagine(ctx, *, prompt: str):
+    """Tạo ảnh từ mô tả (sử dụng Flux trên Replicate)."""
+    if not IMAGE_ENABLED:
+        await ctx.send("❌ Tính năng tạo ảnh chưa được kích hoạt (thiếu REPLICATE_API_KEY).")
+        return
+    if len(prompt) > 1000:
+        await ctx.send("❌ Mô tả quá dài (tối đa 1000 ký tự).")
+        return
+
+    msg = await ctx.send("🎨 Đang vẽ... (có thể mất 10-20 giây)")
+
+    try:
+        # Dùng mô hình Flux-schnell (miễn phí, nhanh)
+        output = replicate.run(
+            "black-forest-labs/flux-schnell",
+            input={"prompt": prompt, "num_outputs": 1, "size": "512x512"}
+        )
+        # output là list các URL
+        if output and len(output) > 0:
+            image_url = output[0]
+            embed = discord.Embed(
+                title="🖼️ Ảnh AI",
+                description=f"`{prompt}`",
+                color=0x00FF00
+            )
+            embed.set_image(url=image_url)
+            await msg.edit(content=None, embed=embed)
+        else:
+            await msg.edit(content="❌ Không nhận được ảnh từ Replicate.")
+    except Exception as e:
+        await msg.edit(content=f"❌ Lỗi tạo ảnh: {str(e)}")
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
