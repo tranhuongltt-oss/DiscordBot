@@ -12,6 +12,11 @@ import re
 import time
 from typing import Optional, Union
 
+# ===== THÊM IMPORT CHO AI =====
+import replicate
+from groq import Groq
+from dotenv import load_dotenv
+
 # ==================== KEEP_ALIVE ====================
 try:
     from keep_alive import keep_alive
@@ -20,6 +25,8 @@ except ImportError:
         pass
 
 # ==================== CẤU HÌNH ====================
+load_dotenv()  # Đọc file .env nếu có
+
 DISCORD_TOKEN = os.getenv("TOKEN")
 
 BOT_OWNERS = [
@@ -684,8 +691,8 @@ async def spam_roast(ctx, member: discord.Member, count: int = 10):
 async def spam_roast_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-        # ==================== LỆNH QUẢN TRỊ (KICK, BAN, UNBAN, MASSBAN, MUTE, UNMUTE, TIMEOUT, DEAFEN, UNDEAFEN, MOVE, MOVEALL, WARN, KICKALL, MASSKICK) ====================
 
+# ==================== LỆNH QUẢN TRỊ (KICK, BAN, UNBAN, MASSBAN, MUTE, UNMUTE, TIMEOUT, DEAFEN, UNDEAFEN, MOVE, MOVEALL, WARN, KICKALL, MASSKICK) ====================
 @bot.command(name="kick")
 @is_bot_owner()
 async def kick_user(ctx, member: discord.Member, *, reason: str = "Không có lý do"):
@@ -1127,7 +1134,6 @@ async def masskick_error(ctx, error):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
 
 # ==================== LỆNH QUẢN LÝ KÊNH & ROLE ====================
-
 @bot.command(name="createchannel")
 @is_bot_owner()
 async def create_channel(ctx, *, name: str):
@@ -1943,11 +1949,11 @@ async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
 async def steal_emoji_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
         await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-        # ==================== LỆNH WEBHOOK MỚI ====================
+
+# ==================== LỆNH WEBHOOK MỚI ====================
 @bot.command(name="addwebhook")
 @is_bot_owner()
 async def addwebhook(ctx, name: str, count: int = 1):
-    """Tạo nhiều webhook trong kênh hiện tại với tên và số lượng"""
     if count < 1:
         await ctx.send("❌ Số lượng phải lớn hơn 0!")
         return
@@ -1963,7 +1969,7 @@ async def addwebhook(ctx, name: str, count: int = 1):
             wh = await ctx.channel.create_webhook(name=webhook_name)
             webhooks[webhook_name] = wh
             created += 1
-        except Exception as e:
+        except Exception:
             failed += 1
     embed = discord.Embed(
         title="✅ TẠO WEBHOOK",
@@ -1974,8 +1980,6 @@ async def addwebhook(ctx, name: str, count: int = 1):
 
 @bot.command(name="webhookspam")
 async def webhookspam(ctx, target: discord.Member, content: str, count: int = None, webhook_name: str = None):
-    """Spam webhook: n! webhookspam @user nội_dung [số_lượng] [tên_webhook]
-    Nếu không nhập số lượng -> spam vô hạn (while True)"""
     if not ctx.author.guild_permissions.manage_webhooks and ctx.author.id not in BOT_OWNERS:
         await ctx.send("❌ Bạn cần quyền **Quản lý Webhook** để sử dụng lệnh này!")
         return
@@ -2005,7 +2009,7 @@ async def webhookspam(ctx, target: discord.Member, content: str, count: int = No
                     await asyncio.sleep(0.1)
                 except Exception:
                     break
-        task = asyncio.create_task(infinite_spam())
+        asyncio.create_task(infinite_spam())
         await ctx.send(f"🚀 Đã bắt đầu spam vô hạn tới {target.mention} bằng webhook `{wh.name}`. Dùng `n! stopwebhookspam` để dừng.")
     else:
         if count < 1 or count > 1000:
@@ -2024,7 +2028,6 @@ async def webhookspam(ctx, target: discord.Member, content: str, count: int = No
 @bot.command(name="stopwebhookspam")
 @is_bot_owner()
 async def stop_webhook_spam(ctx):
-    """Dừng tất cả webhook spam đang chạy (Owner only)"""
     webhooks_in_channel = await ctx.channel.webhooks()
     for wh in webhooks_in_channel:
         try:
@@ -2758,6 +2761,7 @@ CRUSH_MESSAGES = [
     "Gửi {target_name}, {author_name} muốn nói rằng bạn là người tớ muốn yêu thương và chiều chuộng mỗi ngày 🥰",
     "{target_name} à, {author_name} thích bạn, và tớ sẽ thích bạn đến khi nào bạn còn muốn tớ ở bên cạnh ❤️",
 ]
+
 # ==================== LỆNH TÌNH YÊU ====================
 @bot.command(name="love", aliases=["tinhyeu"])
 async def love(ctx, user1: discord.Member = None, user2: discord.Member = None):
@@ -4816,7 +4820,8 @@ async def addgamecoins(ctx, member: discord.Member, amount: int):
         return
     add_coins(member.id, amount)
     await ctx.send(f"✅ Đã thêm **{amount:,} coin** vào tài khoản của {member.mention}.")
-    # ==================== SỰ KIỆN ====================
+
+# ==================== SỰ KIỆN ====================
 @bot.event
 async def on_ready():
     print(f"Logged in as {bot.user} (ID: {bot.user.id})")
@@ -4825,7 +4830,6 @@ async def on_ready():
     for guild in bot.guilds:
         print(f"  - {guild.name} (ID: {guild.id})")
     print("=" * 50)
-    # Đặt trạng thái mặc định
     await bot.change_presence(activity=discord.Game(name="n!help | Boss Bảo 👑"))
 
 @bot.event
@@ -4843,12 +4847,11 @@ async def on_message(message):
                 return
             break
 
-    # Xử lý lệnh thông thường
     await bot.process_commands(message)
 
-    # Hệ thống EXP tự động (chỉ tính với tin nhắn không bắt đầu bằng prefix)
+    # Hệ thống EXP tự động
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
-        if message.guild:  # Chỉ tính trong server, không tính DM
+        if message.guild:
             exp_gain = random.randint(1, 10)
             old_level = get_user_level(message.author.id)
             new_level = add_exp(message.author.id, exp_gain)
@@ -4883,7 +4886,7 @@ async def on_message(message):
             if ctx.command is None:
                 await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
-    # Tự động ping owner khi nhắc tên "bảo" (trừ khi owner được mention trực tiếp)
+    # Ping owner khi nhắc "bảo"
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
@@ -4909,7 +4912,6 @@ async def on_member_join(member):
     if member.guild is None:
         return
 
-    # Log sự kiện
     embed_log = discord.Embed(
         title="👋 THÀNH VIÊN MỚI GIA NHẬP",
         description=f"{member.mention} đã tham gia server.",
@@ -4917,11 +4919,9 @@ async def on_member_join(member):
     )
     await send_log(member.guild.id, embed_log)
 
-    # Thưởng coin khi join
     coin_reward = random.randint(10, 50)
     add_coins(member.id, coin_reward)
 
-    # Gửi tin chào mừng nếu có cài đặt
     guild_id = str(member.guild.id)
     if guild_id in WELCOME_CHANNELS:
         ch_id = WELCOME_CHANNELS[guild_id]
@@ -4942,15 +4942,11 @@ async def on_member_join(member):
             embed.set_footer(text=f"Thành viên thứ #{member.guild.member_count}")
             await channel.send(embed=embed)
 
-    # Tự động gán role cho thành viên mới (nếu có cấu hình)
-    # (có thể mở rộng sau)
-
 @bot.event
 async def on_member_remove(member):
     if member.guild is None:
         return
 
-    # Log sự kiện
     embed_log = discord.Embed(
         title="👋 THÀNH VIÊN RỜI KHỎI SERVER",
         description=f"{member.mention} đã rời server.",
@@ -4958,7 +4954,6 @@ async def on_member_remove(member):
     )
     await send_log(member.guild.id, embed_log)
 
-    # Gửi tin nhắn riêng tạm biệt
     try:
         dm_embed = discord.Embed(
             title="💔 **TẠM BIỆT BẠN NHÉ!** 💔",
@@ -4973,7 +4968,6 @@ async def on_member_remove(member):
     except:
         pass
 
-    # Gửi tin tạm biệt công khai nếu có cài đặt
     guild_id = str(member.guild.id)
     if guild_id in GOODBYE_CHANNELS:
         ch_id = GOODBYE_CHANNELS[guild_id]
@@ -4998,19 +4992,15 @@ async def on_command_error(ctx, error):
         await ctx.send(f"❌ Tham số không hợp lệ. Dùng `n!help {ctx.command.name}` để xem hướng dẫn.")
         return
     if isinstance(error, commands.CheckFailure):
-        # Đã có xử lý riêng ở từng lệnh
         return
-    # Log lỗi ra console
     print(f"[ERROR] Lệnh: {ctx.command.name if ctx.command else 'Unknown'}")
     print(f"[ERROR] Người dùng: {ctx.author} (ID: {ctx.author.id})")
     print(f"[ERROR] Nội dung: {ctx.message.content}")
     print(f"[ERROR] Lỗi: {str(error)}")
-    # Gửi thông báo lỗi chung (không tiết lộ quá nhiều)
     await ctx.send(f"❌ Đã xảy ra lỗi: `{str(error)[:100]}`")
 
 @bot.event
 async def on_guild_join(guild):
-    """Khi bot tham gia server mới"""
     embed = discord.Embed(
         title="🎉 CẢM ƠN ĐÃ THÊM BOT!",
         description=(
@@ -5025,7 +5015,6 @@ async def on_guild_join(guild):
     )
     embed.set_thumbnail(url=bot.user.display_avatar.url)
     embed.set_footer(text="Hệ thống Boss Bảo 💖")
-    # Tìm kênh phù hợp để gửi tin nhắn
     for channel in guild.text_channels:
         if channel.permissions_for(guild.me).send_messages:
             try:
@@ -5036,12 +5025,10 @@ async def on_guild_join(guild):
 
 @bot.event
 async def on_guild_remove(guild):
-    """Khi bot bị kick/leave server"""
     print(f"❌ Bot đã rời server: {guild.name} (ID: {guild.id})")
 
 @bot.event
 async def on_message_delete(message):
-    """Log khi tin nhắn bị xóa"""
     if message.author.bot:
         return
     if not message.guild:
@@ -5056,7 +5043,6 @@ async def on_message_delete(message):
 
 @bot.event
 async def on_message_edit(before, after):
-    """Log khi tin nhắn bị chỉnh sửa"""
     if before.author.bot:
         return
     if not before.guild:
@@ -5075,7 +5061,6 @@ async def on_message_edit(before, after):
 
 @bot.event
 async def on_guild_channel_create(channel):
-    """Log khi kênh được tạo"""
     if not channel.guild:
         return
     embed = discord.Embed(
@@ -5087,7 +5072,6 @@ async def on_guild_channel_create(channel):
 
 @bot.event
 async def on_guild_channel_delete(channel):
-    """Log khi kênh bị xóa"""
     if not channel.guild:
         return
     embed = discord.Embed(
@@ -5099,7 +5083,6 @@ async def on_guild_channel_delete(channel):
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    """Log khi thay đổi trạng thái voice (không spam)"""
     if member.bot:
         return
     if before.channel == after.channel:
@@ -5128,23 +5111,12 @@ async def on_voice_state_update(member, before, after):
 
 @bot.event
 async def on_user_update(before, after):
-    """Log khi user thay đổi tên/avatar (chỉ log nếu có owner quyền)"""
-    # Chỉ log các thay đổi quan trọng
     if before.name != after.name:
-        embed = discord.Embed(
-            title="👤 TÊN USER ĐÃ THAY ĐỔI",
-            description=f"**Tên cũ:** {before.name}\n**Tên mới:** {after.name}",
-            color=0x00CCFF
-        )
-        # Không có guild context nên không log, có thể log vào console
         print(f"[USER UPDATE] {before.name} -> {after.name} (ID: {after.id})")
 
-# ==================== LỆNH PHỤ TRỢ THÊM (KHÔNG CÓ TRONG FILE GỐC) ====================
-# Thêm một số lệnh hữu ích để đạt đủ số dòng
-
+# ==================== LỆNH PHỤ TRỢ THÊM ====================
 @bot.command(name="invite")
 async def invite_link(ctx):
-    """Lấy link mời bot vào server"""
     invite_url = discord.utils.oauth_url(
         bot.user.id,
         permissions=discord.Permissions.all(),
@@ -5160,7 +5132,6 @@ async def invite_link(ctx):
 
 @bot.command(name="support")
 async def support_server(ctx):
-    """Link hỗ trợ bot"""
     embed = discord.Embed(
         title="🆘 HỖ TRỢ BOT",
         description="Nếu bạn gặp vấn đề hoặc cần hỗ trợ, hãy tham gia server hỗ trợ:\nhttps://discord.gg/4wrsMbRVpU",
@@ -5170,7 +5141,6 @@ async def support_server(ctx):
 
 @bot.command(name="uptime")
 async def show_uptime(ctx):
-    """Thời gian bot đã hoạt động"""
     now = datetime.now()
     delta = now - bot.launch_time if hasattr(bot, 'launch_time') else timedelta(seconds=0)
     if not hasattr(bot, 'launch_time'):
@@ -5183,7 +5153,6 @@ async def show_uptime(ctx):
 
 @bot.command(name="botinfo")
 async def bot_info(ctx):
-    """Thông tin về bot"""
     embed = discord.Embed(
         title="🤖 THÔNG TIN BOT",
         color=0x00FFFF
@@ -5201,7 +5170,6 @@ async def bot_info(ctx):
 @bot.command(name="addowner")
 @is_bot_owner()
 async def add_owner(ctx, member: discord.Member):
-    """Thêm người dùng vào danh sách Owner (chỉ Boss Bảo)"""
     if member.id in BOT_OWNERS:
         await ctx.send(f"⚠️ {member.mention} đã có trong danh sách Owner.")
         return
@@ -5212,7 +5180,6 @@ async def add_owner(ctx, member: discord.Member):
 @bot.command(name="deleteowner")
 @is_bot_owner()
 async def delete_owner(ctx, member: discord.Member):
-    """Xóa người dùng khỏi danh sách Owner (chỉ Boss Bảo)"""
     if member.id not in BOT_OWNERS:
         await ctx.send(f"⚠️ {member.mention} không có trong danh sách Owner.")
         return
@@ -5223,18 +5190,14 @@ async def delete_owner(ctx, member: discord.Member):
     save_all_data()
     await ctx.send(f"✅ Đã xóa {member.mention} khỏi danh sách Owner.")
 
-# ==================== LỆNH MỚI BỔ SUNG (ĐẠT ĐỦ SỐ DÒNG) ====================
-# Các lệnh tiện ích khác từ các bot nổi tiếng
-
+# ==================== LỆNH MỚI BỔ SUNG ====================
 @bot.command(name="say")
 async def say(ctx, *, content: str):
-    """Bot lặp lại tin nhắn của bạn"""
     await ctx.send(content)
 
 @bot.command(name="sayembed")
 @is_bot_owner()
 async def say_embed(ctx, title: str, *, description: str):
-    """Gửi embed tùy chỉnh"""
     embed = discord.Embed(title=title, description=description, color=0x00FF00)
     embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}")
     await ctx.send(embed=embed)
@@ -5242,7 +5205,6 @@ async def say_embed(ctx, title: str, *, description: str):
 @bot.command(name="poll")
 @is_bot_owner()
 async def poll(ctx, *, question: str):
-    """Tạo bình chọn với 2 reaction"""
     embed = discord.Embed(
         title="📊 BÌNH CHỌN",
         description=question,
@@ -5258,7 +5220,6 @@ async def poll(ctx, *, question: str):
 @bot.command(name="announce")
 @is_bot_owner()
 async def announce(ctx, channel: discord.TextChannel, *, message: str):
-    """Gửi thông báo đến kênh chỉ định"""
     embed = discord.Embed(
         title="📢 THÔNG BÁO",
         description=message,
@@ -5271,7 +5232,6 @@ async def announce(ctx, channel: discord.TextChannel, *, message: str):
 
 @bot.command(name="color")
 async def random_color(ctx):
-    """Tạo màu ngẫu nhiên"""
     color = random.randint(0, 0xFFFFFF)
     embed = discord.Embed(
         title="🎨 MÀU NGẪU NHIÊN",
@@ -5284,7 +5244,6 @@ async def random_color(ctx):
 
 @bot.command(name="hex")
 async def hex_to_color(ctx, hex_code: str):
-    """Chuyển mã HEX sang màu"""
     try:
         hex_code = hex_code.strip("#")
         color = int(hex_code, 16)
@@ -5300,7 +5259,6 @@ async def hex_to_color(ctx, hex_code: str):
 @bot.command(name="rolecolor")
 @is_bot_owner()
 async def role_color(ctx, role: discord.Role, hex_code: str):
-    """Đổi màu role (chỉ Owner)"""
     try:
         hex_code = hex_code.strip("#")
         color = int(hex_code, 16)
@@ -5312,7 +5270,6 @@ async def role_color(ctx, role: discord.Role, hex_code: str):
 @bot.command(name="addemoji")
 @is_bot_owner()
 async def add_emoji(ctx, name: str, url: str = None):
-    """Thêm emoji từ URL hoặc ảnh đính kèm"""
     if not url and ctx.message.attachments:
         url = ctx.message.attachments[0].url
     if not url:
@@ -5333,7 +5290,6 @@ async def add_emoji(ctx, name: str, url: str = None):
 @bot.command(name="removeemoji")
 @is_bot_owner()
 async def remove_emoji(ctx, emoji: discord.Emoji):
-    """Xóa emoji khỏi server"""
     try:
         await emoji.delete()
         await ctx.send(f"🗑️ Đã xóa emoji `{emoji.name}`.")
@@ -5343,7 +5299,6 @@ async def remove_emoji(ctx, emoji: discord.Emoji):
 @bot.command(name="setstatus")
 @is_bot_owner()
 async def set_status(ctx, status: str):
-    """Đặt trạng thái bot (online, idle, dnd, invisible)"""
     status_map = {
         "online": discord.Status.online,
         "idle": discord.Status.idle,
@@ -5360,14 +5315,12 @@ async def set_status(ctx, status: str):
 @bot.command(name="setgame")
 @is_bot_owner()
 async def set_game(ctx, *, game: str):
-    """Đặt game bot đang chơi"""
     await bot.change_presence(activity=discord.Game(name=game))
     await ctx.send(f"🎮 Đã đặt game thành **{game}**.")
 
 @bot.command(name="setavatar")
 @is_bot_owner()
 async def set_avatar(ctx, url: str = None):
-    """Đổi avatar bot từ URL hoặc ảnh đính kèm"""
     if not url and ctx.message.attachments:
         url = ctx.message.attachments[0].url
     if not url:
@@ -5388,7 +5341,6 @@ async def set_avatar(ctx, url: str = None):
 @bot.command(name="setname")
 @is_bot_owner()
 async def set_name(ctx, *, name: str):
-    """Đổi tên bot"""
     try:
         await bot.user.edit(username=name)
         await ctx.send(f"✅ Đã đổi tên bot thành **{name}**.")
@@ -5399,8 +5351,6 @@ async def set_name(ctx, *, name: str):
 @bot.command(name="levelrole")
 @is_bot_owner()
 async def level_role(ctx, level: int, role: discord.Role):
-    """Gán role tự động khi đạt level (chỉ Owner)"""
-    # Lưu vào config (có thể mở rộng sau)
     if not hasattr(bot, 'level_roles'):
         bot.level_roles = {}
     bot.level_roles[level] = role.id
@@ -5408,11 +5358,9 @@ async def level_role(ctx, level: int, role: discord.Role):
 
 @bot.command(name="rank")
 async def rank(ctx, member: discord.Member = None):
-    """Xem hạng của thành viên trong server"""
     member = member or ctx.author
     uid = str(member.id)
     data = USER_LEVELS.get(uid, {"level": 1, "exp": 0})
-    # Xếp hạng trong server (tính toàn cục)
     sorted_levels = sorted(USER_LEVELS.items(), key=lambda x: x[1]["level"], reverse=True)
     rank_pos = 1
     for idx, (uid2, d) in enumerate(sorted_levels, 1):
@@ -5434,7 +5382,6 @@ async def rank(ctx, member: discord.Member = None):
 @bot.command(name="resetlevel")
 @is_bot_owner()
 async def reset_level(ctx, member: discord.Member):
-    """Reset level của user (chỉ Owner)"""
     uid = str(member.id)
     if uid in USER_LEVELS:
         del USER_LEVELS[uid]
@@ -5446,7 +5393,6 @@ async def reset_level(ctx, member: discord.Member):
 @bot.command(name="addxp")
 @is_bot_owner()
 async def add_xp(ctx, member: discord.Member, amount: int):
-    """Thêm XP cho user (chỉ Owner)"""
     if amount <= 0:
         await ctx.send("❌ Số XP phải > 0.")
         return
@@ -5457,7 +5403,6 @@ async def add_xp(ctx, member: discord.Member, amount: int):
 @bot.command(name="setxp")
 @is_bot_owner()
 async def set_xp(ctx, member: discord.Member, xp: int):
-    """Đặt XP cho user (giữ nguyên level) (chỉ Owner)"""
     if xp < 0:
         await ctx.send("❌ XP không thể âm.")
         return
@@ -5471,25 +5416,19 @@ async def set_xp(ctx, member: discord.Member, xp: int):
 # ==================== LỆNH TIỆN ÍCH BỔ SUNG ====================
 @bot.command(name="weather")
 async def weather(ctx, *, city: str):
-    """Lấy thông tin thời tiết (cần API key) - Demo"""
-    # Đây là lệnh demo, cần API key thực tế
     await ctx.send(f"🌤️ Thời tiết tại **{city}**: 28°C, có mây nhẹ. (Demo)")
 
 @bot.command(name="translate")
 async def translate(ctx, *, text: str):
-    """Dịch văn bản (cần API key) - Demo"""
     await ctx.send(f"🌍 Bản dịch (Demo): {text} -> Tiếng Việt: ...")
 
 @bot.command(name="define")
 async def define(ctx, *, word: str):
-    """Tra từ điển (cần API key) - Demo"""
     await ctx.send(f"📖 **{word}**: Định nghĩa demo: một từ trong từ điển.")
 
 @bot.command(name="calculate")
 async def calculate(ctx, *, expression: str):
-    """Tính toán biểu thức đơn giản"""
     try:
-        # Loại bỏ các ký tự nguy hiểm
         allowed = re.sub(r'[^0-9+\-*/(). ]', '', expression)
         result = eval(allowed)
         await ctx.send(f"🧮 **Kết quả:** {result}")
@@ -5498,7 +5437,6 @@ async def calculate(ctx, *, expression: str):
 
 @bot.command(name="math")
 async def math_help(ctx):
-    """Hướng dẫn dùng lệnh tính toán"""
     embed = discord.Embed(
         title="🧮 HƯỚNG DẪN TÍNH TOÁN",
         description="Dùng `n! calculate <biểu thức>` để tính toán.",
@@ -5510,7 +5448,6 @@ async def math_help(ctx):
 
 @bot.command(name="suggestion")
 async def suggestion(ctx, *, content: str):
-    """Gửi góp ý cho admin"""
     embed = discord.Embed(
         title="💡 GÓP Ý TỪ THÀNH VIÊN",
         description=content,
@@ -5518,13 +5455,11 @@ async def suggestion(ctx, *, content: str):
         timestamp=datetime.now()
     )
     embed.set_footer(text=f"Từ {ctx.author.display_name} ({ctx.author.id})")
-    # Gửi đến log channel (nếu có)
     await send_log(ctx.guild.id, embed)
     await ctx.send("✅ Cảm ơn bạn! Góp ý của bạn đã được gửi đến quản trị viên.")
 
 @bot.command(name="report")
 async def report(ctx, member: discord.Member, *, reason: str):
-    """Báo cáo vi phạm của thành viên"""
     embed = discord.Embed(
         title="🚨 BÁO CÁO VI PHẠM",
         description=f"**Người bị báo cáo:** {member.mention}\n**Lý do:** {reason}",
@@ -5535,17 +5470,6 @@ async def report(ctx, member: discord.Member, *, reason: str):
     await send_log(ctx.guild.id, embed)
     await ctx.send("✅ Báo cáo của bạn đã được gửi đến quản trị viên.")
 
-# ==================== GLOBAL CHECK HOÀN CHỈNH ====================
-@bot.check
-async def globally_disabled_check(ctx):
-    if not bot_enabled:
-        if ctx.command and ctx.command.name != "on":
-            await ctx.send("🛑 Bot đang tạm dừng. Gõ `n! on` để bật lại.")
-            return False
-    if ctx.command and ctx.command.name in DISABLED_COMMANDS:
-        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
-        return False
-    return True
 # ==================== PHẦN AI TÍCH HỢP ĐẦY ĐỦ ====================
 # Yêu cầu: pip install groq replicate python-dotenv aiohttp
 
@@ -5769,12 +5693,24 @@ async def ai_info(ctx):
     embed.add_field(name="Lịch sử", value=f"{len(conversation_history)} người dùng", inline=True)
     embed.set_footer(text="Groq + Replicate")
     await ctx.send(embed=embed)
+
+# ==================== GLOBAL CHECK HOÀN CHỈNH ====================
+@bot.check
+async def globally_disabled_check(ctx):
+    if not bot_enabled:
+        if ctx.command and ctx.command.name != "on":
+            await ctx.send("🛑 Bot đang tạm dừng. Gõ `n! on` để bật lại.")
+            return False
+    if ctx.command and ctx.command.name in DISABLED_COMMANDS:
+        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
+        return False
+    return True
+
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
     if DISCORD_TOKEN:
         try:
-            # Lưu thời gian khởi động cho lệnh uptime
             bot.launch_time = datetime.now()
             bot.run(DISCORD_TOKEN)
         except discord.LoginFailure:
