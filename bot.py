@@ -11,6 +11,7 @@ import math
 import re
 import time
 from typing import Optional, Union
+from dotenv import load_dotenv  # Đã import đầy đủ để tránh lỗi NameError
 
 # ==================== KEEP_ALIVE ====================
 try:
@@ -93,7 +94,7 @@ def save_json(file, data):
 
 def load_all_data():
     global USER_LEVELS, user_coins, user_inventory, marriages, daily_cooldowns, SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS, DISABLED_COMMANDS, warnings, temp_bans, user_effects
-    USER_LEVELS = load_json(LEVEL_FILE, {})
+    USER_LEVELS = load_json(LEVEL_LEVEL_FILE if 'LEVEL_LEVEL_FILE' in globals() else LEVEL_FILE, {})
     user_coins = load_json(COIN_FILE, {})
     user_inventory = load_json(INVENTORY_FILE, {})
     marriages = load_json(MARRIAGE_FILE, {})
@@ -129,7 +130,6 @@ def save_all_data():
     save_json(CONFIG_FILE, config)
 
 load_all_data()
-
 # ==================== HẰNG SỐ ====================
 CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/0b/5c/dd/0b5cddb5352ae325e8bcbd8ae8d448f9.gif"
 NUKE_GIF_URL = "https://i.pinimg.com/originals/7c/12/72/7c12727320e9107bd656c581af98067f.gif"
