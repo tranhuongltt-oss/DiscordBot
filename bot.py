@@ -3190,7 +3190,8 @@ HELP_CATEGORIES = {
             "n!report <thành viên> <lý do>": "🚨 Báo cáo vi phạm",
         }
     }
-# ==================== CLASS HELP SELECT ====================
+}
+# ==================== CLASS HELP SELECT ==================== #
 class HelpSelect(discord.ui.Select):
     def __init__(self, user_id, owner_ids):
         self.user_id = user_id
