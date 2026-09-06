@@ -5628,7 +5628,7 @@ async def write_code(ctx, *, request: str):
             await ctx.send(f"```\n{answer[i:i+1990]}\n```")
         await msg.delete()
     else:
-        await msg.edit(content=f"```\n{answer}\n
+     await msg.edit(content=f"```\n{answer}\n```")
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
