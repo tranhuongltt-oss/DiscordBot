@@ -3172,15 +3172,28 @@ HELP_CATEGORIES = {
             "n! restore": "♻️ Tạo lại phần cấu trúc còn thiếu"
         }
     },
-    "🧠 AI & Trí Tuệ Nhân Tạo": {
+   "🧠 AI & Trí Tuệ Nhân Tạo": {
         "emoji": "🧠",
-        "description": "Trò chuyện, tạo ảnh, viết code, giải thích code với AI.",
+        "description": "Trò chuyện, viết code, giải thích code với AI.",
         "commands": {
-            "n! ask <câu hỏi>": "🤖 Hỏi AI bất kỳ điều gì",
-            "n! code <yêu cầu>": "⌨️ Viết code theo yêu cầu",
-            "n! explain <code>": "📖 Giải thích đoạn code",
-            "n! resetai": "🔄 Xóa lịch sử hội thoại của bạn",
-            "n! aiinfo": "📊 Xem trạng thái AI"
+            "n!ask <câu hỏi>": "🤖 Hỏi AI bất kỳ điều gì",
+            "n!code <yêu cầu>": "⌨️ Viết code theo yêu cầu",
+            "n!explain <code>": "📖 Giải thích đoạn code",
+            "n!resetai": "🔄 Xóa lịch sử hội thoại của bạn",
+            "n!aiinfo": "📊 Xem trạng thái AI"
+        }
+    },
+    "🛠️ Tiện Ích & Công Cụ": {
+        "emoji": "🛠️",
+        "description": "Các lệnh tiện ích tra cứu thời tiết, dịch thuật và tính toán.",
+        "commands": {
+            "n!weather <thành phố>": "🌤️ Tra cứu thông tin thời tiết",
+            "n!translate <văn bản>": "🌍 Dịch thuật văn bản qua AI",
+            "n!define <từ ngữ>": "📖 Tra cứu định nghĩa từ/thuật ngữ",
+            "n!calculate <biểu thức>": "🧮 Tính toán biểu thức toán học an toàn",
+            "n!math": "📐 Hướng dẫn cách dùng lệnh tính toán",
+            "n!suggestion <góp ý>": "💡 Gửi góp ý cho quản trị viên",
+            "n!report <thành viên> <lý do>": "🚨 Báo cáo vi phạm"
         }
     }
 }
@@ -5452,23 +5465,19 @@ async def set_xp(ctx, member: discord.Member, xp: int):
     save_json(LEVEL_FILE, USER_LEVELS)
     await ctx.send(f"✅ Đã đặt XP của {member.mention} thành {xp}.")
 
-# ==================== PHẦN AI & TIỆN ÍCH HOÀN CHỈNH ====================
-# Yêu cầu thư viện: pip install groq replicate discord.py
+# ==================== PHẦN AI & TIỆN ÍCH (KHÔNG TẠO ẢNH) ====================
+# Yêu cầu thư viện: pip install groq discord.py
 
 import os
 import re
 from datetime import datetime
 from groq import Groq
-import replicate
 import discord
 
 # ===== LẤY API KEY & KHỞI TẠO CLIENT =====
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 AI_ENABLED = False
-IMAGE_ENABLED = False
 client = None
-replicate_client = None
 
 if GROQ_API_KEY:
     try:
@@ -5480,16 +5489,6 @@ if GROQ_API_KEY:
 else:
     print("⚠️ Chưa có GROQ_API_KEY – AI sẽ bị tắt.")
 
-if REPLICATE_API_TOKEN:
-    try:
-        replicate_client = replicate.Client(api_token=REPLICATE_API_TOKEN)
-        IMAGE_ENABLED = True
-        print("✅ Replicate (tạo ảnh) đã sẵn sàng!")
-    except Exception as e:
-        print(f"⚠️ Lỗi khởi tạo Replicate: {e}")
-else:
-    print("⚠️ Chưa có REPLICATE_API_TOKEN – tính năng tạo ảnh bị tắt.")
-
 # ===== NHÂN CÁCH AI =====
 SYSTEM_PROMPT = (
     "Bạn là một trợ lý AI thông minh, hiền lành, tốt bụng và cực kỳ thân thiện. "
@@ -5497,7 +5496,6 @@ SYSTEM_PROMPT = (
     "Bạn luôn nói nhiều, trả lời chi tiết, dài dòng và không bao giờ ngắt câu giữa chừng. "
     "Bạn trả lời mọi câu hỏi không giới hạn, dù là bất kỳ chủ đề nào. "
     "Bạn có khả năng viết code, giải thích thuật toán, sửa lỗi, hướng dẫn lập trình. "
-    "Bạn biết tạo ảnh, vẽ minh họa, thiết kế đồ họa (thông qua lệnh imagine). "
     "Bạn là một chuyên gia đa lĩnh vực: toán học, vật lý, hóa học, lịch sử, văn học, tâm lý học, kinh tế, v.v. "
     "Bạn luôn đưa ra câu trả lời sáng tạo, có sự hài hước nhẹ nhàng, nhưng vẫn rất chính xác. "
     "Bạn thích kể chuyện, đưa ra ví dụ minh họa, và luôn khuyến khích người dùng học hỏi thêm. "
@@ -5540,10 +5538,10 @@ async def call_ai(user_id, question, system_prompt=None):
 
     try:
         chat_completion = client.chat.completions.create(
-    messages=messages,
-    model="llama-3.3-70b-versatile", # Đổi thành model này hoặc "llama3-8b-8192"
-    temperature=0.85,
-    max_tokens=2048,
+            messages=messages,
+            model="llama-3.3-70b-versatile", 
+            temperature=0.85,
+            max_tokens=2048,
         )
         answer = chat_completion.choices[0].message.content
 
@@ -5578,6 +5576,7 @@ async def ask_ai(ctx, *, question: str):
         await msg.delete()
     else:
         await msg.edit(content=f"🤖 **{ctx.author.mention}**\n{answer}")
+
 @bot.command(name="code", aliases=["viếtcode"])
 async def write_code(ctx, *, request: str):
     """Viết code theo yêu cầu."""
@@ -5594,7 +5593,7 @@ async def write_code(ctx, *, request: str):
             await ctx.send(f"```\n{answer[i:i+1990]}\n```")
         await msg.delete()
     else:
-     await msg.edit(content=f"```\n{answer}\n```")
+        await msg.edit(content=f"```\n{answer}\n
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
