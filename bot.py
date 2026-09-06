@@ -3187,7 +3187,7 @@ HELP_CATEGORIES = {
             "n!calculate <biểu thức>": "🧮 Tính toán biểu thức toán học",
             "n!math": "📐 Hướng dẫn cách dùng lệnh tính toán",
             "n!suggestion <góp ý>": "💡 Gửi góp ý cho quản trị viên",
-            "n!report <thành viên> <lý do>": "🚨 Báo cáo vi phạm"
+            "n!report <thành viên> <lý do>": "🚨 Báo cáo vi phạm",
         }
     }
 # ==================== CLASS HELP SELECT ====================
