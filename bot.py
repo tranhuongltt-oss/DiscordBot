@@ -133,7 +133,7 @@ load_all_data()
 # ==================== HẰNG SỐ ====================
 CUSTOM_SETUP_GIF = "https://i.pinimg.com/originals/0b/5c/dd/0b5cddb5352ae325e8bcbd8ae8d448f9.gif"
 NUKE_GIF_URL = "https://i.pinimg.com/originals/7c/12/72/7c12727320e9107bd656c581af98067f.gif"
-NUKE_AVATAR_URL = "https://media.discordapp.net/attachments/1541456087105151066/1542127023810416660/8b59ed006d0073e951a47e1da3c2d111.jpg"
+NUKE_AVATAR_URL = "https://i.pinimg.com/736x/94/5b/97/945b97c702790f33d6a32854c15cbe5f.jpg"
 HELP_THUMBNAIL_GIF = "https://i.pinimg.com/originals/56/00/5a/56005a1acfe12d3df3e97c646d81b561.gif"
 
 ROAST_LINES = [
