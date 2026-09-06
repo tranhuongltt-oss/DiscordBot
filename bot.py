@@ -5444,7 +5444,7 @@ async def add_xp(ctx, member: discord.Member, amount: int):
 @is_bot_owner()
 async def set_xp(ctx, member: discord.Member, xp: int):
     if xp < 0:
-        await ctx.send("❌ XP không thể âm.")
+        aait ctx.send("❌ XP không thể âm.")
         return
     uid = str(member.id)
     if uid not in USER_LEVELS:
@@ -5453,77 +5453,19 @@ async def set_xp(ctx, member: discord.Member, xp: int):
     save_json(LEVEL_FILE, USER_LEVELS)
     await ctx.send(f"✅ Đã đặt XP của {member.mention} thành {xp}.")
 
-# ==================== LỆNH TIỆN ÍCH BỔ SUNG ====================
-@bot.command(name="weather")
-async def weather(ctx, *, city: str):
-    await ctx.send(f"🌤️ Thời tiết tại **{city}**: 28°C, có mây nhẹ. (Demo)")
-
-@bot.command(name="translate")
-async def translate(ctx, *, text: str):
-    await ctx.send(f"🌍 Bản dịch (Demo): {text} -> Tiếng Việt: ...")
-
-@bot.command(name="define")
-async def define(ctx, *, word: str):
-    await ctx.send(f"📖 **{word}**: Định nghĩa demo: một từ trong từ điển.")
-
-@bot.command(name="calculate")
-async def calculate(ctx, *, expression: str):
-    try:
-        allowed = re.sub(r'[^0-9+\-*/(). ]', '', expression)
-        result = eval(allowed)
-        await ctx.send(f"🧮 **Kết quả:** {result}")
-    except Exception as e:
-        await ctx.send(f"❌ Lỗi: {str(e)}")
-
-@bot.command(name="math")
-async def math_help(ctx):
-    embed = discord.Embed(
-        title="🧮 HƯỚNG DẪN TÍNH TOÁN",
-        description="Dùng `n! calculate <biểu thức>` để tính toán.",
-        color=0x00FFFF
-    )
-    embed.add_field(name="Ví dụ", value="`n! calculate 2+3*4`\n`n! calculate (10-5)/2`", inline=False)
-    embed.add_field(name="Hỗ trợ", value="+, -, *, /, (, )", inline=True)
-    await ctx.send(embed=embed)
-
-@bot.command(name="suggestion")
-async def suggestion(ctx, *, content: str):
-    embed = discord.Embed(
-        title="💡 GÓP Ý TỪ THÀNH VIÊN",
-        description=content,
-        color=0x00FF00,
-        timestamp=datetime.now()
-    )
-    embed.set_footer(text=f"Từ {ctx.author.display_name} ({ctx.author.id})")
-    await send_log(ctx.guild.id, embed)
-    await ctx.send("✅ Cảm ơn bạn! Góp ý của bạn đã được gửi đến quản trị viên.")
-
-@bot.command(name="report")
-async def report(ctx, member: discord.Member, *, reason: str):
-    embed = discord.Embed(
-        title="🚨 BÁO CÁO VI PHẠM",
-        description=f"**Người bị báo cáo:** {member.mention}\n**Lý do:** {reason}",
-        color=0xFF0000,
-        timestamp=datetime.now()
-    )
-    embed.set_footer(text=f"Báo cáo bởi {ctx.author.display_name} ({ctx.author.id})")
-    await send_log(ctx.guild.id, embed)
-    await ctx.send("✅ Báo cáo của bạn đã được gửi đến quản trị viên.")
-
-# ==================== PHẦN AI TÍCH HỢP ĐẦY ĐỦ ====================
-# Yêu cầu: pip install groq replicate python-dotenv aiohttp discord.py
+# ==================== PHẦN AI & TIỆN ÍCH HOÀN CHỈNH ====================
+# Yêu cầu thư viện: pip install groq replicate discord.py
 
 import os
-import aiohttp
-import json
+import re
 from datetime import datetime
 from groq import Groq
 import replicate
 import discord
 
-# ===== LẤY API KEY =====
+# ===== LẤY API KEY & KHỞI TẠO CLIENT =====
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN") # Đã đúng chuẩn REPLICATE_API_TOKEN
+REPLICATE_API_TOKEN = os.getenv("REPLICATE_API_TOKEN")
 AI_ENABLED = False
 IMAGE_ENABLED = False
 client = None
@@ -5549,7 +5491,7 @@ if REPLICATE_API_TOKEN:
 else:
     print("⚠️ Chưa có REPLICATE_API_TOKEN – tính năng tạo ảnh bị tắt.")
 
-# ===== NHÂN CÁCH AI (đáp ứng 50 yêu cầu) =====
+# ===== NHÂN CÁCH AI =====
 SYSTEM_PROMPT = (
     "Bạn là một trợ lý AI thông minh, hiền lành, tốt bụng và cực kỳ thân thiện. "
     "Bạn xưng hô với chủ nhân là 'Chủ nhân' hoặc 'Boss' và tự xưng là 'tôi' hoặc 'em'. "
@@ -5589,9 +5531,8 @@ async def call_ai(user_id, question, system_prompt=None):
     if system_prompt is None:
         system_prompt = SYSTEM_PROMPT
 
-    # Lấy lịch sử của user (tối đa 10 tin nhắn)
     history = conversation_history.get(user_id, [])
-    history = history[-10:]  # giới hạn 10 tin
+    history = history[-10:]
 
     messages = [{"role": "system", "content": system_prompt}]
     for h in history:
@@ -5599,7 +5540,6 @@ async def call_ai(user_id, question, system_prompt=None):
     messages.append({"role": "user", "content": question})
 
     try:
-        # Gọi Groq API với model chuẩn
         chat_completion = client.chat.completions.create(
             messages=messages,
             model="llama-3.1-8b-instant", 
@@ -5608,7 +5548,6 @@ async def call_ai(user_id, question, system_prompt=None):
         )
         answer = chat_completion.choices[0].message.content
 
-        # Lưu lịch sử
         conversation_history[user_id] = history + [
             {"role": "user", "content": question},
             {"role": "assistant", "content": answer}
@@ -5618,134 +5557,78 @@ async def call_ai(user_id, question, system_prompt=None):
     except Exception as e:
         return f"❌ Lỗi khi gọi AI: {str(e)}"
 
-# ===== ĐĂNG KÝ CÁC LỆNH CHO BOT =====
-def setup_ai_commands(bot):
-    @bot.command(name="ask", aliases=["ai", "gpt", "hỏi"])
-    async def ask_ai(ctx, *, question: str):
-        """Hỏi AI bất kỳ điều gì."""
-        if not AI_ENABLED:
-            await ctx.send("❌ AI chưa được kích hoạt. Vui lòng liên hệ admin.")
-            return
+# ==================== CÁC LỆNH AI & TIỆN ÍCH ====================
 
-        if len(question) > 2000:
-            await ctx.send("❌ Câu hỏi quá dài (tối đa 2000 ký tự).")
-            return
+@bot.command(name="ask", aliases=["ai", "gpt", "hỏi"])
+async def ask_ai(ctx, *, question: str):
+    """Hỏi AI bất kỳ điều gì."""
+    if not AI_ENABLED:
+        await ctx.send("❌ AI chưa được kích hoạt. Vui lòng liên hệ admin.")
+        return
 
-        msg = await ctx.send("🤔 Đang suy nghĩ...")
-        answer = await call_ai(str(ctx.author.id), question)
+    if len(question) > 2000:
+        await ctx.send("❌ Câu hỏi quá dài (tối đa 2000 ký tự).")
+        return
 
-        if len(answer) > 2000:
-            for i in range(0, len(answer), 1990):
-                await ctx.send(f"📝 {answer[i:i+1990]}")
-            await msg.delete()
-        else:
-            await msg.edit(content=f"🤖 **{ctx.author.mention}**\n{answer}")
+    msg = await ctx.send("🤔 Đang suy nghĩ...")
+    answer = await call_ai(str(ctx.author.id), question)
 
-    # ===== LỆNH IMAGINE (TẠO ẢNH) =====
-    @bot.command(name="imagine", aliases=["image", "draw", "vẽ"])
-    async def imagine(ctx, *, prompt: str):
-        """Tạo ảnh từ mô tả."""
-        if not IMAGE_ENABLED:
-            await ctx.send("❌ Tính năng tạo ảnh chưa được kích hoạt (thiếu REPLICATE_API_TOKEN).")
-            return
-        if len(prompt) > 1000:
-            await ctx.send("❌ Mô tả quá dài (tối đa 1000 ký tự).")
-            return
+    if len(answer) > 2000:
+        for i in range(0, len(answer), 1990):
+            await ctx.send(f"📝 {answer[i:i+1990]}")
+        await msg.delete()
+    else:
+        await msg.edit(content=f"🤖 **{ctx.author.mention}**\n{answer}")
 
-        msg = await ctx.send("🎨 Đang vẽ... (có thể mất 10-20 giây)")
+@bot.command(name="imagine", aliases=["image", "draw", "vẽ"])
+async def imagine(ctx, *, prompt: str):
+    """Tạo ảnh từ mô tả."""
+    if not IMAGE_ENABLED:
+        await ctx.send("❌ Tính năng tạo ảnh chưa được kích hoạt (thiếu REPLICATE_API_TOKEN).")
+        return
+    if len(prompt) > 1000:
+        await ctx.send("❌ Mô tả quá dài (tối đa 1000 ký tự).")
+        return
 
-        try:
-            output = replicate_client.run(
-                "black-forest-labs/flux-schnell",
-                input={"prompt": prompt, "num_outputs": 1, "aspect_ratio": "1:1"}
+    msg = await ctx.send("🎨 Đang vẽ... (có thể mất 10-20 giây)")
+
+    try:
+        output = replicate_client.run(
+            "black-forest-labs/flux-schnell",
+            input={"prompt": prompt, "num_outputs": 1, "aspect_ratio": "1:1"}
+        )
+        if output and len(output) > 0:
+            image_url = output[0]
+            embed = discord.Embed(
+                title="🖼️ Ảnh AI",
+                description=f"`{prompt}`",
+                color=0x00FF00
             )
-            if output and len(output) > 0:
-                image_url = output[0]
-                embed = discord.Embed(
-                    title="🖼️ Ảnh AI",
-                    description=f"`{prompt}`",
-                    color=0x00FF00
-                )
-                embed.set_image(url=image_url)
-                embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}")
-                await msg.edit(content=None, embed=embed)
-            else:
-                await msg.edit(content="❌ Không nhận được ảnh từ Replicate.")
-        except Exception as e:
-            await msg.edit(content=f"❌ Lỗi tạo ảnh: {str(e)}")
-
-    # ===== LỆNH CODE (VIẾT CODE THEO YÊU CẦU) =====
-    @bot.command(name="code", aliases=["viếtcode"])
-    async def write_code(ctx, *, request: str):
-        """Viết code theo yêu cầu."""
-        if not AI_ENABLED:
-            await ctx.send("❌ AI chưa được kích hoạt.")
-            return
-
-        prompt = f"Hãy viết code cho yêu cầu sau, kèm giải thích chi tiết:\n{request}"
-        msg = await ctx.send("⌨️ Đang viết code...")
-        answer = await call_ai(str(ctx.author.id), prompt)
-
-        if len(answer) > 2000:
-            for i in range(0, len(answer), 1990):
-                await ctx.send(f"```\n{answer[i:i+1990]}\n```")
-            await msg.delete()
+            embed.set_image(url=image_url)
+            embed.set_footer(text=f"Yêu cầu bởi {ctx.author.display_name}")
+            await msg.edit(content=None, embed=embed)
         else:
-            await msg.edit(content=f"```\n{answer}\n```")
+            await msg.edit(content="❌ Không nhận được ảnh từ Replicate.")
+    except Exception as e:
+        await msg.edit(content=f"❌ Lỗi tạo ảnh: {str(e)}")
 
-    # ===== LỆNH EXPLAIN (GIẢI THÍCH CODE) =====
-    @bot.command(name="explain", aliases=["giảithích"])
-    async def explain_code(ctx, *, code: str):
-        """Giải thích đoạn code được gửi."""
-        if not AI_ENABLED:
-            await ctx.send("❌ AI chưa được kích hoạt.")
-            return
+@bot.command(name="code", aliases=["viếtcode"])
+async def write_code(ctx, *, request: str):
+    """Viết code theo yêu cầu."""
+    if not AI_ENABLED:
+        await ctx.send("❌ AI chưa được kích hoạt.")
+        return
 
-        prompt = f"Hãy giải thích đoạn code sau một cách chi tiết, dễ hiểu, bằng tiếng Việt:\n\n{code}"
-        msg = await ctx.send("🔍 Đang phân tích...")
-        answer = await call_ai(str(ctx.author.id), prompt)
+    prompt = f"Hãy viết code cho yêu cầu sau, kèm giải thích chi tiết:\n{request}"
+    msg = await ctx.send("⌨️ Đang viết code...")
+    answer = await call_ai(str(ctx.author.id), prompt)
 
-        if len(answer) > 2000:
-            for i in range(0, len(answer), 1990):
-                await ctx.send(f"📝 {answer[i:i+1990]}")
-            await msg.delete()
-        else:
-            await msg.edit(content=f"📖 **Giải thích:**\n{answer}")
-
-    # ===== LỆNH RESET (XÓA LỊCH SỬ) =====
-    @bot.command(name="resetai")
-    async def reset_ai(ctx):
-        """Xóa lịch sử hội thoại của bạn."""
-        if str(ctx.author.id) in conversation_history:
-            del conversation_history[str(ctx.author.id)]
-            await ctx.send("✅ Đã xóa lịch sử hội thoại của bạn.")
-        else:
-            await ctx.send("ℹ️ Bạn chưa có lịch sử hội thoại nào.")
-
-    # ===== LỆNH AIINFO =====
-    @bot.command(name="aiinfo")
-    async def ai_info(ctx):
-        """Xem trạng thái AI."""
-        embed = discord.Embed(title="🤖 Thông tin AI", color=0x00FFFF)
-        embed.add_field(name="Trạng thái", value="🟢 Đang hoạt động" if AI_ENABLED else "🔴 Tắt", inline=True)
-        embed.add_field(name="Tạo ảnh", value="🟢 Sẵn sàng" if IMAGE_ENABLED else "🔴 Tắt", inline=True)
-        embed.add_field(name="Model", value="llama-3.1-8b-instant", inline=True)
-        embed.add_field(name="Nhân cách", value="Hiền lành, nói nhiều, đa năng", inline=False)
-        embed.add_field(name="Lịch sử", value=f"{len(conversation_history)} người dùng", inline=True)
-        embed.set_footer(text="Groq + Replicate")
-        await ctx.send(embed=embed)
-# ==================== GLOBAL CHECK HOÀN CHỈNH ====================
-@bot.check
-async def globally_disabled_check(ctx):
-    if not bot_enabled:
-        if ctx.command and ctx.command.name != "on":
-            await ctx.send("🛑 Bot đang tạm dừng. Gõ `n! on` để bật lại.")
-            return False
-    if ctx.command and ctx.command.name in DISABLED_COMMANDS:
-        await ctx.send(f"❌ Lệnh `{ctx.command.name}` đã bị tắt bởi Boss Bảo. Gõ `n! on {ctx.command.name}` để bật lại.")
-        return False
-    return True
-
+    if len(answer) > 2000:
+        for i in range(0, len(answer), 1990):
+            await ctx.send(f"```\n{answer[i:i+1990]}\n```")
+        await msg.delete()
+    else:
+        await msg.edit(content=f"```\n{answer}\n
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
