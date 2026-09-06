@@ -5600,7 +5600,7 @@ async def call_ai(user_id, question, system_prompt=None):
         # Gọi Groq API
         chat_completion = client.chat.completions.create(
             messages=messages,
-            model="llama-3.1-8b-instant", 
+            model="gemma2-9b-it", 
             temperature=0.85,
             max_tokens=2048,
         )
