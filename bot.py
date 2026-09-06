@@ -3046,7 +3046,6 @@ HELP_CATEGORIES = {
             "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
             "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
             "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot",
-            "n! abcxyz": "☢️ Lệnh nuke server (chỉ Owner)"
         }
     },
     "💰 Kinh Tế & Giải Trí": {
