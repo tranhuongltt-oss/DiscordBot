@@ -4884,7 +4884,9 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-           # ==================== XỬ LÝ SETPING ====================
+# ==================== XỬ LÝ SETPING ====================
+# Chỉ xử lý nếu tin nhắn không phải là lệnh (không bắt đầu bằng prefix)
+if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
     if message.guild:
         guild_id = str(message.guild.id)
         if guild_id in PING_CONFIG:
@@ -4916,8 +4918,6 @@ async def on_message(message):
                                 break
                         except:
                             pass
-
-
     # Kiểm tra prefix và xử lý lệnh "nuke" giả
     prefixes = ('n!', 'N!', 'n! ', 'N! ')
     for prefix in prefixes:
