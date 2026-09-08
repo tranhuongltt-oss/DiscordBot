@@ -3076,6 +3076,9 @@ HELP_CATEGORIES = {
             "n! showsv": "🌐 Xem danh sách server bot đang tham gia",
             "n! off [lệnh]": "🚫 Tắt một lệnh hoặc toàn bộ bot",
             "n! on [lệnh]": "✅ Bật một lệnh hoặc bật lại bot",
+            "n!welcome [nội dung]": "🎉 Đặt nội dung chào mừng khi thành viên vào server (xóa: off)",
+            "n!goodbye [nội dung]": "👋 Đặt nội dung tạm biệt khi thành viên rời server (xóa: off)",
+            "n!setping <ping|name|reply> @user <nội dung>": "🤖 Tự động phản hồi khi ping/gõ tên/trả lời người dùng",
         }
     },
     "💰 Kinh Tế & Giải Trí": {
