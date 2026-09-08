@@ -70,6 +70,12 @@ user_effects = {}
 
 webhooks = {}
 
+# ==================== BIẾN TOÀN CỤC MỚI ====================
+WELCOME_MESSAGES = {}
+GOODBYE_MESSAGES = {}
+PING_CONFIG = {}
+PING_FILE = "ping_config.json"
+
 LEVEL_FILE = "levels.json"
 CONFIG_FILE = "config.json"
 COIN_FILE = "coins.json"
@@ -94,6 +100,7 @@ def save_json(file, data):
 
 def load_all_data():
     global USER_LEVELS, user_coins, user_inventory, marriages, daily_cooldowns, SERVER_LOG_CHANNELS, WELCOME_CHANNELS, GOODBYE_CHANNELS, SERVER_LEVEL_CHANNELS, BOT_OWNERS, DISABLED_COMMANDS, warnings, temp_bans, user_effects
+    global WELCOME_MESSAGES, GOODBYE_MESSAGES, PING_CONFIG  # Thêm dòng này
     USER_LEVELS = load_json(LEVEL_LEVEL_FILE if 'LEVEL_LEVEL_FILE' in globals() else LEVEL_FILE, {})
     user_coins = load_json(COIN_FILE, {})
     user_inventory = load_json(INVENTORY_FILE, {})
@@ -109,6 +116,10 @@ def load_all_data():
     SERVER_LEVEL_CHANNELS = config.get("level_channels", {})
     BOT_OWNERS = config.get("owners", BOT_OWNERS)
     DISABLED_COMMANDS = set(config.get("disabled_commands", []))
+    # Load dữ liệu mới
+    WELCOME_MESSAGES = load_json("welcome_messages.json", {})
+    GOODBYE_MESSAGES = load_json("goodbye_messages.json", {})
+    PING_CONFIG = load_json(PING_FILE, {})
 
 def save_all_data():
     save_json(LEVEL_FILE, USER_LEVELS)
@@ -128,6 +139,10 @@ def save_all_data():
         "disabled_commands": list(DISABLED_COMMANDS)
     }
     save_json(CONFIG_FILE, config)
+    # Lưu dữ liệu mới
+    save_json("welcome_messages.json", WELCOME_MESSAGES)
+    save_json("goodbye_messages.json", GOODBYE_MESSAGES)
+    save_json(PING_FILE, PING_CONFIG)
 
 load_all_data()
 # ==================== HẰNG SỐ ====================
@@ -4881,6 +4896,38 @@ async def on_message(message):
             break
 
     await bot.process_commands(message)
+        # ==================== XỬ LÝ SETPING ====================
+    if message.guild:
+        guild_id = str(message.guild.id)
+        if guild_id in PING_CONFIG:
+            config = PING_CONFIG[guild_id]
+            for user_id_str, setting in config.items():
+                user_id = int(user_id_str)
+                mode = setting["mode"]
+                content = setting["content"]
+
+                if mode == "ping":
+                    if message.mentions and any(u.id == user_id for u in message.mentions):
+                        await message.channel.send(content)
+                        break
+
+                elif mode == "name":
+                    stored_name = setting.get("name")
+                    if stored_name:
+                        if stored_name.lower() in message.content.lower():
+                            if message.author.id != user_id:
+                                await message.channel.send(content)
+                                break
+
+                elif mode == "reply":
+                    if message.reference:
+                        try:
+                            ref_msg = await message.channel.fetch_message(message.reference.message_id)
+                            if ref_msg and ref_msg.author.id == user_id:
+                                await message.channel.send(content)
+                                break
+                        except:
+                            pass
 
     # Hệ thống EXP tự động
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
@@ -4956,7 +5003,21 @@ async def on_member_join(member):
     add_coins(member.id, coin_reward)
 
     guild_id = str(member.guild.id)
-    if guild_id in WELCOME_CHANNELS:
+
+    # Gửi nội dung welcome tùy chỉnh nếu có
+    if guild_id in WELCOME_MESSAGES and guild_id in WELCOME_CHANNELS:
+        ch_id = WELCOME_CHANNELS[guild_id]
+        channel = member.guild.get_channel(ch_id)
+        if channel:
+            welcome_content = WELCOME_MESSAGES[guild_id]
+            welcome_content = welcome_content.replace("{user}", member.mention)
+            try:
+                await channel.send(welcome_content)
+            except:
+                pass
+
+    # Nếu không có nội dung tùy chỉnh, gửi embed mặc định (giữ nguyên)
+    if guild_id not in WELCOME_MESSAGES and guild_id in WELCOME_CHANNELS:
         ch_id = WELCOME_CHANNELS[guild_id]
         channel = member.guild.get_channel(ch_id)
         if channel:
@@ -4974,7 +5035,6 @@ async def on_member_join(member):
             embed.set_image(url="https://i.pinimg.com/originals/54/19/c9/5419c9ce3ffade43b2837daa2c96b1d9.gif")
             embed.set_footer(text=f"Thành viên thứ #{member.guild.member_count}")
             await channel.send(embed=embed)
-
 @bot.event
 async def on_member_remove(member):
     if member.guild is None:
@@ -5002,7 +5062,19 @@ async def on_member_remove(member):
         pass
 
     guild_id = str(member.guild.id)
-    if guild_id in GOODBYE_CHANNELS:
+
+    if guild_id in GOODBYE_MESSAGES and guild_id in GOODBYE_CHANNELS:
+        ch_id = GOODBYE_CHANNELS[guild_id]
+        channel = member.guild.get_channel(ch_id)
+        if channel:
+            goodbye_content = GOODBYE_MESSAGES[guild_id]
+            goodbye_content = goodbye_content.replace("{user}", member.mention)
+            try:
+                await channel.send(goodbye_content)
+            except:
+                pass
+
+    if guild_id not in GOODBYE_MESSAGES and guild_id in GOODBYE_CHANNELS:
         ch_id = GOODBYE_CHANNELS[guild_id]
         channel = member.guild.get_channel(ch_id)
         if channel:
@@ -5013,7 +5085,6 @@ async def on_member_remove(member):
             )
             embed.set_image(url="https://i.pinimg.com/originals/16/d5/83/16d583a3fd6d356e5a1d5e57b318474c.gif")
             await channel.send(embed=embed)
-
 @bot.event
 async def on_command_error(ctx, error):
     if isinstance(error, commands.CommandNotFound):
@@ -5445,6 +5516,99 @@ async def set_xp(ctx, member: discord.Member, xp: int):
     USER_LEVELS[uid]["exp"] = xp
     save_json(LEVEL_FILE, USER_LEVELS)
     await ctx.send(f"✅ Đã đặt XP của {member.mention} thành {xp}.")
+# ==================== LỆNH WELCOME, GOODBYE, SETPING ====================
+
+@bot.command(name="welcome")
+@is_bot_owner()
+async def set_welcome_message(ctx, *, content: str = None):
+    """
+    Thiết lập nội dung thông báo khi thành viên mới vào server.
+    Cú pháp: n!welcome [nội dung]    -> đặt nội dung
+             n!welcome              -> xem nội dung hiện tại
+             n!welcome off          -> xóa nội dung (tắt)
+    """
+    guild_id = str(ctx.guild.id)
+    if content is None:
+        msg = WELCOME_MESSAGES.get(guild_id)
+        if msg:
+            await ctx.send(f"📌 **Nội dung welcome hiện tại:**\n{msg}")
+        else:
+            await ctx.send("❌ Chưa có nội dung welcome nào được đặt.")
+        return
+
+    if content.lower() == "off":
+        if guild_id in WELCOME_MESSAGES:
+            del WELCOME_MESSAGES[guild_id]
+            save_all_data()
+            await ctx.send("✅ Đã tắt thông báo welcome.")
+        else:
+            await ctx.send("❌ Chưa có nội dung welcome để tắt.")
+        return
+
+    WELCOME_MESSAGES[guild_id] = content
+    save_all_data()
+    await ctx.send(f"✅ Đã đặt nội dung welcome:\n{content}")
+
+@bot.command(name="goodbye")
+@is_bot_owner()
+async def set_goodbye_message(ctx, *, content: str = None):
+    """
+    Thiết lập nội dung thông báo khi thành viên rời server.
+    Cú pháp: n!goodbye [nội dung]    -> đặt nội dung
+             n!goodbye              -> xem nội dung hiện tại
+             n!goodbye off          -> xóa nội dung (tắt)
+    """
+    guild_id = str(ctx.guild.id)
+    if content is None:
+        msg = GOODBYE_MESSAGES.get(guild_id)
+        if msg:
+            await ctx.send(f"📌 **Nội dung goodbye hiện tại:**\n{msg}")
+        else:
+            await ctx.send("❌ Chưa có nội dung goodbye nào được đặt.")
+        return
+
+    if content.lower() == "off":
+        if guild_id in GOODBYE_MESSAGES:
+            del GOODBYE_MESSAGES[guild_id]
+            save_all_data()
+            await ctx.send("✅ Đã tắt thông báo goodbye.")
+        else:
+            await ctx.send("❌ Chưa có nội dung goodbye để tắt.")
+        return
+
+    GOODBYE_MESSAGES[guild_id] = content
+    save_all_data()
+    await ctx.send(f"✅ Đã đặt nội dung goodbye:\n{content}")
+
+@bot.command(name="setping")
+@is_bot_owner()
+async def set_ping(ctx, mode: str, member: discord.Member, *, content: str):
+    """
+    Thiết lập phản hồi tự động khi có sự kiện liên quan đến một thành viên.
+    Cú pháp: n!setping <ping|name|reply> @user <nội dung>
+    
+    - ping   : Khi ai đó ping @user, bot sẽ gửi nội dung.
+    - name   : Khi ai đó gõ tên hiển thị của user, bot sẽ gửi nội dung.
+    - reply  : Khi ai đó trả lời tin nhắn của user, bot sẽ gửi nội dung.
+    """
+    mode = mode.lower()
+    if mode not in ["ping", "name", "reply"]:
+        await ctx.send("❌ Chế độ không hợp lệ! Dùng `ping`, `name` hoặc `reply`.")
+        return
+
+    guild_id = str(ctx.guild.id)
+    if guild_id not in PING_CONFIG:
+        PING_CONFIG[guild_id] = {}
+
+    name_to_store = member.display_name if mode == "name" else None
+    PING_CONFIG[guild_id][str(member.id)] = {
+        "mode": mode,
+        "content": content,
+        "name": name_to_store
+    }
+    save_all_data()
+
+    await ctx.send(f"✅ Đã set ping cho {member.mention} với chế độ `{mode}`.\n📝 Nội dung: {content}")
 # ==================== CHẠY BOT ====================
 if __name__ == "__main__":
     keep_alive()
