@@ -1915,21 +1915,39 @@ async def list_emoji_error(ctx, error):
 
 @bot.command(name="steal")
 @is_bot_owner()
-async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
+async def steal_emoji(ctx, emoji: discord.PartialEmoji, *, name: str = None):
+    """
+    Lấy emoji tùy chỉnh từ một server khác và thêm vào server hiện tại.
+    Cú pháp: n!steal <:emoji_name:emoji_id> [tên_mới]
+    Nếu không có tên, bot tự tạo tên mặc định.
+    """
+    # Kiểm tra nếu là emoji Unicode (không có id)
+    if not emoji.id:
+        await ctx.send("❌ Không thể steal emoji Unicode! Chỉ hỗ trợ emoji tùy chỉnh (custom emoji).")
+        return
+
+    # Tạo tên mặc định nếu không được cung cấp
     if name is None:
-        name = f"emoji_{emoji_id}"
+        base_name = "no_name"
+        name = base_name
+        counter = 1
+        # Kiểm tra tên đã tồn tại chưa, nếu có thì thêm số
+        while discord.utils.get(ctx.guild.emojis, name=name):
+            counter += 1
+            name = f"{base_name}_{counter}"
+
     try:
-        emoji = await bot.fetch_emoji(emoji_id)
-        if not emoji:
-            await ctx.send("❌ Không tìm thấy emoji!")
-            return
+        # Tải ảnh emoji từ URL
         async with aiohttp.ClientSession() as session:
             async with session.get(emoji.url) as resp:
                 if resp.status != 200:
-                    await ctx.send("❌ Không tải được ảnh!")
+                    await ctx.send("❌ Không thể tải ảnh từ emoji!")
                     return
                 image_data = await resp.read()
+
+        # Tạo emoji mới trong server
         new_emoji = await ctx.guild.create_custom_emoji(name=name, image=image_data)
+
         embed = discord.Embed(
             title="🎨 ĐÃ COPY EMOJI",
             description=f"✅ {new_emoji} - `{new_emoji.name}`\n👑 **Người thực hiện:** {ctx.author.mention}",
@@ -1937,14 +1955,11 @@ async def steal_emoji(ctx, emoji_id: int, *, name: str = None):
         )
         embed.set_footer(text="Hệ thống quản trị Boss Bảo 💖")
         await ctx.send(embed=embed)
+
+    except discord.Forbidden:
+        await ctx.send("❌ Bot không có quyền tạo emoji! Hãy cấp quyền `Quản lý Emoji`.")
     except Exception as e:
         await ctx.send(f"❌ Lỗi: {str(e)}")
-
-@steal_emoji.error
-async def steal_emoji_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-
 # ==================== LỆNH WEBHOOK MỚI ====================
 @bot.command(name="addwebhook")
 @is_bot_owner()
@@ -3245,6 +3260,7 @@ async def help_command(ctx):
             "Hãy chọn danh mục ở Menu thả xuống để khám phá danh sách lệnh chi tiết.\n\n"
             "📌 **Prefix mặc định:** `n!`\n"
             "👑 **Sở hữu bởi:** Boss Bảo & Đồng minh Tối Cao\n"
+            "🤖 **OWNER BOT BY:** <@1540585511842881616>\n"   # <--- THÊM DÒNG NÀY
             "💡 **Gợi ý:** Sử dụng các lệnh kinh tế để kiếm coin và tham gia game!"
         ),
         color=0xFF69B4
@@ -3253,14 +3269,16 @@ async def help_command(ctx):
     embed.set_footer(text="Hệ thống quản trị đỉnh cao • Boss Bảo On Top", icon_url=bot.user.display_avatar.url)
     view = HelpView(ctx.author.id, BOT_OWNERS)
     await ctx.send(embed=embed, view=view)
-
 # ==================== LỆNH SETUP (CHỈ OWNER) ====================
 @bot.command(name="setup")
 @is_bot_owner()
 async def setup(ctx):
     embed = discord.Embed(
         title="💖 HỆ THỐNG QUẢN TRỊ TỐI CAO CỦA BOSS BẢO 💖",
-        description="Chọn một danh mục bên dưới để xem các lệnh tương ứng.",
+        description=(
+            "Chọn một danh mục bên dưới để xem các lệnh tương ứng.\n"
+            "🤖 **OWNER BOT BY:** <@1540585511842881616>"  
+        ),
         color=0xFF69B4
     )
     for cat_name, data in HELP_CATEGORIES.items():
@@ -3269,12 +3287,6 @@ async def setup(ctx):
     embed.set_footer(text="Độc quyền phục vụ Boss Bảo 💖", icon_url=ctx.author.display_avatar.url)
     view = HelpView(ctx.author.id, BOT_OWNERS)
     await ctx.send(embed=embed, view=view)
-
-@setup.error
-async def setup_error(ctx, error):
-    if isinstance(error, commands.CheckFailure):
-        await ctx.send(' NGU À? CÓ PHẢI BOSS BẢO KHÔNG MÀ SÀI? 🤣🤣🤣😂😂😒')
-
 # ==================== HỆ THỐNG SHOP 20 VẬT PHẨM ====================
 SHOP_ITEMS = {
     "🍀 Lá Cỏ May Mắn": {
