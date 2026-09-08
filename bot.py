@@ -4882,46 +4882,58 @@ async def on_ready():
         print(f"  - {guild.name} (ID: {guild.id})")
     print("=" * 50)
     await bot.change_presence(activity=discord.Game(name="n!help | Boss Bảo 👑"))
-
 @bot.event
 async def on_message(message):
+    # ==============================================
+    # 1. BỎ QUA TIN NHẮN CỦA BOT
+    # ==============================================
     if message.author.bot:
         return
-# ==================== XỬ LÝ SETPING ====================
-# Chỉ xử lý nếu tin nhắn không phải là lệnh (không bắt đầu bằng prefix)
-if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
-    if message.guild:
-        guild_id = str(message.guild.id)
-        if guild_id in PING_CONFIG:
-            config = PING_CONFIG[guild_id]
-            for user_id_str, setting in config.items():
-                user_id = int(user_id_str)
-                mode = setting["mode"]
-                content = setting["content"]
 
-                if mode == "ping":
-                    if message.mentions and any(u.id == user_id for u in message.mentions):
-                        await message.channel.send(content)
-                        break
+    # ==============================================
+    # 2. XỬ LÝ SETPING (TỰ ĐỘNG PHẢN HỒI)
+    # ==============================================
+    # Chỉ xử lý nếu tin nhắn không phải là lệnh (không bắt đầu bằng prefix)
+    if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
+        if message.guild:
+            guild_id = str(message.guild.id)
+            if guild_id in PING_CONFIG:
+                config = PING_CONFIG[guild_id]
+                for user_id_str, setting in config.items():
+                    user_id = int(user_id_str)
+                    mode = setting["mode"]
+                    content = setting["content"]
 
-                elif mode == "name":
-                    stored_name = setting.get("name")
-                    if stored_name:
-                        if stored_name.lower() in message.content.lower():
-                            if message.author.id != user_id:
-                                await message.channel.send(content)
-                                break
+                    if mode == "ping":
+                        # Kiểm tra nếu tin nhắn có mention đúng user đó
+                        if message.mentions and any(u.id == user_id for u in message.mentions):
+                            await message.channel.send(content)
+                            break  # Chỉ phản hồi 1 lần cho mỗi tin nhắn
 
-                elif mode == "reply":
-                    if message.reference:
-                        try:
-                            ref_msg = await message.channel.fetch_message(message.reference.message_id)
-                            if ref_msg and ref_msg.author.id == user_id:
-                                await message.channel.send(content)
-                                break
-                        except:
-                            pass
-    # Kiểm tra prefix và xử lý lệnh "nuke" giả
+                    elif mode == "name":
+                        # Kiểm tra nếu tin nhắn chứa tên hiển thị của user đó
+                        stored_name = setting.get("name")
+                        if stored_name:
+                            if stored_name.lower() in message.content.lower():
+                                # Không tự phản hồi chính mình
+                                if message.author.id != user_id:
+                                    await message.channel.send(content)
+                                    break
+
+                    elif mode == "reply":
+                        # Kiểm tra nếu tin nhắn là reply tới tin nhắn của user đó
+                        if message.reference:
+                            try:
+                                ref_msg = await message.channel.fetch_message(message.reference.message_id)
+                                if ref_msg and ref_msg.author.id == user_id:
+                                    await message.channel.send(content)
+                                    break
+                            except:
+                                pass
+
+    # ==============================================
+    # 3. XỬ LÝ PREFIX & LỆNH "nuke" GIẢ
+    # ==============================================
     prefixes = ('n!', 'N!', 'n! ', 'N! ')
     for prefix in prefixes:
         if message.content.lower().startswith(prefix.lower()):
@@ -4931,9 +4943,15 @@ if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
                 return
             break
 
+    # ==============================================
+    # 4. XỬ LÝ LỆNH (PROCESS COMMANDS)
+    # ==============================================
     await bot.process_commands(message)
-    
-    # Hệ thống EXP tự động
+
+    # ==============================================
+    # 5. HỆ THỐNG EXP TỰ ĐỘNG
+    # ==============================================
+    # Chỉ tính exp cho tin nhắn không bắt đầu bằng prefix
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
         if message.guild:
             exp_gain = random.randint(1, 10)
@@ -4960,7 +4978,9 @@ if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
                             pass
                 await check_and_assign_level_roles(message.author, new_level)
 
-    # Xử lý lệnh "nuked" alias
+    # ==============================================
+    # 6. XỬ LÝ LỆNH "nuked" ALIAS
+    # ==============================================
     if message.content.lower().startswith("nuked"):
         content_without_prefix = message.content[len("nuked "):].strip() if len(message.content) > 5 else ""
         if content_without_prefix == "":
@@ -4970,7 +4990,9 @@ if not message.content.startswith(('n!', 'N!', 'n! ', 'N! ')):
             if ctx.command is None:
                 await message.reply("ơi gì vậy sài lệnh thì cứ nuked + lệnh nha")
 
-    # Ping owner khi nhắc "bảo"
+    # ==============================================
+    # 7. PING OWNER KHI NHẮC TỚI "BẢO"
+    # ==============================================
     has_owner_mention = False
     if message.mentions:
         for user in message.mentions:
