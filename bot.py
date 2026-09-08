@@ -4884,19 +4884,7 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-
-    # Kiểm tra prefix và xử lý lệnh "nuke" giả
-    prefixes = ('n!', 'N!', 'n! ', 'N! ')
-    for prefix in prefixes:
-        if message.content.lower().startswith(prefix.lower()):
-            content_after = message.content[len(prefix):].lstrip()
-            if content_after.lower().startswith("nuke"):
-                await message.reply("làm gì có lệnh nuke ngáo à")
-                return
-            break
-
-    await bot.process_commands(message)
-        # ==================== XỬ LÝ SETPING ====================
+           # ==================== XỬ LÝ SETPING ====================
     if message.guild:
         guild_id = str(message.guild.id)
         if guild_id in PING_CONFIG:
@@ -4929,6 +4917,19 @@ async def on_message(message):
                         except:
                             pass
 
+
+    # Kiểm tra prefix và xử lý lệnh "nuke" giả
+    prefixes = ('n!', 'N!', 'n! ', 'N! ')
+    for prefix in prefixes:
+        if message.content.lower().startswith(prefix.lower()):
+            content_after = message.content[len(prefix):].lstrip()
+            if content_after.lower().startswith("nuke"):
+                await message.reply("làm gì có lệnh nuke ngáo à")
+                return
+            break
+
+    await bot.process_commands(message)
+    
     # Hệ thống EXP tự động
     if not message.content.startswith("n!") and not message.content.startswith("N!") and not message.content.startswith("n! ") and not message.content.startswith("N! "):
         if message.guild:
